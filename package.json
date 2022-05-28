@@ -1,0 +1,21 @@
+{
+  "name": "dead-file-remover",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Daksh Sharma",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/parser": "^7.18.3",
+    "@babel/traverse": "^7.18.2",
+    "@babel/types": "^7.18.2",
+    "enhanced-resolve": "^5.9.3",
+    "path": "^0.12.7"
+  },
+  "devDependencies": {
+    "code-tokenizer": "^1.0.6"
+  }
+}
