@@ -1,9 +1,9 @@
 module.exports = {
-//   entry: ['/Users/dakshsharma/Desktop/Assignments/dead-file-remover/23-quiz/final/src/index.js'],
+  // entry: ['../todomvc-redux-react-typescript/client/index.js'],
   entry: {
-    source: '/Users/dakshsharma/Desktop/Assignments/dead-file-remover/23-quiz/final/src/',
+    source: '/Users/dakshsharma/Desktop/Assignments/react-projects/23-quiz/final/src/index.js',
     checkIntraModuleDependencies: true,
   },
-  exclude: [],
-  directoriesToCheck: ["./23-quiz/final/src"],
+  exclude: [/node_modules/],
+  directoriesToCheck: ['../react-projects/23-quiz/final/src'],
 };
