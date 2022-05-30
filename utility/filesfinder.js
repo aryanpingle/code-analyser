@@ -1,7 +1,6 @@
 const path = require("path");
 const fs = require("fs");
-const { directoryResolver } = require("./resolver");
-
+const { directoryResolver, getPredecessorDirectory } = require("./resolver");
 
 const getAllFiles = async (
   allDirectories,
@@ -10,7 +9,10 @@ const getAllFiles = async (
 ) => {
   const allFiles = [];
   for (const directory of allDirectories) {
-    const directoyAbsoluteAddress = directoryResolver(process.cwd(), directory);
+    const directoyAbsoluteAddress = directoryResolver(
+      getPredecessorDirectory(__dirname, 1),
+      directory
+    );
     if (!fs.statSync(directoyAbsoluteAddress).isDirectory()) {
       if (!excludedPointsRegex.test(directoyAbsoluteAddress))
         allFiles.push(directoyAbsoluteAddress);
@@ -73,7 +75,32 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
   }
 };
 
+const getAllEntryFiles = async (entry, excludedPointsRegex) => {
+  const visitedEntryDirectoriesMapping = {};
+  const isArray = Array.isArray(entry);
+  let entryArray;
+  if (!isArray) {
+    entryArray = [entry.source];
+  } else entryArray = entry;
+  return await getAllFiles(
+    entryArray,
+    visitedEntryDirectoriesMapping,
+    excludedPointsRegex
+  );
+};
+
+const getAllFilesToCheck = async (directoriesToCheck, excludedPointsRegex) => {
+  const visitedDirectoriesToCheckMapping = {};
+  return await getAllFiles(
+    directoriesToCheck,
+    visitedDirectoriesToCheckMapping,
+    excludedPointsRegex
+  );
+};
+
 module.exports = {
   updateFilesMetadata,
   getAllFiles,
+  getAllEntryFiles,
+  getAllFilesToCheck,
 };

@@ -27,6 +27,7 @@ const traverseFile = (fileLocation, filesMetadata) => {
     traverseAST(ast, currentFileMetadata);
     ast = null;
     updateFilesMetadata(filesMetadata, currentFileMetadata);
+    // console.log(filesMetadata)
     let importedFilesMapping = currentFileMetadata.importedFilesMapping;
     for (const file in importedFilesMapping) {
       if (

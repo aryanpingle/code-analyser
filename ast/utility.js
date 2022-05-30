@@ -1,5 +1,5 @@
 const path = require("path");
-
+const { pathResolver, isPathAbsolute } = require("../utility/resolver");
 const astParserPlugins = [
   "jsx",
   ["typescript", { dts: true }],
@@ -37,9 +37,10 @@ const astParserPlugins = [
   "topLevelAwait",
 ];
 
-const getDefaultFileObject = (fileLocation) => {
+const getDefaultFileObject = (fileLocation, type = "FILE") => {
   return {
     name: path.basename(fileLocation),
+    type,
     fileLocation: fileLocation,
     referencedCount: 0,
     importReferenceCount: 0,
@@ -92,6 +93,70 @@ const updateSpecifierAndCurrentFileReferenceCount = (
   };
 };
 
+const setRequiredVariablesObjects = (
+  node,
+  currentFileMetadata,
+  importedFileAddress
+) => {
+  if (node.type === "Identifier") {
+    const localEntityName = node.name;
+    currentFileMetadata.entityMapping[localEntityName] = {
+      name: "default",
+      localName: localEntityName,
+      importedFrom: importedFileAddress,
+      referenceCount: 0,
+      importReferenceCount: 1,
+    };
+    currentFileMetadata.importedFilesMapping[
+      importedFileAddress
+    ].importReferenceCount += 1;
+  } else {
+    node.properties.forEach((property) => {
+      const importedEntityName = property.key.name;
+      const localEntityName = property.value.name;
+      const importReferenceCount =
+        importedEntityName === localEntityName ? 2 : 1;
+      currentFileMetadata.entityMapping[localEntityName] = {
+        name: importedEntityName,
+        localName: localEntityName,
+        importedFrom: importedFileAddress,
+        referenceCount: 0,
+        importReferenceCount,
+      };
+      currentFileMetadata.importedFilesMapping[
+        importedFileAddress
+      ].importReferenceCount += importReferenceCount;
+    });
+  }
+};
+
+const isRequireStatement = (node) => {
+  const callExpression = getCallExpressionFromNode(node);
+  return (
+    callExpression &&
+    callExpression.callee &&
+    callExpression.callee.name === "require"
+  );
+};
+
+const getCallExpressionFromNode = (node) => {
+  let callExpression;
+  if (!node) return callExpression;
+  if (node.type === "CallExpression") callExpression = node;
+  else if (node.type === "MemberExpression") callExpression = node.object;
+  return callExpression;
+};
+
+const getImportedFileAddress = (node) => {
+  const callExpression = getCallExpressionFromNode(node);
+  return callExpression.arguments[0].value;
+};
+
+const getResolvedImportedFileDetails = (directoryAddress, fileAddress) => {
+  if (isPathAbsolute(fileAddress)) return { type: "FILE", fileAddress };
+  return pathResolver(directoryAddress, fileAddress);
+};
+
 const isSpecifiersPresent = (node) => node.specifiers.length;
 
 module.exports = {
@@ -100,5 +165,9 @@ module.exports = {
   doIdentifierOperations,
   setDefaultReferenceCount,
   updateSpecifierAndCurrentFileReferenceCount,
-  isSpecifiersPresent
+  isSpecifiersPresent,
+  setRequiredVariablesObjects,
+  getImportedFileAddress,
+  isRequireStatement,
+  getResolvedImportedFileDetails,
 };
