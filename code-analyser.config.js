@@ -1,9 +1,13 @@
 module.exports = {
-  // entry: ['../todomvc-redux-react-typescript/client/index.js'],
-  entry: {
-    source: './index.js',
-    checkIntraModuleDependencies: true,
+  intraModuleDependencies: {
+    check: true,
+    entryModule: "../react-projects/23-quiz/final/src/index.js",
   },
-  exclude: [/node_modules|\.git/],
-  directoriesToCheck: ['./'],
+  deadFiles: {
+    check: false,
+    entry: [/index\.js/i],
+  },
+  exclude: [/node_modules|(\.git)/],
+  directoriesToCheck: ["../react-projects/23-quiz/final"],
+  // directoriesToCheck: ["../todomvc-redux-react-typescript/client/"],
 };

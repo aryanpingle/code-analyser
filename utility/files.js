@@ -75,18 +75,31 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
   }
 };
 
-const getAllEntryFiles = async (entry, excludedPointsRegex) => {
+const getAllEntryFiles = async (
+  entryArray,
+  allFilesToCheck,
+  excludedPointsRegex
+) => {
   const visitedEntryDirectoriesMapping = {};
-  const isArray = Array.isArray(entry);
-  let entryArray;
-  if (!isArray) {
-    entryArray = [entry.source];
-  } else entryArray = entry;
-  return await getAllFiles(
-    entryArray,
-    visitedEntryDirectoriesMapping,
-    excludedPointsRegex
-  );
+  const entryFiles = [];
+  for (const entry of entryArray) {
+    // console.log(entry)
+    if (entry instanceof RegExp) {
+      allFilesToCheck.forEach((file) => {
+        if (entry.test(file) && !excludedPointsRegex.test(file)) {
+          entryFiles.push(file);
+        }
+      });
+    } else {
+      const filesInsideThisDirectory = await getAllFiles(
+        [entry],
+        visitedEntryDirectoriesMapping,
+        excludedPointsRegex
+      );
+      filesInsideThisDirectory.forEach((file) => entryFiles.push(file));
+    }
+  }
+  return entryFiles;
 };
 
 const getAllFilesToCheck = async (directoriesToCheck, excludedPointsRegex) => {
@@ -97,10 +110,26 @@ const getAllFilesToCheck = async (directoriesToCheck, excludedPointsRegex) => {
     excludedPointsRegex
   );
 };
+const getDefaultFilesMetadata = (excludedPointsRegex) => {
+  return {
+    filesMapping: {},
+    visitedFilesMapping: {},
+    excludedPointsRegex,
+    unparsableVistedFiles: 0,
+  };
+};
+
+const setDefaultFilesMetadata = (filesMetadata) => {
+  filesMetadata.filesMapping = {};
+  filesMetadata.visitedDirectoriesMapping = {};
+  filesMetadata.unparsableVistedFiles = 0;
+};
 
 module.exports = {
   updateFilesMetadata,
   getAllFiles,
   getAllEntryFiles,
   getAllFilesToCheck,
+  getDefaultFilesMetadata,
+  setDefaultFilesMetadata,
 };

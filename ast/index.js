@@ -1,9 +1,7 @@
 const { default: traverse } = require("@babel/traverse");
 const { parse } = require("@babel/parser");
 const fs = require("fs");
-const {
-  getDirectoryFromPath,
-} = require("../utility/resolver");
+const { getDirectoryFromPath } = require("../utility/resolver");
 let i = 1;
 const {
   astParserPlugins,
@@ -35,8 +33,8 @@ const traverseAST = (tree, currentFileMetadata) => {
       const givenSourceAdress = astPath.node.source.value;
       const { type, fileAddress: importedFileAddress } =
         getResolvedImportedFileDetails(
-          givenSourceAdress,
-          getDirectoryFromPath(fileLocation)
+          getDirectoryFromPath(fileLocation),
+          givenSourceAdress
         );
       currentFileMetadata.importedFilesMapping[importedFileAddress] =
         getDefaultFileObject(importedFileAddress, type);
@@ -60,7 +58,7 @@ const traverseAST = (tree, currentFileMetadata) => {
         const { type, fileAddress: importedFileAddress } =
           getResolvedImportedFileDetails(
             getDirectoryFromPath(fileLocation),
-            givenSourceAdress,
+            givenSourceAdress
           );
         currentFileMetadata.importedFilesMapping[importedFileAddress] =
           getDefaultFileObject(importedFileAddress, type);

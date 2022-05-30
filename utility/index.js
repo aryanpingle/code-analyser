@@ -1,5 +1,5 @@
 const { checkUsingEntryFile } = require("../checker/entry-file-checker");
-const { getAllEntryFiles, getAllFilesToCheck } = require("./filesfinder");
+const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
 const { addNewInstanceToSpinner, updateSpinnerInstance } = require("./cli");
 const { buildIntraModuleDependencyRegex } = require("./regex");
 
@@ -77,28 +77,30 @@ const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
 };
 
 const getAllRequiredFiles = async (config, excludedPointsRegex, spinner) => {
-  addNewInstanceToSpinner(spinner, "id1", "Retrieving entry files...");
-  const allEntryFiles = await getAllEntryFiles(
-    config.entry,
-    excludedPointsRegex
-  );
-  updateSpinnerInstance(spinner, "id1", {
-    text: "Successfully retrieved all entry files",
-    status: "succeed",
-  });
   addNewInstanceToSpinner(
     spinner,
-    "id2",
+    "id1",
     "Retrieving all files inside directories to check..."
   );
   const allFilesToCheck = await getAllFilesToCheck(
     config.directoriesToCheck,
     excludedPointsRegex
   );
-  updateSpinnerInstance(spinner, "id2", {
+  updateSpinnerInstance(spinner, "id1", {
     text: "Successfully retrieved all files inside the directories to check",
     status: "succeed",
   });
+  addNewInstanceToSpinner(spinner, "id2", "Retrieving entry files...");
+  const allEntryFiles = await getAllEntryFiles(
+    config.entry,
+    allFilesToCheck,
+    excludedPointsRegex
+  );
+  updateSpinnerInstance(spinner, "id2", {
+    text: "Successfully retrieved all entry files",
+    status: "succeed",
+  });
+
   return { allEntryFiles, allFilesToCheck };
 };
 

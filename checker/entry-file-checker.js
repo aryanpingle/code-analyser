@@ -1,4 +1,4 @@
-const { updateFilesMetadata } = require("../utility/filesfinder");
+const { updateFilesMetadata } = require("../utility/files");
 const { traverseAST, buildAST, getDefaultFileObject } = require("../ast/index");
 
 const checkUsingEntryFile = (entyFileLocation, filesMetadata) => {
@@ -55,7 +55,7 @@ const traverseFile = (fileLocation, filesMetadata) => {
 const isFileNotVisited = (fileLocation, filesMetadata) =>
   !filesMetadata.visitedFilesMapping[fileLocation];
 const isFileExtensionValid = (fileLocation) =>
-  /.(js|jsx|ts|tsx)$/.test(fileLocation);
+  /\.(js|jsx|ts|tsx)$/.test(fileLocation);
 const isFileNotExcluded = (file, excludedPointsRegex) =>
   !excludedPointsRegex.test(file);
 const isFileMappingNotPresent = (file, filesMetadata) =>
