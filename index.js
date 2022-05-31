@@ -38,7 +38,7 @@ const analyseCodeAndDetectDeadFiles = async (
   analyseCode(allEntryFiles, filesMetadata, spinner);
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
   console.log(allDeadFiles);
-  // console.log(filesMetadata.visitedFilesMapping)
+  // console.log(filesMetadata.filesMapping)
 };
 
 const analyseCodeAndDetectIntraModuleDependencies = async (

@@ -1,11 +1,11 @@
 module.exports = {
   intraModuleDependencies: {
-    check: true,
+    check: false,
     entryModule: "../react-projects/23-quiz/final/src/index.js",
   },
   deadFiles: {
-    check: false,
-    entry: [/index\.js/i],
+    check: true,
+    entry: [/final\/src\/index\.js/i],
   },
   exclude: [/node_modules|(\.git)/],
   directoriesToCheck: ["../react-projects/23-quiz/final"],

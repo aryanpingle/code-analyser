@@ -110,12 +110,14 @@ const setRequiredVariablesObjects = (
     currentFileMetadata.importedFilesMapping[
       importedFileAddress
     ].importReferenceCount += 1;
-  } else {
-    node.properties.forEach((property) => {
-      const importedEntityName = property.key.name;
-      const localEntityName = property.value.name;
+  } else if (node.type === "ObjectPattern" || node.type === "ArrayPattern") {
+    const patternToCheck =
+      node.type === "ObjectPattern" ? node.properties : node.elements;
+    patternToCheck.forEach((property) => {
+      const importedEntityName = getImportedNameFromProperty(property);
+      const localEntityName = getLocalNameFromProperty(property);
       const importReferenceCount =
-        importedEntityName === localEntityName ? 2 : 1;
+        importedEntityName === localEntityName  && node.type === "ObjectPattern" ? 2 : 1;
       currentFileMetadata.entityMapping[localEntityName] = {
         name: importedEntityName,
         localName: localEntityName,
@@ -129,13 +131,25 @@ const setRequiredVariablesObjects = (
     });
   }
 };
+const getLocalNameFromProperty = (property) => {
+  if (property.type === "ObjectProperty") return property.value.name;
+  else if (property.type === "Identifier") return property.name;
+  else return "default";
+};
 
-const isRequireStatement = (node) => {
+const getImportedNameFromProperty = (property) => {
+  if (property.type === "ObjectProperty") return property.key.name;
+  else if (property.type === "Identifier") return property.name;
+  else return "default";
+};
+
+const isRequireOrImportStatement = (node) => {
   const callExpression = getCallExpressionFromNode(node);
   return (
     callExpression &&
     callExpression.callee &&
-    callExpression.callee.name === "require"
+    (callExpression.callee.name === "require" ||
+      callExpression.callee.name === "import")
   );
 };
 
@@ -168,6 +182,6 @@ module.exports = {
   isSpecifiersPresent,
   setRequiredVariablesObjects,
   getImportedFileAddress,
-  isRequireStatement,
+  isRequireOrImportStatement,
   getResolvedImportedFileDetails,
 };

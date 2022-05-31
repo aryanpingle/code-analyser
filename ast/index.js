@@ -2,7 +2,6 @@ const { default: traverse } = require("@babel/traverse");
 const { parse } = require("@babel/parser");
 const fs = require("fs");
 const { getDirectoryFromPath } = require("../utility/resolver");
-let i = 1;
 const {
   astParserPlugins,
   getDefaultFileObject,
@@ -11,7 +10,7 @@ const {
   updateSpecifierAndCurrentFileReferenceCount,
   isSpecifiersPresent,
   setRequiredVariablesObjects,
-  isRequireStatement,
+  isRequireOrImportStatement,
   getImportedFileAddress,
   getResolvedImportedFileDetails,
 } = require("./utility");
@@ -52,8 +51,28 @@ const traverseAST = (tree, currentFileMetadata) => {
       }
     },
     VariableDeclarator(path) {
-      if (isRequireStatement(path.node.init)) {
+      if (isRequireOrImportStatement(path.node.init)) {
         const givenSourceAdress = getImportedFileAddress(path.node.init);
+        const fileLocation = currentFileMetadata.fileLocation;
+        const { type, fileAddress: importedFileAddress } =
+          getResolvedImportedFileDetails(
+            getDirectoryFromPath(fileLocation),
+            givenSourceAdress
+          );
+        //   if(/index/.test(currentFileMetadata.fileLocation))
+        // console.log(path.node.id)
+        currentFileMetadata.importedFilesMapping[importedFileAddress] =
+          getDefaultFileObject(importedFileAddress, type);
+        setRequiredVariablesObjects(
+          path.node.id,
+          currentFileMetadata,
+          importedFileAddress
+        );
+      }
+    },
+    AssignmentExpression(path) {
+      if (isRequireOrImportStatement(path.node.right)) {
+        const givenSourceAdress = getImportedFileAddress(path.node.right);
         const fileLocation = currentFileMetadata.fileLocation;
         const { type, fileAddress: importedFileAddress } =
           getResolvedImportedFileDetails(
@@ -63,7 +82,7 @@ const traverseAST = (tree, currentFileMetadata) => {
         currentFileMetadata.importedFilesMapping[importedFileAddress] =
           getDefaultFileObject(importedFileAddress, type);
         setRequiredVariablesObjects(
-          path.node.id,
+          path.node.left,
           currentFileMetadata,
           importedFileAddress
         );
