@@ -71,7 +71,18 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
         currentFileMapping[index].referencedCount;
       filesMapping[index].importReferenceCount +=
         currentFileMapping[index].importReferenceCount;
-    } else filesMapping[index] = currentFileMapping[index];
+      const webpackChunkConfiguration =
+        currentFileMapping[index].webpackChunkConfiguration;
+      if (webpackChunkConfiguration !== {}) {
+        delete filesMapping[index].webpackChunkConfiguration["default"];
+        for (const confgIndex in webpackChunkConfiguration) {
+          filesMapping[index].webpackChunkConfiguration[confgIndex] =
+            webpackChunkConfiguration[confgIndex];
+        }
+      }
+    } else {
+      filesMapping[index] = currentFileMapping[index];
+    }
   }
 };
 

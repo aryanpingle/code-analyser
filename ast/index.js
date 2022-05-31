@@ -105,6 +105,8 @@ const traverseAST = (tree, currentFileMetadata) => {
         const webpackConfiguration = {
           webpackChunkName: importedFileAddress,
           webpackPath: importedFileAddress,
+          webpackInclude: /^()/,
+          webpackExclude: /!^()/,
         };
         // console.log(webpackConfiguration);
         const leadingCommentsArray =
@@ -132,6 +134,8 @@ const traverseAST = (tree, currentFileMetadata) => {
       doIdentifierOperations(path, currentFileMetadata);
     },
   });
+  // if (/App/.test(currentFileMetadata.fileLocation))
+  // console.log(currentFileMetadata.importedFilesMapping, currentFileMetadata.fileLocation);
 };
 
 module.exports = {

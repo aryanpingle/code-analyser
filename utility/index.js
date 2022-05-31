@@ -48,7 +48,10 @@ const updateFileWebpackChunk = async (filesMetadata) => {
   const filesMapping = filesMetadata.filesMapping;
   const folders = [];
   for (const file in filesMapping) {
-    if (filesMapping[file].type === "FOLDER") {
+    if (
+      filesMapping[file].type !== "INBUILT_NODE_MODULE" &&
+      fs.statSync(file).isDirectory()
+    ) {
       folders.push(filesMapping[file]);
     }
   }
@@ -60,24 +63,27 @@ const updateFileWebpackChunk = async (filesMetadata) => {
       [folderName],
       filesMetadata.excludedPointsRegex
     );
+    console.log(folderName);
     allFilesToCheck.forEach((file) => {
-      if (
-        folderWebpackConfiguration.webpackInclude.test(file) &&
-        !folderWebpackConfiguration.webpackExclude.test(file)
-      ) {
-        if (!filesMapping[file])
-          filesMapping[file] = getDefaultFileObject(file);
-        filesMapping[file].webpackChunkConfiguration =
-          folder.webpackChunkConfiguration;
+      for (const confgIndex in folderWebpackConfiguration) {
+        if (
+          folderWebpackConfiguration[confgIndex].webpackInclude.test(file) &&
+          !folderWebpackConfiguration[confgIndex].webpackExclude.test(file)
+        ) {
+          if (!filesMapping[file]) {
+            filesMapping[file] = getDefaultFileObject(file);
+          }
+          delete filesMapping[file].webpackChunkConfiguration["default"];
+          // console.log(file, folderWebpackConfiguration[confgIndex], folderName)
+          filesMapping[file].webpackChunkConfiguration[
+            folderWebpackConfiguration[confgIndex].webpackChunkName
+          ] = folderWebpackConfiguration[confgIndex];
+        }
       }
     });
   }
 };
-const getIntraModuleDependencies = (
-  filesMetadata,
-  moduleLocation,
-  spinner
-) => {
+const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
   addNewInstanceToSpinner(
     spinner,
     "id5",
@@ -89,15 +95,16 @@ const getIntraModuleDependencies = (
 
   const intraModuleImports = [];
   const filesMapping = filesMetadata.filesMapping;
-  const moduleChunkName = getWebChunkName(moduleLocation, filesMetadata);
+  const moduleChunkMap = getWebChunkNamesMap(moduleLocation, filesMetadata);
   // console.log(filesMapping)
   for (const file in filesMapping) {
     if (
       intraModuleDependencyRegex.test(file) &&
       fs.statSync(file).isFile() &&
       !excludedPointsRegex.test(file) &&
-      isInSameWebpackChunk(file, moduleChunkName, filesMetadata)
+      isInSameWebpackChunk(file, moduleChunkMap, filesMetadata)
     ) {
+      // console.log(file, moduleLocation, moduleChunkName, filesMetadata.filesMapping[file].webpackChunkConfiguration.webpackChunkName)
       intraModuleImports.push(file);
     }
   }
@@ -116,28 +123,44 @@ const getIntraModuleDependencies = (
   return intraModuleImports;
 };
 
-const getWebChunkName = (moduleLocation, filesMetadata) => {
-  let chunkName = "default";
+const getWebChunkNamesMap = (moduleLocation, filesMetadata) => {
+  console.log(filesMetadata.filesMapping['/Users/dakshsharma/Desktop/Assignments/teams-clone/client/src/index.js'])
+  let chunkNameMap = {};
   const filesMapping = filesMetadata.filesMapping;
+  const checkValRegex = new RegExp(`^${moduleLocation}`);
   for (const file in filesMapping) {
     const webpackChunkConfiguration =
       filesMapping[file].webpackChunkConfiguration;
-    if (
-      moduleLocation.startsWith(webpackChunkConfiguration.webpackPath) &&
-      (fs.statSync(moduleLocation).isDirectory() ||
-        (webpackChunkConfiguration.webpackInclude.test(moduleLocation) &&
-          webpackChunkConfiguration.webpackInclude.test(moduleLocation)))
-    ) {
-      chunkName = webpackChunkConfiguration.webpackChunkName;
+    for (const confgIndex in webpackChunkConfiguration) {
+      if (
+        checkValRegex.test(webpackChunkConfiguration[confgIndex].webpackPath) &&
+        (fs.statSync(moduleLocation).isDirectory() ||
+          (webpackChunkConfiguration[confgIndex].webpackInclude.test(
+            moduleLocation
+          ) &&
+            webpackChunkConfiguration[confgIndex].webpackInclude.test(
+              moduleLocation
+            )))
+      ) {
+        chunkNameMap[
+          webpackChunkConfiguration[confgIndex].webpackChunkName
+        ] = true;
+      }
     }
   }
-  return chunkName;
+  return chunkNameMap;
 };
-const isInSameWebpackChunk = (file, moduleChunkName, filesMetadata) => {
-  return (
-    filesMetadata.filesMapping[file].webpackChunkConfiguration
-      .webpackChunkName === moduleChunkName
-  );
+const isInSameWebpackChunk = (file, moduleChunkNameMap, filesMetadata) => {
+  // console.log(moduleChunkNameMap)
+  const webpackChunkConfiguration =
+    filesMetadata.filesMapping[file].webpackChunkConfiguration;
+  for (confgIndex in webpackChunkConfiguration) {
+    if (
+      moduleChunkNameMap[webpackChunkConfiguration[confgIndex].webpackChunkName]
+    )
+      return true;
+  }
+  return false;
 };
 const getAllRequiredFiles = async (config, excludedPointsRegex, spinner) => {
   addNewInstanceToSpinner(
@@ -172,5 +195,5 @@ module.exports = {
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
-  updateFileWebpackChunk
+  updateFileWebpackChunk,
 };

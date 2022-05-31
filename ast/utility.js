@@ -1,5 +1,6 @@
 const path = require("path");
 const { pathResolver, isPathAbsolute } = require("../utility/resolver");
+const { getDirectoryFromPath } = require("../utility/resolver");
 const astParserPlugins = [
   "jsx",
   ["typescript", { dts: true }],
@@ -46,10 +47,12 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
     importReferenceCount: 0,
     isEntryFile: false,
     webpackChunkConfiguration: {
-      webpackChunkName: "default",
-      webpackInclude: /^()/,
-      webpackExclude: /!^()/,
-      webpackPath: fileLocation,
+      default: {
+        webpackChunkName: "default",
+        webpackInclude: /^()/,
+        webpackExclude: /!^()/,
+        webpackPath: fileLocation,
+      },
     },
   };
 };
@@ -203,9 +206,10 @@ const updateWebpackConfigurationOfImportedFile = (
   const currentwebpackConfiguration =
     currentFileMetadata.importedFilesMapping[importedFileAddress]
       .webpackChunkConfiguration;
-  for (const key in webpackChunkConfiguration) {
-    currentwebpackConfiguration[key] = webpackChunkConfiguration[key];
-  }
+  if (currentwebpackConfiguration["default"])
+    delete currentwebpackConfiguration["default"];
+  currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
+    webpackChunkConfiguration;
 };
 const isSpecifiersPresent = (node) => node.specifiers.length;
 

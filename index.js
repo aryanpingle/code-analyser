@@ -1,15 +1,10 @@
 const config = require("./code-analyser.config.js");
 const { buildExcludedPointsRegex } = require("./utility/regex");
 const { directoryResolver } = require("./utility/resolver");
-const {
-  createNewCliSpinner,
-  addNewInstanceToSpinner,
-  updateSpinnerInstance,
-} = require("./utility/cli");
+const { createNewCliSpinner } = require("./utility/cli");
 const {
   getDefaultFilesMetadata,
   setDefaultFilesMetadata,
-  getAllFiles,
 } = require("./utility/files");
 const {
   analyseCode,
@@ -48,25 +43,22 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
   excludedPointsRegex
 ) => {
   const spinner = createNewCliSpinner();
-  addNewInstanceToSpinner(spinner, "id2", "Retrieving entry files...");
-  const allEntryFiles = await getAllFiles(
-    [config.intraModuleDependencies.entryModule],
-    {},
-    excludedPointsRegex
+  const { allEntryFiles } = await getAllRequiredFiles(
+    {
+      directoriesToCheck: [config.intraModuleDependencies.moduleToCheck],
+      entry: config.intraModuleDependencies.entry,
+    },
+    excludedPointsRegex,
+    spinner
   );
-  updateSpinnerInstance(spinner, "id2", {
-    text: "Successfully retrieved all entry files",
-    status: "succeed",
-  });
   analyseCode(allEntryFiles, filesMetadata, spinner);
   await updateFileWebpackChunk(filesMetadata);
   const intraModuleDependencies = getIntraModuleDependencies(
     filesMetadata,
-    directoryResolver(__dirname, config.intraModuleDependencies.entryModule),
+    directoryResolver(__dirname, config.intraModuleDependencies.moduleToCheck),
     spinner
   );
   console.log(intraModuleDependencies);
-  // console.log(filesMetadata)
 };
 
 if (config.deadFiles && config.deadFiles.check) {
