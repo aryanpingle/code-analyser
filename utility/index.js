@@ -2,7 +2,8 @@ const { checkUsingEntryFile } = require("../checker/entry-file-checker");
 const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
 const { addNewInstanceToSpinner, updateSpinnerInstance } = require("./cli");
 const { buildIntraModuleDependencyRegex } = require("./regex");
-
+const { getDefaultFileObject } = require("../ast/utility");
+const fs = require("fs");
 const analyseCode = (allEntryFiles, filesMetadata, spinner) => {
   addNewInstanceToSpinner(spinner, "id3", "Analysing codebase...");
   allEntryFiles.forEach((entryFile) =>
@@ -43,8 +44,40 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
   }
   return allDeadFiles;
 };
-
-const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
+const updateFileWebpackChunk = async (filesMetadata) => {
+  const filesMapping = filesMetadata.filesMapping;
+  const folders = [];
+  for (const file in filesMapping) {
+    if (filesMapping[file].type === "FOLDER") {
+      folders.push(filesMapping[file]);
+    }
+  }
+  for (const index in folders) {
+    const folder = folders[index];
+    const folderName = folder.fileLocation;
+    const folderWebpackConfiguration = folder.webpackChunkConfiguration;
+    const allFilesToCheck = await getAllFilesToCheck(
+      [folderName],
+      filesMetadata.excludedPointsRegex
+    );
+    allFilesToCheck.forEach((file) => {
+      if (
+        folderWebpackConfiguration.webpackInclude.test(file) &&
+        !folderWebpackConfiguration.webpackExclude.test(file)
+      ) {
+        if (!filesMapping[file])
+          filesMapping[file] = getDefaultFileObject(file);
+        filesMapping[file].webpackChunkConfiguration =
+          folder.webpackChunkConfiguration;
+      }
+    });
+  }
+};
+const getIntraModuleDependencies = (
+  filesMetadata,
+  moduleLocation,
+  spinner
+) => {
   addNewInstanceToSpinner(
     spinner,
     "id5",
@@ -53,13 +86,20 @@ const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
   const intraModuleDependencyRegex =
     buildIntraModuleDependencyRegex(moduleLocation);
   const excludedPointsRegex = filesMetadata.excludedPointsRegex;
+
   const intraModuleImports = [];
-  for (const file in filesMetadata.filesMapping) {
+  const filesMapping = filesMetadata.filesMapping;
+  const moduleChunkName = getWebChunkName(moduleLocation, filesMetadata);
+  // console.log(filesMapping)
+  for (const file in filesMapping) {
     if (
       intraModuleDependencyRegex.test(file) &&
-      !excludedPointsRegex.test(file)
-    )
+      fs.statSync(file).isFile() &&
+      !excludedPointsRegex.test(file) &&
+      isInSameWebpackChunk(file, moduleChunkName, filesMetadata)
+    ) {
       intraModuleImports.push(file);
+    }
   }
   if (filesMetadata.unparsableVistedFiles === 0)
     updateSpinnerInstance(spinner, "id5", {
@@ -76,6 +116,29 @@ const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
   return intraModuleImports;
 };
 
+const getWebChunkName = (moduleLocation, filesMetadata) => {
+  let chunkName = "default";
+  const filesMapping = filesMetadata.filesMapping;
+  for (const file in filesMapping) {
+    const webpackChunkConfiguration =
+      filesMapping[file].webpackChunkConfiguration;
+    if (
+      moduleLocation.startsWith(webpackChunkConfiguration.webpackPath) &&
+      (fs.statSync(moduleLocation).isDirectory() ||
+        (webpackChunkConfiguration.webpackInclude.test(moduleLocation) &&
+          webpackChunkConfiguration.webpackInclude.test(moduleLocation)))
+    ) {
+      chunkName = webpackChunkConfiguration.webpackChunkName;
+    }
+  }
+  return chunkName;
+};
+const isInSameWebpackChunk = (file, moduleChunkName, filesMetadata) => {
+  return (
+    filesMetadata.filesMapping[file].webpackChunkConfiguration
+      .webpackChunkName === moduleChunkName
+  );
+};
 const getAllRequiredFiles = async (config, excludedPointsRegex, spinner) => {
   addNewInstanceToSpinner(
     spinner,
@@ -109,4 +172,5 @@ module.exports = {
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
+  updateFileWebpackChunk
 };

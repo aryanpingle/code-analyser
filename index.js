@@ -16,6 +16,7 @@ const {
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
+  updateFileWebpackChunk,
 } = require("./utility/index");
 
 const excludedPointsRegex = buildExcludedPointsRegex(config.exclude);
@@ -58,13 +59,14 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     status: "succeed",
   });
   analyseCode(allEntryFiles, filesMetadata, spinner);
+  await updateFileWebpackChunk(filesMetadata);
   const intraModuleDependencies = getIntraModuleDependencies(
     filesMetadata,
     directoryResolver(__dirname, config.intraModuleDependencies.entryModule),
     spinner
   );
   console.log(intraModuleDependencies);
-  // console.log(filesMetadata.visitedFilesMapping)
+  // console.log(filesMetadata)
 };
 
 if (config.deadFiles && config.deadFiles.check) {

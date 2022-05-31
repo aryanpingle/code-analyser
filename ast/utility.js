@@ -45,6 +45,12 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
     referencedCount: 0,
     importReferenceCount: 0,
     isEntryFile: false,
+    webpackChunkConfiguration: {
+      webpackChunkName: "default",
+      webpackInclude: /^()/,
+      webpackExclude: /!^()/,
+      webpackPath: fileLocation,
+    },
   };
 };
 
@@ -117,7 +123,9 @@ const setRequiredVariablesObjects = (
       const importedEntityName = getImportedNameFromProperty(property);
       const localEntityName = getLocalNameFromProperty(property);
       const importReferenceCount =
-        importedEntityName === localEntityName  && node.type === "ObjectPattern" ? 2 : 1;
+        importedEntityName === localEntityName && node.type === "ObjectPattern"
+          ? 2
+          : 1;
       currentFileMetadata.entityMapping[localEntityName] = {
         name: importedEntityName,
         localName: localEntityName,
@@ -158,21 +166,97 @@ const getCallExpressionFromNode = (node) => {
   if (!node) return callExpression;
   if (node.type === "CallExpression") callExpression = node;
   else if (node.type === "MemberExpression") callExpression = node.object;
+  else if (node.type === "AwaitExpression") callExpression = node.argument;
   return callExpression;
 };
 
 const getImportedFileAddress = (node) => {
   const callExpression = getCallExpressionFromNode(node);
-  return callExpression.arguments[0].value;
+  return getValueFromStringOrTemplateLiteral(callExpression.arguments[0]);
 };
-
-const getResolvedImportedFileDetails = (directoryAddress, fileAddress) => {
+const getValueFromStringOrTemplateLiteral = (argument) => {
+  if (argument.type === "StringLiteral")
+    return { type: "FILE", address: argument.value };
+  else if (argument.type === "TemplateLiteral" && argument.quasis.length)
+    return {
+      type: "FOLDER",
+      address: getLastFeasibleAddress(argument.quasis[0].value.cooked),
+    };
+  else return { type: "NONE" };
+};
+const getLastFeasibleAddress = (path) => {
+  return path.replace(/(.{2,})\/(.*)$/, "$1");
+};
+const getResolvedImportedFileDetails = (
+  directoryAddress,
+  fileAddress,
+  importType = "FILE"
+) => {
   if (isPathAbsolute(fileAddress)) return { type: "FILE", fileAddress };
-  return pathResolver(directoryAddress, fileAddress);
+  return pathResolver(directoryAddress, fileAddress, importType);
 };
-
+const updateWebpackConfigurationOfImportedFile = (
+  currentFileMetadata,
+  importedFileAddress,
+  webpackChunkConfiguration
+) => {
+  const currentwebpackConfiguration =
+    currentFileMetadata.importedFilesMapping[importedFileAddress]
+      .webpackChunkConfiguration;
+  for (const key in webpackChunkConfiguration) {
+    currentwebpackConfiguration[key] = webpackChunkConfiguration[key];
+  }
+};
 const isSpecifiersPresent = (node) => node.specifiers.length;
 
+const isMemberNodeAndImportStatement = (memberNode) => {
+  return (
+    memberNode.type === "MemberExpression" &&
+    memberNode.object &&
+    memberNode.object.callee &&
+    memberNode.object.callee.type === "Import" &&
+    memberNode.property &&
+    memberNode.property.name === "then"
+  );
+};
+
+const parseComment = (commentSubParts) => {
+  commentSubParts[0] = commentSubParts[0].trim();
+  commentSubParts[1] = commentSubParts[1].trim();
+  let parsedValue;
+  parsedValue = commentSubParts[1].replace(/^(['"])(.*)\1$/, "$2");
+  if (parsedValue !== commentSubParts[1])
+    // String
+    return { key: commentSubParts[0], value: parsedValue };
+  parsedValue = commentSubParts[1].replace(/^\/(.*)\/(.*)/, "$1");
+  parsedValue = new RegExp(parsedValue);
+  return { key: commentSubParts[0], value: parsedValue };
+};
+
+const doAssignmentOperations = (
+  nodeToGetAddress,
+  nodeToGetValues,
+  currentFileMetadata
+) => {
+  if (isRequireOrImportStatement(nodeToGetAddress)) {
+    const { type: importType, address: givenSourceAdress } =
+      getImportedFileAddress(nodeToGetAddress);
+    const fileLocation = currentFileMetadata.fileLocation;
+    const { type, fileAddress: importedFileAddress } =
+      getResolvedImportedFileDetails(
+        getDirectoryFromPath(fileLocation),
+        givenSourceAdress,
+        importType
+      );
+    currentFileMetadata.importedFilesMapping[importedFileAddress] =
+      getDefaultFileObject(importedFileAddress, type);
+    setRequiredVariablesObjects(
+      nodeToGetValues,
+      currentFileMetadata,
+      importedFileAddress
+    );
+  }
+};
 module.exports = {
   astParserPlugins,
   getDefaultFileObject,
@@ -183,5 +267,9 @@ module.exports = {
   setRequiredVariablesObjects,
   getImportedFileAddress,
   isRequireOrImportStatement,
+  isMemberNodeAndImportStatement,
   getResolvedImportedFileDetails,
+  parseComment,
+  updateWebpackConfigurationOfImportedFile,
+  doAssignmentOperations,
 };

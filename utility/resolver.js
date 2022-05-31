@@ -1,14 +1,33 @@
 const path = require("path");
 const enhancedResolve = require("enhanced-resolve");
+const { existsSync } = require("fs");
 
 const enhancedResolver = new enhancedResolve.create.sync({
   extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts"],
 });
-const pathResolver = (directoryName, fileAddress) => {
+const pathResolver = (directoryName, fileAddress, pathType = "FILE") => {
   try {
-    return {type: "FILE", fileAddress: enhancedResolver(directoryName, fileAddress)};
+    if (
+      pathType === "FOLDER" &&
+      existsSync(directoryResolver(directoryName, fileAddress))
+    ) {
+      return {
+        type: "FOLDER",
+        fileAddress: directoryResolver(directoryName, fileAddress),
+      };
+    }
+    return {
+      type: "FILE",
+      fileAddress: enhancedResolver(directoryName, fileAddress),
+    };
   } catch (_) {
-    return {type: "INBUILT_NODE_MODULE", fileAddress};
+    if (existsSync(directoryResolver(directoryName, fileAddress))) {
+      return {
+        type: "FOLDER",
+        fileAddress: directoryResolver(directoryName, fileAddress),
+      };
+    }
+    return { type: "INBUILT_NODE_MODULE", fileAddress };
   }
 };
 const directoryResolver = (directoryName, givenDirectoryAddress) => {
