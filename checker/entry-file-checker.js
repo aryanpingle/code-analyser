@@ -19,7 +19,6 @@ const traverseFile = (fileLocation, filesMetadata) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
-    // if (/react\/index\.js/.test(fileLocation)) console.log(ast.program.body);
     let currentFileMetadata = {
       entityMapping: {},
       importedFilesMapping: {},
@@ -28,7 +27,6 @@ const traverseFile = (fileLocation, filesMetadata) => {
     traverseAST(ast, currentFileMetadata);
     ast = null;
     updateFilesMetadata(filesMetadata, currentFileMetadata);
-    // console.log(filesMetadata)
     let importedFilesMapping = currentFileMetadata.importedFilesMapping;
     for (const file in importedFilesMapping) {
       if (

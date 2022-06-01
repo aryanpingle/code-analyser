@@ -1,14 +1,13 @@
 module.exports = {
   intraModuleDependencies: {
-    check: true,
-    entry: [/\.js/i],
-    moduleToCheck: "../teams-clone/client/src/pages",
+    check: true, // True or false
+    entry: [/\.[jt]s/i], // Regex or can be absolute/relative file path
+    moduleToCheck: "./index.js", // module to check for intradependency 
   },
   deadFiles: {
-    check: false,
-    entry: [/src\/index\.[jt]s/i],
+    check: true,
+    entry: [/index\.[jt]s/i],
   },
-  exclude: [/node_modules|(\.git)|(Icon)/],
-  directoriesToCheck: ["../teams-clone/client/src/"],
-  // directoriesToCheck: ["../todomvc-redux-react-typescript/client/"],
+  exclude: [/node_modules|(\.git)|(Icon)/], // Excluded files
+  directoriesToCheck: ["./"],
 };

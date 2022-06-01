@@ -43,7 +43,7 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
     name: path.basename(fileLocation),
     type,
     fileLocation: fileLocation,
-    referencedCount: 0,
+    referenceCount: 0,
     importReferenceCount: 0,
     isEntryFile: false,
     webpackChunkConfiguration: {
@@ -57,28 +57,16 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
   };
 };
 
-const doIdentifierOperations = (path, currentFileMetadata) => {
-  const identifierName = path.node.name;
-  if (currentFileMetadata.entityMapping[identifierName]) {
-    try {
-      currentFileMetadata.entityMapping[identifierName].referenceCount++;
-      const importedFrom =
-        currentFileMetadata.entityMapping[identifierName].importedFrom;
-      currentFileMetadata.importedFilesMapping[importedFrom].referencedCount++;
-    } catch (_) {}
-  }
-};
-
 const setDefaultReferenceCount = (currentFileMetadata, importedFileAddress) => {
   currentFileMetadata.importedFilesMapping[
     importedFileAddress
-  ].referencedCount = 2;
+  ].referenceCount = 2;
   currentFileMetadata.importedFilesMapping[
     importedFileAddress
   ].importReferenceCount = 1;
 };
 
-const updateSpecifierAndCurrentFileReferenceCount = (
+const updateImportSpecifierAndCurrentFileReferenceCount = (
   specifier,
   currentFileMetadata,
   importedFileAddress
@@ -102,12 +90,31 @@ const updateSpecifierAndCurrentFileReferenceCount = (
   };
 };
 
+const updateExportSpecifierAndCurrentFileReferenceCount = (
+  currentFileMetadata,
+  importedFileAddress
+) => {
+  currentFileMetadata.importedFilesMapping[
+    importedFileAddress
+  ].importReferenceCount += 1;
+  currentFileMetadata.importedFilesMapping[
+    importedFileAddress
+  ].referenceCount += 2;
+};
+
 const setRequiredVariablesObjects = (
   node,
   currentFileMetadata,
   importedFileAddress
 ) => {
-  if (node.type === "Identifier") {
+  if (!node) {
+    currentFileMetadata.importedFilesMapping[
+      importedFileAddress
+    ].importReferenceCount += 1;
+    currentFileMetadata.importedFilesMapping[
+      importedFileAddress
+    ].referenceCount += 2;
+  } else if (node.type === "Identifier") {
     const localEntityName = node.name;
     currentFileMetadata.entityMapping[localEntityName] = {
       name: "default",
@@ -152,16 +159,6 @@ const getImportedNameFromProperty = (property) => {
   if (property.type === "ObjectProperty") return property.key.name;
   else if (property.type === "Identifier") return property.name;
   else return "default";
-};
-
-const isRequireOrImportStatement = (node) => {
-  const callExpression = getCallExpressionFromNode(node);
-  return (
-    callExpression &&
-    callExpression.callee &&
-    (callExpression.callee.name === "require" ||
-      callExpression.callee.name === "import")
-  );
 };
 
 const getCallExpressionFromNode = (node) => {
@@ -211,69 +208,57 @@ const updateWebpackConfigurationOfImportedFile = (
   currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
     webpackChunkConfiguration;
 };
-const isSpecifiersPresent = (node) => node.specifiers.length;
 
-const isMemberNodeAndImportStatement = (memberNode) => {
-  return (
-    memberNode.type === "MemberExpression" &&
-    memberNode.object &&
-    memberNode.object.callee &&
-    memberNode.object.callee.type === "Import" &&
-    memberNode.property &&
-    memberNode.property.name === "then"
-  );
-};
-
-const parseComment = (commentSubParts) => {
-  commentSubParts[0] = commentSubParts[0].trim();
-  commentSubParts[1] = commentSubParts[1].trim();
-  let parsedValue;
-  parsedValue = commentSubParts[1].replace(/^(['"])(.*)\1$/, "$2");
-  if (parsedValue !== commentSubParts[1])
-    // String
-    return { key: commentSubParts[0], value: parsedValue };
-  parsedValue = commentSubParts[1].replace(/^\/(.*)\/(.*)/, "$1");
-  parsedValue = new RegExp(parsedValue);
-  return { key: commentSubParts[0], value: parsedValue };
-};
-
-const doAssignmentOperations = (
-  nodeToGetAddress,
-  nodeToGetValues,
-  currentFileMetadata
-) => {
-  if (isRequireOrImportStatement(nodeToGetAddress)) {
-    const { type: importType, address: givenSourceAdress } =
-      getImportedFileAddress(nodeToGetAddress);
-    const fileLocation = currentFileMetadata.fileLocation;
-    const { type, fileAddress: importedFileAddress } =
-      getResolvedImportedFileDetails(
-        getDirectoryFromPath(fileLocation),
-        givenSourceAdress,
-        importType
-      );
-    currentFileMetadata.importedFilesMapping[importedFileAddress] =
-      getDefaultFileObject(importedFileAddress, type);
-    setRequiredVariablesObjects(
-      nodeToGetValues,
-      currentFileMetadata,
-      importedFileAddress
-    );
+const parseComment = (comment) => {
+  const commentSubParts = comment.value.split(":");
+  if (commentSubParts.length === 2) {
+    commentSubParts[0] = commentSubParts[0].trim();
+    commentSubParts[1] = commentSubParts[1].trim();
+    let parsedValue;
+    parsedValue = commentSubParts[1].replace(/^(['"])(.*)\1$/, "$2");
+    if (parsedValue !== commentSubParts[1])
+      return { key: commentSubParts[0], value: parsedValue };
+    parsedValue = commentSubParts[1].replace(/^\/(.*)\/(.*)/, "$1");
+    parsedValue = new RegExp(parsedValue);
+    return { key: commentSubParts[0], value: parsedValue, valid: true };
   }
+  return { valid: false };
 };
+
+const getNewWebpackConfigurationObject = (fileLocation) => {
+  return {
+    webpackChunkName: fileLocation,
+    webpackPath: fileLocation,
+    webpackInclude: /^()/,
+    webpackExclude: /!^()/,
+  };
+};
+const getResolvedPathFromGivenPath = (
+  fileLocation,
+  givenSourceAdress,
+  importType = ""
+) => {
+  const { type, fileAddress: importedFileAddress } =
+    getResolvedImportedFileDetails(
+      getDirectoryFromPath(fileLocation),
+      givenSourceAdress,
+      importType
+    );
+  return { type, importedFileAddress };
+};
+
 module.exports = {
   astParserPlugins,
   getDefaultFileObject,
-  doIdentifierOperations,
   setDefaultReferenceCount,
-  updateSpecifierAndCurrentFileReferenceCount,
-  isSpecifiersPresent,
+  updateImportSpecifierAndCurrentFileReferenceCount,
+  updateExportSpecifierAndCurrentFileReferenceCount,
   setRequiredVariablesObjects,
   getImportedFileAddress,
-  isRequireOrImportStatement,
-  isMemberNodeAndImportStatement,
   getResolvedImportedFileDetails,
   parseComment,
   updateWebpackConfigurationOfImportedFile,
-  doAssignmentOperations,
+  getResolvedPathFromGivenPath,
+  getNewWebpackConfigurationObject,
+  getCallExpressionFromNode,
 };

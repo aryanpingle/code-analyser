@@ -3,7 +3,7 @@ const enhancedResolve = require("enhanced-resolve");
 const { existsSync } = require("fs");
 
 const enhancedResolver = new enhancedResolve.create.sync({
-  extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts"],
+  extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
 });
 const pathResolver = (directoryName, fileAddress, pathType = "FILE") => {
   try {

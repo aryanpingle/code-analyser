@@ -67,8 +67,8 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
   const currentFileMapping = currentFileMetadata.importedFilesMapping;
   for (let index in currentFileMapping) {
     if (filesMapping[index]) {
-      filesMapping[index].referencedCount +=
-        currentFileMapping[index].referencedCount;
+      filesMapping[index].referenceCount +=
+        currentFileMapping[index].referenceCount;
       filesMapping[index].importReferenceCount +=
         currentFileMapping[index].importReferenceCount;
       const webpackChunkConfiguration =
@@ -94,7 +94,6 @@ const getAllEntryFiles = async (
   const visitedEntryDirectoriesMapping = {};
   const entryFiles = [];
   for (const entry of entryArray) {
-    // console.log(entry)
     if (entry instanceof RegExp) {
       allFilesToCheck.forEach((file) => {
         if (entry.test(file) && !excludedPointsRegex.test(file)) {
@@ -132,7 +131,7 @@ const getDefaultFilesMetadata = (excludedPointsRegex) => {
 
 const setDefaultFilesMetadata = (filesMetadata) => {
   filesMetadata.filesMapping = {};
-  filesMetadata.visitedDirectoriesMapping = {};
+  filesMetadata.visitedFilesMapping = {};
   filesMetadata.unparsableVistedFiles = 0;
 };
 

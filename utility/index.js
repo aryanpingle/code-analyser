@@ -25,7 +25,7 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
     return (
       (filesMetadata.filesMapping[file] &&
         filesMetadata.filesMapping[file].isEntryFile === false &&
-        filesMetadata.filesMapping[file].referencedCount ===
+        filesMetadata.filesMapping[file].referenceCount ===
           filesMetadata.filesMapping[file].importReferenceCount) ||
       !filesMetadata.filesMapping[file]
     );
@@ -63,7 +63,6 @@ const updateFileWebpackChunk = async (filesMetadata) => {
       [folderName],
       filesMetadata.excludedPointsRegex
     );
-    console.log(folderName);
     allFilesToCheck.forEach((file) => {
       for (const confgIndex in folderWebpackConfiguration) {
         if (
@@ -74,7 +73,6 @@ const updateFileWebpackChunk = async (filesMetadata) => {
             filesMapping[file] = getDefaultFileObject(file);
           }
           delete filesMapping[file].webpackChunkConfiguration["default"];
-          // console.log(file, folderWebpackConfiguration[confgIndex], folderName)
           filesMapping[file].webpackChunkConfiguration[
             folderWebpackConfiguration[confgIndex].webpackChunkName
           ] = folderWebpackConfiguration[confgIndex];
@@ -96,7 +94,6 @@ const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
   const intraModuleImports = [];
   const filesMapping = filesMetadata.filesMapping;
   const moduleChunkMap = getWebChunkNamesMap(moduleLocation, filesMetadata);
-  // console.log(filesMapping)
   for (const file in filesMapping) {
     if (
       intraModuleDependencyRegex.test(file) &&
@@ -104,7 +101,6 @@ const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
       !excludedPointsRegex.test(file) &&
       isInSameWebpackChunk(file, moduleChunkMap, filesMetadata)
     ) {
-      // console.log(file, moduleLocation, moduleChunkName, filesMetadata.filesMapping[file].webpackChunkConfiguration.webpackChunkName)
       intraModuleImports.push(file);
     }
   }
@@ -124,7 +120,6 @@ const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
 };
 
 const getWebChunkNamesMap = (moduleLocation, filesMetadata) => {
-  console.log(filesMetadata.filesMapping['/Users/dakshsharma/Desktop/Assignments/teams-clone/client/src/index.js'])
   let chunkNameMap = {};
   const filesMapping = filesMetadata.filesMapping;
   const checkValRegex = new RegExp(`^${moduleLocation}`);
@@ -151,7 +146,6 @@ const getWebChunkNamesMap = (moduleLocation, filesMetadata) => {
   return chunkNameMap;
 };
 const isInSameWebpackChunk = (file, moduleChunkNameMap, filesMetadata) => {
-  // console.log(moduleChunkNameMap)
   const webpackChunkConfiguration =
     filesMetadata.filesMapping[file].webpackChunkConfiguration;
   for (confgIndex in webpackChunkConfiguration) {
