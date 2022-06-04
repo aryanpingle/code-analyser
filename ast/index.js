@@ -7,14 +7,19 @@ const {
   isFirstPartOfDynamicImports,
   isDynamicImportWithPromise,
   isRequireStatement,
+  isRequireOrImportStatement,
 } = require("./conditional-expressions-checks");
 const {
   doIdentifierOperations,
-  doAssignmentOperations,
+  doRequireOrImportStatementOperations,
   doImportDeclartionOperations,
   doExportDeclarationOperations,
   doDynamicImportWithPromiseOperations,
   doOperationsOnFirstPartOfDynamicImports,
+  doModuleExportStatementOperations,
+  doExportSpecifiersOperations,
+  doImportDeclartionOperationsAfterSetup,
+  doDynamicImportWithPromiseOperationsAfterSetup,
 } = require("./ast-operations");
 
 const buildAST = (fileLocation) => {
@@ -26,47 +31,155 @@ const buildAST = (fileLocation) => {
   });
 };
 
-const traverseAST = (tree, currentFileMetadata) => {
+const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
   traverse(tree, {
     ImportDeclaration(path) {
-      doImportDeclartionOperations(path.node, currentFileMetadata);
+      if (type === "CHECK_IMPORTS")
+        doImportDeclartionOperations(path.node, currentFileMetadata);
+      else if (type === "CHECK_USAGE") {
+        doImportDeclartionOperationsAfterSetup(
+          path.node,
+          currentFileMetadata,
+          filesMetadata
+        );
+      }
+      path.skip();
     },
     ExportNamedDeclaration(path) {
-      if (isExportFromTypeStatement(path.node)) {
+      if (type === "CHECK_IMPORTS" && isExportFromTypeStatement(path.node)) {
         doExportDeclarationOperations(path.node, currentFileMetadata);
+      } else {
+        if (type === "CHECK_USAGE" && isExportFromTypeStatement(path.node)) {
+          doImportDeclartionOperationsAfterSetup(
+            path.node,
+            currentFileMetadata,
+            filesMetadata,
+            "Export"
+          );
+        }
+      }
+      if (type === "CHECK_EXPORTS") {
+        doExportSpecifiersOperations(
+          path.node,
+          currentFileMetadata,
+          filesMetadata
+        );
       }
     },
     ExportAllDeclaration(path) {
-      if (isExportFromTypeStatement(path.node)) {
+      if (type === "CHECK_IMPORTS" && isExportFromTypeStatement(path.node)) {
         doExportDeclarationOperations(path.node, currentFileMetadata);
+      } else {
+        if (type === "CHECK_USAGE" && isExportFromTypeStatement(path.node)) {
+          doImportDeclartionOperationsAfterSetup(
+            path.node,
+            currentFileMetadata,
+            filesMetadata,
+            "Export"
+          );
+        }
+      }
+      if (type === "CHECK_EXPORTS") {
+        doExportSpecifiersOperations(
+          path.node ,
+          currentFileMetadata,
+          filesMetadata
+        );
+      }
+    },
+    ExportDefaultDeclaration(path) {
+      if (type === "CHECK_EXPORTS") {
+        doExportSpecifiersOperations(
+          path.node,
+          currentFileMetadata,
+          filesMetadata,
+          "default"
+        );
       }
     },
     VariableDeclarator(path) {
-      doAssignmentOperations(path.node.init, path.node.id, currentFileMetadata);
+      if (type === "CHECK_IMPORTS" || type === "CHECK_USAGE") {
+        if (isRequireOrImportStatement(path.node.init)) {
+          doRequireOrImportStatementOperations(
+            path.node.init,
+            path.node.id,
+            currentFileMetadata,
+            filesMetadata,
+            type
+          );
+          path.skip();
+        }
+      }
     },
     AssignmentExpression(path) {
-      doAssignmentOperations(
-        path.node.right,
-        path.node.left,
-        currentFileMetadata
-      );
+      // if (type === "CHECK_IMPORTS") path.skip();
+      if (type === "CHECK_IMPORTS" || type === "CHECK_USAGE") {
+        if (isRequireOrImportStatement(path.node.right)) {
+          doRequireOrImportStatementOperations(
+            path.node.right,
+            path.node.left,
+            currentFileMetadata,
+            filesMetadata,
+            type
+          );
+          path.skip();
+        }
+      }
+      if (type === "CHECK_EXPORTS") {
+        doModuleExportStatementOperations(
+          path.node.right,
+          path.node.left,
+          currentFileMetadata,
+          filesMetadata
+        );
+      }
     },
     CallExpression(path) {
+      // if (type === "CHECK_IMPORTS") path.skip();
       const callExpressionNode = path.node;
       const memberNode = callExpressionNode.callee;
       if (isDynamicImportWithPromise(memberNode)) {
-        doDynamicImportWithPromiseOperations(path, currentFileMetadata);
+        if (type === "CHECK_IMPORTS")
+          doDynamicImportWithPromiseOperations(path, currentFileMetadata);
+        else if (type === "CHECK_USAGE") {
+          doDynamicImportWithPromiseOperationsAfterSetup(
+            path,
+            currentFileMetadata,
+            filesMetadata
+          );
+        }
       } else if (isFirstPartOfDynamicImports(callExpressionNode)) {
-        doOperationsOnFirstPartOfDynamicImports(path, currentFileMetadata);
-      } else if (isRequireStatement(path.node)) {
-        doAssignmentOperations(path.node, null, currentFileMetadata);
+        if (type === "CHECK_USAGE") {
+          doOperationsOnFirstPartOfDynamicImports(
+            path,
+            currentFileMetadata,
+            filesMetadata
+          );
+        }
+      } else if (
+        isRequireStatement(path.node) &&
+        (type === "CHECK_IMPORTS" || type === "CHECK_USAGE")
+      ) {
+        if (isRequireOrImportStatement(path.node)) {
+          doRequireOrImportStatementOperations(
+            path.node,
+            null,
+            currentFileMetadata,
+            filesMetadata,
+            type
+          );
+        }
       }
     },
     Identifier(path) {
-      doIdentifierOperations(path, currentFileMetadata);
+      if (type === "CHECK_USAGE") {
+        doIdentifierOperations(path, currentFileMetadata);
+      }
     },
     JSXIdentifier(path) {
-      doIdentifierOperations(path, currentFileMetadata);
+      if (type === "CHECK_USAGE") {
+        doIdentifierOperations(path, currentFileMetadata);
+      }
     },
   });
 };

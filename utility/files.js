@@ -62,15 +62,15 @@ const allFilesFinder = async (
   return allFiles;
 };
 
-const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
+const updateFilesMetadata = (filesMetadata, currentFileMetadata, type = "CHECK_IMPORTS") => {
   const filesMapping = filesMetadata.filesMapping;
   const currentFileMapping = currentFileMetadata.importedFilesMapping;
   for (let index in currentFileMapping) {
     if (filesMapping[index]) {
-      filesMapping[index].referenceCount +=
-        currentFileMapping[index].referenceCount;
-      filesMapping[index].importReferenceCount +=
-        currentFileMapping[index].importReferenceCount;
+      // filesMapping[index].referenceCount +=
+      //   currentFileMapping[index].referenceCount;
+      // filesMapping[index].importReferenceCount +=
+      //   currentFileMapping[index].importReferenceCount;
       const webpackChunkConfiguration =
         currentFileMapping[index].webpackChunkConfiguration;
       if (webpackChunkConfiguration !== {}) {
@@ -84,6 +84,8 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
       filesMapping[index] = currentFileMapping[index];
     }
   }
+  if(type != "CHECK_USAGE")
+  filesMapping[currentFileMetadata.fileLocation].exportedVariables = currentFileMetadata.exportedVariables;
 };
 
 const getAllEntryFiles = async (

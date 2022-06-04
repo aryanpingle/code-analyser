@@ -1,7 +1,6 @@
-const { updateFilesMetadata } = require("../utility/files");
 const { traverseAST, buildAST, getDefaultFileObject } = require("../ast/index");
-
-const checkUsingEntryFile = (entyFileLocation, filesMetadata) => {
+const { updateFilesMetadata } = require("../utility/files");
+const checkFileImportsExports = (entyFileLocation, filesMetadata) => {
   if (!filesMetadata.filesMapping[entyFileLocation]) {
     filesMetadata.filesMapping[entyFileLocation] =
       getDefaultFileObject(entyFileLocation);
@@ -21,24 +20,24 @@ const traverseFile = (fileLocation, filesMetadata) => {
     let ast = buildAST(fileLocation);
     let currentFileMetadata = {
       importedVariables: {},
+      exportedVariables: {},
       importedFilesMapping: {},
       fileLocation,
     };
-    // for(const file in filesMetadata.filesMapping){
-    //   if(/login/.test(fileLocation) && /AuthContext/.test(file))console.log(filesMetadata.filesMapping[file], fileLocation)
-    // }
-    
-    traverseAST(ast, currentFileMetadata, "CHECK_USAGE", filesMetadata);
-    ast = null;
-    updateFilesMetadata(filesMetadata, currentFileMetadata, "CHECK_USAGE");
+    traverseAST(ast, currentFileMetadata, "CHECK_IMPORTS");
+    updateFilesMetadata(filesMetadata, currentFileMetadata);
+    // if(/reportWebVitals/.test(currentFileMetadata.fileLocation))console.log(currentFileMetadata.importedVariables)
     let importedFilesMapping = currentFileMetadata.importedFilesMapping;
-    // console.log(importedFilesMapping, fileLocation)
     for (const file in importedFilesMapping) {
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
         isFileNotExcluded(file, filesMetadata.excludedPointsRegex)
       ) {
+        if (!filesMetadata.filesMapping[file]) {
+          filesMetadata.filesMapping[file] =
+            getDefaultFileObject(file);
+        }
         traverseFile(file, filesMetadata);
       } else if (
         isFileMappingNotPresent(file, filesMetadata) &&
@@ -47,7 +46,13 @@ const traverseFile = (fileLocation, filesMetadata) => {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }
-    // console.log(currentFileMetadata)
+    traverseAST(ast, currentFileMetadata, "CHECK_EXPORTS", filesMetadata);
+    // console.log(currentFileMetadata.exportedVariables)
+    // if(/reportWebVitals/.test(currentFileMetadata.fileLocation))console.log(filesMetadata.filesMapping[currentFileMetadata.fileLocation])
+    updateFilesMetadata(filesMetadata, currentFileMetadata);
+
+    // if(/reportWebVitals/.test(currentFileMetadata.fileLocation))console.log(filesMetadata.filesMapping[currentFileMetadata.fileLocation])
+    ast = null;
     currentFileMetadata = null;
     importedFilesMapping = null;
   } catch (err) {
@@ -57,6 +62,7 @@ const traverseFile = (fileLocation, filesMetadata) => {
   }
 };
 
+module.exports = { checkFileImportsExports };
 const isFileNotVisited = (fileLocation, filesMetadata) =>
   !filesMetadata.visitedFilesMapping[fileLocation];
 const isFileExtensionValid = (fileLocation) =>
@@ -65,5 +71,3 @@ const isFileNotExcluded = (file, excludedPointsRegex) =>
   !excludedPointsRegex.test(file);
 const isFileMappingNotPresent = (file, filesMetadata) =>
   !filesMetadata.filesMapping[file];
-
-module.exports = { checkUsingEntryFile };

@@ -43,9 +43,13 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
     name: path.basename(fileLocation),
     type,
     fileLocation: fileLocation,
-    referenceCount: 0,
-    importReferenceCount: 0,
     isEntryFile: false,
+    exportedVariables: {
+      default: getNewDefaultObject(fileLocation),
+      importReferenceCount: 0,
+      referenceCount: 0,
+      exportReferenceCount: 0, // If the whole object is referred
+    },
     webpackChunkConfiguration: {
       default: {
         webpackChunkName: "default",
@@ -58,12 +62,7 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
 };
 
 const setDefaultReferenceCount = (currentFileMetadata, importedFileAddress) => {
-  currentFileMetadata.importedFilesMapping[
-    importedFileAddress
-  ].referenceCount = 2;
-  currentFileMetadata.importedFilesMapping[
-    importedFileAddress
-  ].importReferenceCount = 1;
+  // currentFileMetadata.importedVariables[]
 };
 
 const updateImportSpecifierAndCurrentFileReferenceCount = (
@@ -73,59 +72,90 @@ const updateImportSpecifierAndCurrentFileReferenceCount = (
 ) => {
   const localEntityName = specifier.local.name;
   let importedEntityName;
-  let importReferenceCount;
+  let type = "ALL_EXPORTS_IMPORTED";
   if (specifier.type === "ImportSpecifier") {
     importedEntityName = specifier.imported.name;
+    type = "INDIVIDUAL_IMPORT";
   }
-  importReferenceCount = importedEntityName === localEntityName ? 2 : 1;
-  currentFileMetadata.importedFilesMapping[
-    importedFileAddress
-  ].importReferenceCount += importReferenceCount;
-  currentFileMetadata.entityMapping[localEntityName] = {
+  currentFileMetadata.importedVariables[localEntityName] = {
     name: importedEntityName,
     localName: localEntityName,
+    type,
     importedFrom: importedFileAddress,
-    referenceCount: 0,
-    importReferenceCount,
   };
 };
 
 const updateExportSpecifierAndCurrentFileReferenceCount = (
+  specifier,
   currentFileMetadata,
   importedFileAddress
 ) => {
-  currentFileMetadata.importedFilesMapping[
-    importedFileAddress
-  ].importReferenceCount += 1;
-  currentFileMetadata.importedFilesMapping[
-    importedFileAddress
-  ].referenceCount += 2;
+  const exportName = specifier.exported.name;
+  let importName = exportName;
+  let type = "ALL_EXPORTS_IMPORTED";
+  if (specifier.local) {
+    importName = specifier.local.name;
+    type = "INDIVIDUAL_IMPORT";
+  }
+  currentFileMetadata.importedVariables[importName] = {
+    name: exportName,
+    localName: importName,
+    type,
+    importedFrom: importedFileAddress,
+  };
 };
 
 const setRequiredVariablesObjects = (
   node,
   currentFileMetadata,
-  importedFileAddress
+  importedFileAddress,
+  filesMetadata,
+  type = "ImportStatement"
 ) => {
   if (!node) {
-    currentFileMetadata.importedFilesMapping[
-      importedFileAddress
-    ].importReferenceCount += 1;
-    currentFileMetadata.importedFilesMapping[
-      importedFileAddress
-    ].referenceCount += 2;
+    const exportedVariable =
+      filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+        "default"
+      ];
+    exportedVariable.importReferenceCount += 1;
+    exportedVariable.referenceCount += 2;
   } else if (node.type === "Identifier") {
     const localEntityName = node.name;
-    currentFileMetadata.entityMapping[localEntityName] = {
-      name: "default",
-      localName: localEntityName,
-      importedFrom: importedFileAddress,
-      referenceCount: 0,
-      importReferenceCount: 1,
-    };
-    currentFileMetadata.importedFilesMapping[
-      importedFileAddress
+    if (type === "RequireStatement") {
+      currentFileMetadata.importedVariables[localEntityName] =
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+      if (
+        !currentFileMetadata.importedVariables[localEntityName].referenceCount
+      ) {
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].referenceCount = 0;
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].importReferenceCount = 0;
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].exportReferenceCount = 0;
+      }
+      // console.log(
+      //   filesMetadata.filesMapping[importedFileAddress],
+      //   localEntityName
+      // );
+    } else {
+      currentFileMetadata.importedVariables[localEntityName] =
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+          "default"
+        ];
+    }
+    // console.log(
+    //   localEntityName,
+    //   importedFileAddress,
+    //   filesMetadata.filesMapping[importedFileAddress]
+    // );
+    currentFileMetadata.importedVariables[
+      localEntityName
     ].importReferenceCount += 1;
+    currentFileMetadata.importedVariables[localEntityName].referenceCount += 1;
   } else if (node.type === "ObjectPattern" || node.type === "ArrayPattern") {
     const patternToCheck =
       node.type === "ObjectPattern" ? node.properties : node.elements;
@@ -136,16 +166,18 @@ const setRequiredVariablesObjects = (
         importedEntityName === localEntityName && node.type === "ObjectPattern"
           ? 2
           : 1;
-      currentFileMetadata.entityMapping[localEntityName] = {
-        name: importedEntityName,
-        localName: localEntityName,
-        importedFrom: importedFileAddress,
-        referenceCount: 0,
-        importReferenceCount,
-      };
-      currentFileMetadata.importedFilesMapping[
-        importedFileAddress
-      ].importReferenceCount += importReferenceCount;
+      // console.log(filesMetadata.filesMapping[importedFileAddress], importedEntityName)
+      try {
+        currentFileMetadata.importedVariables[localEntityName] =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            importedEntityName
+          ];
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].importReferenceCount += importReferenceCount;
+        currentFileMetadata.importedVariables[localEntityName].referenceCount +=
+          importReferenceCount;
+      } catch (_) {}
     });
   }
 };
@@ -198,11 +230,11 @@ const getResolvedImportedFileDetails = (
 const updateWebpackConfigurationOfImportedFile = (
   currentFileMetadata,
   importedFileAddress,
-  webpackChunkConfiguration
+  webpackChunkConfiguration,
+  filesMetadata
 ) => {
   const currentwebpackConfiguration =
-    currentFileMetadata.importedFilesMapping[importedFileAddress]
-      .webpackChunkConfiguration;
+    filesMetadata.filesMapping[importedFileAddress].webpackChunkConfiguration;
   if (currentwebpackConfiguration["default"])
     delete currentwebpackConfiguration["default"];
   currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
@@ -217,7 +249,7 @@ const parseComment = (comment) => {
     let parsedValue;
     parsedValue = commentSubParts[1].replace(/^(['"])(.*)\1$/, "$2");
     if (parsedValue !== commentSubParts[1])
-      return { key: commentSubParts[0], value: parsedValue };
+      return { key: commentSubParts[0], value: parsedValue, valid: true };
     parsedValue = commentSubParts[1].replace(/^\/(.*)\/(.*)/, "$1");
     parsedValue = new RegExp(parsedValue);
     return { key: commentSubParts[0], value: parsedValue, valid: true };
@@ -247,6 +279,96 @@ const getResolvedPathFromGivenPath = (
   return { type, importedFileAddress };
 };
 
+const getValuesFromStatement = (nodeToGetValues, type) => {
+  if (nodeToGetValues.type === "Identifier")
+    return [{ [nodeToGetValues.name]: "default" }];
+  else if (nodeToGetValues.type === "ObjectExpression") {
+    const keyValuesPairArray = [];
+    nodeToGetValues.properties.forEach((property) => {
+      if (property.value && property.key)
+        keyValuesPairArray.push({ [property.value.name]: property.key.name });
+    });
+    return keyValuesPairArray;
+  } else if (nodeToGetValues.specifiers && nodeToGetValues.specifiers.length) {
+    const keyValuesPairArray = [];
+    nodeToGetValues.specifiers.forEach((specifier) => {
+      if (specifier.local)
+        keyValuesPairArray.push({
+          [specifier.exported.name]: specifier.local.name,
+        });
+      else
+        keyValuesPairArray.push({
+          [specifier.exported.name]: specifier.exported.name,
+        });
+    });
+    return keyValuesPairArray;
+  } else if (nodeToGetValues.declaration) {
+    if (nodeToGetValues.declaration.name)
+      return [{ [nodeToGetValues.declaration.name]: "default" }];
+    else if (nodeToGetValues.declaration.declarations) {
+      // export const x = () => {} type
+      const keyValuesPairArray = [];
+      nodeToGetValues.declaration.declarations.forEach((declaration) => {
+        keyValuesPairArray.push({ [declaration.id.name]: declaration.id.name });
+      });
+      return keyValuesPairArray;
+    } else if (nodeToGetValues.declaration.id) {
+      // export function x(){}
+      const keyValuesPairArray = [];
+      if (type === "default") {
+        keyValuesPairArray.push({
+          [nodeToGetValues.declaration.id.name]: "default",
+        });
+      } else
+        keyValuesPairArray.push({
+          [nodeToGetValues.declaration.id.name]:
+            nodeToGetValues.declaration.id.name,
+        });
+      return keyValuesPairArray;
+    } else return [{ default: "default" }];
+  } else return [];
+};
+const getNewDefaultObject = (fileLocation, name = "default") => {
+  return {
+    localName: name,
+    firstReferencedAt: fileLocation,
+    referenceCount: 0,
+    importReferenceCount: 0,
+    exportReferenceCount: 0,
+  };
+};
+const setExportedVariablesFromArray = (
+  exportedVariablesArray,
+  currentFileMetadata,
+  filesMetadata
+) => {
+  exportedVariablesArray.forEach((variable) => {
+    try {
+      if (currentFileMetadata.importedVariables[Object.keys(variable)[0]]) {
+        const importedVariable =
+          currentFileMetadata.importedVariables[Object.keys(variable)[0]];
+        if (importedVariable.type === "ALL_EXPORTS_IMPORTED") {
+          currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+            filesMetadata.filesMapping[
+              importedVariable.importedFrom
+            ].exportedVariables;
+        } else {
+          currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+            filesMetadata.filesMapping[
+              importedVariable.importedFrom
+            ].exportedVariables[Object.keys(variable)[0]];
+        }
+      } else {
+        currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+          getNewDefaultObject(
+            currentFileMetadata.fileLocation,
+            Object.values(variable)[0]
+          );
+      }
+    } catch (_) {}
+  });
+};
+
 module.exports = {
   astParserPlugins,
   getDefaultFileObject,
@@ -261,4 +383,6 @@ module.exports = {
   getResolvedPathFromGivenPath,
   getNewWebpackConfigurationObject,
   getCallExpressionFromNode,
+  getValuesFromStatement,
+  setExportedVariablesFromArray,
 };

@@ -1,9 +1,13 @@
 const { checkUsingEntryFile } = require("../checker/entry-file-checker");
+const {
+  checkFileImportsExports,
+} = require("../checker/file-imports-exports-checker");
 const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
 const { addNewInstanceToSpinner, updateSpinnerInstance } = require("./cli");
 const { buildIntraModuleDependencyRegex } = require("./regex");
 const { getDefaultFileObject } = require("../ast/utility");
 const fs = require("fs");
+
 const analyseCode = (allEntryFiles, filesMetadata, spinner) => {
   addNewInstanceToSpinner(spinner, "id3", "Analysing codebase...");
   allEntryFiles.forEach((entryFile) =>
@@ -22,11 +26,33 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
     "Identifying all deadfiles inside the directories to check..."
   );
   const allDeadFiles = allFilesToCheck.filter((file) => {
+    let isReferred = false;
+    if (filesMetadata.filesMapping[file]) {
+      const allExportedVariables =
+        filesMetadata.filesMapping[file].exportedVariables;
+      if (
+        allExportedVariables.referenceCount >
+        allExportedVariables.importReferenceCount +
+          allExportedVariables.exportReferenceCount
+      ) {
+        isReferred = true;
+      }
+      for (const variable in allExportedVariables) {
+        // console.log(allExportedVariables, variable)
+        if (
+          allExportedVariables[variable].referenceCount >
+          allExportedVariables[variable].importReferenceCount +
+            allExportedVariables[variable].exportReferenceCount
+        ) {
+          isReferred = true;
+          break;
+        }
+      }
+    }
     return (
       (filesMetadata.filesMapping[file] &&
         filesMetadata.filesMapping[file].isEntryFile === false &&
-        filesMetadata.filesMapping[file].referenceCount ===
-          filesMetadata.filesMapping[file].importReferenceCount) ||
+        !isReferred) ||
       !filesMetadata.filesMapping[file]
     );
   });
@@ -184,10 +210,17 @@ const getAllRequiredFiles = async (config, excludedPointsRegex, spinner) => {
   return { allEntryFiles, allFilesToCheck };
 };
 
+const getAllImportsAndExportsOfEachFile = (allEntryFiles, filesMetadata) => {
+  allEntryFiles.forEach((file) => {
+    checkFileImportsExports(file, filesMetadata);
+  });
+};
+
 module.exports = {
   analyseCode,
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
   updateFileWebpackChunk,
+  getAllImportsAndExportsOfEachFile,
 };

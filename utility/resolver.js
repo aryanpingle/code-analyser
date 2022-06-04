@@ -31,12 +31,12 @@ const pathResolver = (directoryName, fileAddress, pathType = "FILE") => {
   }
 };
 const directoryResolver = (directoryName, givenDirectoryAddress) => {
-  if (!path.isAbsolute(givenDirectoryAddress))
-    return path.join(directoryName, givenDirectoryAddress);
+  if (!isPathAbsolute(givenDirectoryAddress)){
+    return path.join(directoryName, givenDirectoryAddress);}
   return givenDirectoryAddress;
 };
 
-const isPathAbsolute = (pathToCheck) => path.isAbsolute(pathToCheck);
+const isPathAbsolute = (pathToCheck) => pathToCheck && path.isAbsolute(pathToCheck);
 
 const getDirectoryFromPath = (pathToRetrieveFrom) =>
   path.dirname(pathToRetrieveFrom);

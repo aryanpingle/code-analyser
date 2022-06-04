@@ -30,7 +30,14 @@ const isSpecifiersPresent = (node) => node.specifiers && node.specifiers.length;
 const isImportStatementArgumentsPresent = (callExpressionNode) =>
   callExpressionNode.arguments.length &&
   callExpressionNode.arguments[0].params.length;
-const isRequireStatement = (node) => node.callee && node.callee.name === "require";
+const isRequireStatement = (node) =>
+  node.callee && node.callee.name === "require";
+const isModuleExportStatement = (node) =>
+  node.type === "MemberExpression" &&
+  node.object &&
+  node.object.name === "module" &&
+  node.property &&
+  node.property.name === "exports";
 
 module.exports = {
   isExportFromTypeStatement,
@@ -40,5 +47,6 @@ module.exports = {
   isFileMappingNotPresentInCurrentFile,
   isSpecifiersPresent,
   isImportStatementArgumentsPresent,
-  isRequireStatement
+  isRequireStatement,
+  isModuleExportStatement,
 };
