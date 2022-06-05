@@ -48,21 +48,11 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
       default: getNewDefaultObject(fileLocation),
       importReferenceCount: 0,
       referenceCount: 0,
-      exportReferenceCount: 0, // If the whole object is referred
+    // If the whole object is referred
     },
-    webpackChunkConfiguration: {
-      default: {
-        webpackChunkName: "default",
-        webpackInclude: /^()/,
-        webpackExclude: /!^()/,
-        webpackPath: fileLocation,
-      },
-    },
+    webpackChunkConfiguration: {},
+    importedFilesMapping: {},
   };
-};
-
-const setDefaultReferenceCount = (currentFileMetadata, importedFileAddress) => {
-  // currentFileMetadata.importedVariables[]
 };
 
 const updateImportSpecifierAndCurrentFileReferenceCount = (
@@ -73,8 +63,15 @@ const updateImportSpecifierAndCurrentFileReferenceCount = (
   const localEntityName = specifier.local.name;
   let importedEntityName;
   let type = "ALL_EXPORTS_IMPORTED";
-  if (specifier.type === "ImportSpecifier") {
-    importedEntityName = specifier.imported.name;
+  if (
+    specifier.type === "ImportSpecifier" ||
+    specifier.type === "ImportDefaultSpecifier"
+  ) {
+    if (specifier.type === "ImportSpecifier")
+      importedEntityName = specifier.imported.name;
+    else {
+      importedEntityName = "default";
+    }
     type = "INDIVIDUAL_IMPORT";
   }
   currentFileMetadata.importedVariables[localEntityName] = {
@@ -121,37 +118,16 @@ const setRequiredVariablesObjects = (
     exportedVariable.referenceCount += 2;
   } else if (node.type === "Identifier") {
     const localEntityName = node.name;
-    if (type === "RequireStatement") {
-      currentFileMetadata.importedVariables[localEntityName] =
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-      if (
-        !currentFileMetadata.importedVariables[localEntityName].referenceCount
-      ) {
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].referenceCount = 0;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].importReferenceCount = 0;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].exportReferenceCount = 0;
-      }
-      // console.log(
-      //   filesMetadata.filesMapping[importedFileAddress],
-      //   localEntityName
-      // );
-    } else {
-      currentFileMetadata.importedVariables[localEntityName] =
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-          "default"
-        ];
+    currentFileMetadata.importedVariables[localEntityName] =
+      filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+    if (
+      !currentFileMetadata.importedVariables[localEntityName].referenceCount
+    ) {
+      currentFileMetadata.importedVariables[localEntityName].referenceCount = 0;
+      currentFileMetadata.importedVariables[
+        localEntityName
+      ].importReferenceCount = 0;
     }
-    // console.log(
-    //   localEntityName,
-    //   importedFileAddress,
-    //   filesMetadata.filesMapping[importedFileAddress]
-    // );
     currentFileMetadata.importedVariables[
       localEntityName
     ].importReferenceCount += 1;
@@ -228,15 +204,12 @@ const getResolvedImportedFileDetails = (
   return pathResolver(directoryAddress, fileAddress, importType);
 };
 const updateWebpackConfigurationOfImportedFile = (
-  currentFileMetadata,
   importedFileAddress,
   webpackChunkConfiguration,
   filesMetadata
 ) => {
   const currentwebpackConfiguration =
     filesMetadata.filesMapping[importedFileAddress].webpackChunkConfiguration;
-  if (currentwebpackConfiguration["default"])
-    delete currentwebpackConfiguration["default"];
   currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
     webpackChunkConfiguration;
 };
@@ -260,9 +233,6 @@ const parseComment = (comment) => {
 const getNewWebpackConfigurationObject = (fileLocation) => {
   return {
     webpackChunkName: fileLocation,
-    webpackPath: fileLocation,
-    webpackInclude: /^()/,
-    webpackExclude: /!^()/,
   };
 };
 const getResolvedPathFromGivenPath = (
@@ -334,7 +304,6 @@ const getNewDefaultObject = (fileLocation, name = "default") => {
     firstReferencedAt: fileLocation,
     referenceCount: 0,
     importReferenceCount: 0,
-    exportReferenceCount: 0,
   };
 };
 const setExportedVariablesFromArray = (
@@ -352,11 +321,22 @@ const setExportedVariablesFromArray = (
             filesMetadata.filesMapping[
               importedVariable.importedFrom
             ].exportedVariables;
+          if (
+            !currentFileMetadata.exportedVariables[Object.values(variable)[0]]
+              .referenceCount
+          ) {
+            currentFileMetadata.exportedVariables[
+              Object.values(variable)[0]
+            ].referenceCount = 0;
+            currentFileMetadata.exportedVariables[
+              Object.values(variable)[0]
+            ].importReferenceCount = 0;
+          }
         } else {
           currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
             filesMetadata.filesMapping[
               importedVariable.importedFrom
-            ].exportedVariables[Object.keys(variable)[0]];
+            ].exportedVariables[importedVariable.name];
         }
       } else {
         currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
@@ -369,10 +349,20 @@ const setExportedVariablesFromArray = (
   });
 };
 
+const getAllPropertiesFromNode = (node) => {
+  const allPropertiesArray = [];
+  let headNode = node;
+  while (headNode && headNode.type === "MemberExpression") {
+    allPropertiesArray.unshift(headNode.property.name);
+    headNode = headNode.object;
+  }
+  allPropertiesArray.unshift(headNode.name);
+  return allPropertiesArray;
+};
+
 module.exports = {
   astParserPlugins,
   getDefaultFileObject,
-  setDefaultReferenceCount,
   updateImportSpecifierAndCurrentFileReferenceCount,
   updateExportSpecifierAndCurrentFileReferenceCount,
   setRequiredVariablesObjects,
@@ -384,5 +374,6 @@ module.exports = {
   getNewWebpackConfigurationObject,
   getCallExpressionFromNode,
   getValuesFromStatement,
+  getAllPropertiesFromNode,
   setExportedVariablesFromArray,
 };

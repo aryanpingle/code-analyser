@@ -8,6 +8,8 @@ const {
   isDynamicImportWithPromise,
   isRequireStatement,
   isRequireOrImportStatement,
+  isAccessingPropertyOfObject,
+  isNotExportTypeReference,
 } = require("./conditional-expressions-checks");
 const {
   doIdentifierOperations,
@@ -20,6 +22,8 @@ const {
   doExportSpecifiersOperations,
   doImportDeclartionOperationsAfterSetup,
   doDynamicImportWithPromiseOperationsAfterSetup,
+  doDynamicImportsUsingLazyHookOperations,
+  doAccessingPropertiesOfObjectOperations,
 } = require("./ast-operations");
 
 const buildAST = (fileLocation) => {
@@ -81,7 +85,7 @@ const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
       }
       if (type === "CHECK_EXPORTS") {
         doExportSpecifiersOperations(
-          path.node ,
+          path.node,
           currentFileMetadata,
           filesMetadata
         );
@@ -95,6 +99,17 @@ const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
           filesMetadata,
           "default"
         );
+      }
+    },
+    MemberExpression(path) {
+      if (type === "CHECK_USAGE") {
+        if (isAccessingPropertyOfObject(path.node)) {
+          doAccessingPropertiesOfObjectOperations(
+            path.node,
+            currentFileMetadata
+          );
+          path.skip();
+        }
       }
     },
     VariableDeclarator(path) {
@@ -135,7 +150,6 @@ const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
       }
     },
     CallExpression(path) {
-      // if (type === "CHECK_IMPORTS") path.skip();
       const callExpressionNode = path.node;
       const memberNode = callExpressionNode.callee;
       if (isDynamicImportWithPromise(memberNode)) {
@@ -149,12 +163,26 @@ const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
           );
         }
       } else if (isFirstPartOfDynamicImports(callExpressionNode)) {
-        if (type === "CHECK_USAGE") {
+        if (type === "CHECK_USAGE" || type === "CHECK_IMPORTS") {
           doOperationsOnFirstPartOfDynamicImports(
             path,
             currentFileMetadata,
-            filesMetadata
+            filesMetadata,
+            type
           );
+          const parentAssignmentPath = path.findParent(
+            (path) =>
+              path.isVariableDeclaration() || path.isAssignmentExpression()
+          );
+          if (parentAssignmentPath) {
+            doDynamicImportsUsingLazyHookOperations(
+              parentAssignmentPath.node,
+              path.node,
+              currentFileMetadata,
+              filesMetadata,
+              type
+            );
+          }
         }
       } else if (
         isRequireStatement(path.node) &&
@@ -173,12 +201,14 @@ const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
     },
     Identifier(path) {
       if (type === "CHECK_USAGE") {
-        doIdentifierOperations(path, currentFileMetadata);
+        if (isNotExportTypeReference(path))
+          doIdentifierOperations(path, currentFileMetadata);
       }
     },
     JSXIdentifier(path) {
       if (type === "CHECK_USAGE") {
-        doIdentifierOperations(path, currentFileMetadata);
+        if (isNotExportTypeReference(path))
+          doIdentifierOperations(path, currentFileMetadata);
       }
     },
   });

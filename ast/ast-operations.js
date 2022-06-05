@@ -1,9 +1,7 @@
 const {
-  getDefaultFileObject,
   setRequiredVariablesObjects,
   updateImportSpecifierAndCurrentFileReferenceCount,
   getResolvedPathFromGivenPath,
-  setDefaultReferenceCount,
   updateExportSpecifierAndCurrentFileReferenceCount,
   getImportedFileAddress,
   updateWebpackConfigurationOfImportedFile,
@@ -12,6 +10,7 @@ const {
   getResolvedImportedFileDetails,
   getValuesFromStatement,
   setExportedVariablesFromArray,
+  getAllPropertiesFromNode,
 } = require("./utility");
 const { getDirectoryFromPath } = require("../utility/resolver");
 const {
@@ -25,8 +24,12 @@ const {
 
 const doIdentifierOperations = (path, currentFileMetadata) => {
   const identifierName = path.node.name;
-  // console.log(identifierName)
-  // if(/config/.test(identifierName)){console.log(currentFileMetadata.importedVariables[identifierName])};
+  if (
+    /components\/app/.test(currentFileMetadata.fileLocation) &&
+    identifierName === "X"
+  )
+    console.log(identifierName, currentFileMetadata.importedVariables);
+
   if (currentFileMetadata.importedVariables[identifierName]) {
     try {
       currentFileMetadata.importedVariables[identifierName].referenceCount++;
@@ -56,8 +59,7 @@ const doRequireOrImportStatementOperations = (
       currentFileMetadata
     )
   )
-    currentFileMetadata.importedFilesMapping[importedFileAddress] =
-      getDefaultFileObject(importedFileAddress, type);
+    currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
   if (operationType === "CHECK_USAGE") {
     setRequiredVariablesObjects(
       nodeToGetValues,
@@ -82,8 +84,7 @@ const doImportDeclartionOperations = (node, currentFileMetadata) => {
       currentFileMetadata
     )
   )
-    currentFileMetadata.importedFilesMapping[importedFileAddress] =
-      getDefaultFileObject(importedFileAddress, type);
+    currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
   if (isSpecifiersPresent(node)) {
     node.specifiers.forEach((specifier) => {
       updateImportSpecifierAndCurrentFileReferenceCount(
@@ -125,29 +126,26 @@ const doImportDeclartionOperationsAfterSetup = (
       }
       try {
         if (type === "ALL_EXPORTS_IMPORTED") {
-          const exportedVariablesOfImportedFile =
+          currentFileMetadata.importedVariables[localEntityName] =
             filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-          for (const variable in exportedVariablesOfImportedFile) {
-            currentFileMetadata.importedVariables[variable] =
-              exportedVariablesOfImportedFile[variable];
-            if (!exportedVariablesOfImportedFile.referenceCount) {
-              exportedVariablesOfImportedFile.referenceCount = 0;
-              exportedVariablesOfImportedFile.importReferenceCount = 0;
-              exportedVariablesOfImportedFile.exportReferenceCount = 0;
-            }
-            if (currentFileMetadata.importedVariables[variable]) {
-              currentFileMetadata.importedVariables[
-                variable
-              ].referenceCount += 1;
-              currentFileMetadata.importedVariables[
-                variable
-              ].importReferenceCount += 1;
-            }
+          if (
+            !currentFileMetadata.importedVariables[localEntityName]
+              .referenceCount
+          ) {
+            currentFileMetadata.importedVariables[
+              localEntityName
+            ].referenceCount = 0;
+            currentFileMetadata.importedVariables[
+              localEntityName
+            ].importReferenceCount = 0;
+          }
+          if (currentFileMetadata.importedVariables[variable]) {
+            currentFileMetadata.importedVariables[variable].referenceCount += 1;
+            currentFileMetadata.importedVariables[
+              variable
+            ].importReferenceCount += 1;
           }
         } else if (type === "INDIVIDUAL_IMPORT") {
-          // console.log(filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-          //   importedEntityName
-          // ])
           currentFileMetadata.importedVariables[localEntityName] =
             filesMetadata.filesMapping[importedFileAddress].exportedVariables[
               importedEntityName
@@ -200,8 +198,7 @@ const doExportDeclarationOperations = (node, currentFileMetadata) => {
       currentFileMetadata
     )
   )
-    currentFileMetadata.importedFilesMapping[importedFileAddress] =
-      getDefaultFileObject(importedFileAddress, type);
+    currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
 
   if (isSpecifiersPresent(node)) {
     node.specifiers.forEach((specifier) => {
@@ -211,7 +208,7 @@ const doExportDeclarationOperations = (node, currentFileMetadata) => {
         importedFileAddress
       );
     });
-  } else setDefaultReferenceCount(currentFileMetadata, importedFileAddress);
+  }
 };
 
 const doExportSpecifiersOperations = (
@@ -220,9 +217,6 @@ const doExportSpecifiersOperations = (
   filesMetadata,
   type
 ) => {
-  // if (/model\/index/.test(currentFileMetadata.fileLocation))
-  //   console.log(nodeToGetValues);
-
   if (nodeToGetValues.source) {
     const { importedFileAddress } = getResolvedPathFromGivenPath(
       currentFileMetadata.fileLocation,
@@ -230,7 +224,7 @@ const doExportSpecifiersOperations = (
     );
     if (nodeToGetValues.specifiers) {
       nodeToGetValues.specifiers.forEach((specifier) => {
-        let specifierType = "ALL_EXPORTS_IMPORTED";
+        let specifierType = "ALL_EXPORTS_EXPORTED";
         let importName = specifier.exported.name;
         let localName = importName;
         if (specifier.type === "ExportSpecifier") {
@@ -239,7 +233,11 @@ const doExportSpecifiersOperations = (
         } else if (specifier.type === "ExportNamespaceSpecifier") {
           specifierType = "ALL_EXPORTS_AS_OBJECT";
         }
-        if (specifierType === "ALL_EXPORTS_IMPORTED") {
+
+        if (
+          specifierType === "ALL_EXPORTS_EXPORTED" ||
+          specifierType === "ALL_EXPORTS_AS_OBJECT"
+        ) {
           currentFileMetadata.exportedVariables[importName] =
             filesMetadata.filesMapping[importedFileAddress].exportedVariables;
           if (
@@ -251,31 +249,18 @@ const doExportSpecifiersOperations = (
             currentFileMetadata.exportedVariables[
               importName
             ].importReferenceCount = 0;
-            currentFileMetadata.exportedVariables[
-              importName
-            ].exportReferenceCount = 0;
           }
         } else if (specifierType === "INDIVIDUAL_IMPORT") {
+          // if(/components\/index/.test(currentFileMetadata.fileLocation))
+          // console.log(
+          //   filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+          //     localName
+          //   ]
+          // );
           currentFileMetadata.exportedVariables[importName] =
             filesMetadata.filesMapping[importedFileAddress].exportedVariables[
               localName
             ];
-        } else {
-          currentFileMetadata.exportedVariables[importName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-          if (
-            !currentFileMetadata.exportedVariables[importName].referenceCount
-          ) {
-            currentFileMetadata.exportedVariables[
-              importName
-            ].referenceCount = 0;
-            currentFileMetadata.exportedVariables[
-              importName
-            ].importReferenceCount = 0;
-            currentFileMetadata.exportedVariables[
-              importName
-            ].exportReferenceCount = 0;
-          }
         }
       });
     } else {
@@ -317,8 +302,7 @@ const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
       currentFileMetadata
     )
   )
-    currentFileMetadata.importedFilesMapping[importedFileAddress] =
-      getDefaultFileObject(importedFileAddress, type);
+    currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
   try {
     if (isImportStatementArgumentsPresent(callExpressionNode)) {
       callExpressionNode.arguments[0].params.forEach((specifier) => {
@@ -376,11 +360,64 @@ const doDynamicImportWithPromiseOperationsAfterSetup = (
     });
   }
 };
-
+const doDynamicImportsUsingLazyHookOperations = (
+  parentNode,
+  childNode,
+  currentFileMetadata,
+  filesMetadata,
+  operationType
+) => {
+  const fileLocation = currentFileMetadata.fileLocation;
+  const callExpressionNode = childNode;
+  const { type: importType, address: givenSourceAdress } =
+    getImportedFileAddress(callExpressionNode);
+  const { importedFileAddress } = getResolvedPathFromGivenPath(
+    fileLocation,
+    givenSourceAdress,
+    importType
+  );
+  if (
+    isFileMappingNotPresentInCurrentFile(
+      importedFileAddress,
+      currentFileMetadata
+    )
+  )
+    currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
+  let identifier = null;
+  if (parentNode.left) {
+    identifier = parentNode.left.name;
+  } else if (
+    parentNode.declarations &&
+    parentNode.declarations[0] &&
+    parentNode.declarations[0].id
+  ) {
+    identifier = parentNode.declarations[0].id.name;
+  }
+  if (identifier) {
+    if (operationType === "CHECK_USAGE") {
+      currentFileMetadata.importedVariables[identifier] =
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+      if (!currentFileMetadata.importedVariables[identifier].referenceCount) {
+        currentFileMetadata.importedVariables[identifier].referenceCount = 0;
+        currentFileMetadata.importedVariables[
+          identifier
+        ].importReferenceCount = 0;
+      }
+    } else {
+      currentFileMetadata.importedVariables[identifier] = {
+        name: null,
+        localName: identifier,
+        type: "ALL_EXPORTS_IMPORTED",
+        importedFrom: importedFileAddress,
+      };
+    }
+  }
+};
 const doOperationsOnFirstPartOfDynamicImports = (
   path,
   currentFileMetadata,
-  filesMetadata
+  filesMetadata,
+  operationType
 ) => {
   const fileLocation = currentFileMetadata.fileLocation;
   const callExpressionNode = path.node;
@@ -391,26 +428,61 @@ const doOperationsOnFirstPartOfDynamicImports = (
     givenSourceAdress,
     importType
   );
-  const webpackConfiguration =
-    getNewWebpackConfigurationObject(importedFileAddress);
+  if (
+    isFileMappingNotPresentInCurrentFile(
+      importedFileAddress,
+      currentFileMetadata
+    )
+  )
+    currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
+  if (operationType === "CHECK_USAGE") {
+    const webpackConfiguration =
+      getNewWebpackConfigurationObject(importedFileAddress);
 
-  const leadingCommentsArray = callExpressionNode.arguments[0].leadingComments;
+    const leadingCommentsArray =
+      callExpressionNode.arguments[0].leadingComments;
 
-  if (leadingCommentsArray) {
-    leadingCommentsArray.forEach((comment) => {
-      const { key, value, valid } = parseComment(comment);
-      if (valid) {
-        webpackConfiguration[key] = value;
-      }
-    });
+    if (leadingCommentsArray) {
+      leadingCommentsArray.forEach((comment) => {
+        const { key, value, valid } = parseComment(comment);
+        if (valid) {
+          webpackConfiguration[key] = value;
+        }
+      });
+    }
+    updateWebpackConfigurationOfImportedFile(
+      importedFileAddress,
+      webpackConfiguration,
+      filesMetadata
+    );
   }
-  updateWebpackConfigurationOfImportedFile(
-    currentFileMetadata,
-    importedFileAddress,
-    webpackConfiguration,
-    filesMetadata
-  );
 };
+
+const doAccessingPropertiesOfObjectOperations = (node, currentFileMetadata) => {
+  const allPropertiesArray = getAllPropertiesFromNode(node);
+  if (allPropertiesArray.length === 0) return;
+
+  if (currentFileMetadata.importedVariables[allPropertiesArray[0]]) {
+    let objectToChange =
+      currentFileMetadata.importedVariables[allPropertiesArray[0]];
+    let currentIndex = 1,
+      arrayLength = allPropertiesArray.length;
+    while (
+      currentIndex < arrayLength &&
+      objectToChange[allPropertiesArray[currentIndex]]
+    ) {
+      if (!objectToChange.referenceCount) {
+        objectToChange.referenceCount = 0;
+        objectToChange.importReferenceCount = 0;
+      }
+      objectToChange.referenceCount++;
+      objectToChange = objectToChange[allPropertiesArray[currentIndex]];
+      currentIndex++;
+    }
+    objectToChange.referenceCount++;
+  }
+};
+
 module.exports = {
   doIdentifierOperations,
   doRequireOrImportStatementOperations,
@@ -422,4 +494,6 @@ module.exports = {
   doExportSpecifiersOperations,
   doImportDeclartionOperationsAfterSetup,
   doDynamicImportWithPromiseOperationsAfterSetup,
+  doDynamicImportsUsingLazyHookOperations,
+  doAccessingPropertiesOfObjectOperations,
 };

@@ -1,21 +1,28 @@
 const { updateFilesMetadata } = require("../utility/files");
 const { traverseAST, buildAST, getDefaultFileObject } = require("../ast/index");
 
-const checkUsingEntryFile = (entyFileLocation, filesMetadata) => {
+const checkUsingEntryFile = (
+  entyFileLocation,
+  filesMetadata,
+  webpackChunkName
+) => {
   if (!filesMetadata.filesMapping[entyFileLocation]) {
     filesMetadata.filesMapping[entyFileLocation] =
       getDefaultFileObject(entyFileLocation);
   }
   filesMetadata.filesMapping[entyFileLocation].isEntryFile = true;
+  filesMetadata.filesMapping[entyFileLocation].webpackChunkConfiguration[
+    webpackChunkName
+  ] = true;
   if (
     isFileNotVisited(entyFileLocation, filesMetadata) &&
     isFileExtensionValid(entyFileLocation)
   ) {
-    traverseFile(entyFileLocation, filesMetadata);
+    traverseFile(entyFileLocation, filesMetadata, webpackChunkName);
   }
 };
 
-const traverseFile = (fileLocation, filesMetadata) => {
+const traverseFile = (fileLocation, filesMetadata, webpackChunkName) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
@@ -24,15 +31,9 @@ const traverseFile = (fileLocation, filesMetadata) => {
       importedFilesMapping: {},
       fileLocation,
     };
-    // for(const file in filesMetadata.filesMapping){
-    //   if(/login/.test(fileLocation) && /AuthContext/.test(file))console.log(filesMetadata.filesMapping[file], fileLocation)
-    // }
-    
     traverseAST(ast, currentFileMetadata, "CHECK_USAGE", filesMetadata);
     ast = null;
-    updateFilesMetadata(filesMetadata, currentFileMetadata, "CHECK_USAGE");
     let importedFilesMapping = currentFileMetadata.importedFilesMapping;
-    // console.log(importedFilesMapping, fileLocation)
     for (const file in importedFilesMapping) {
       if (
         isFileNotVisited(file, filesMetadata) &&
@@ -47,7 +48,6 @@ const traverseFile = (fileLocation, filesMetadata) => {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }
-    // console.log(currentFileMetadata)
     currentFileMetadata = null;
     importedFilesMapping = null;
   } catch (err) {

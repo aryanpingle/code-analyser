@@ -35,8 +35,6 @@ const analyseCodeAndDetectDeadFiles = async (
   getAllImportsAndExportsOfEachFile(allEntryFiles, filesMetadata);
   filesMetadata.visitedFilesMapping = {};
   analyseCode(allEntryFiles, filesMetadata, spinner);
-  for (const file in filesMetadata.filesMapping)
-    if (/members\/index/i.test(file)) console.log(filesMetadata.filesMapping[file]);
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
   console.log(allDeadFiles);
 };
@@ -55,7 +53,10 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     excludedPointsRegex,
     spinner
   );
-  analyseCode(allEntryFiles, filesMetadata, spinner);
+  getAllImportsAndExportsOfEachFile(allEntryFiles, filesMetadata);
+
+  filesMetadata.visitedFilesMapping = {};
+  analyseCode(allEntryFiles, filesMetadata, spinner, "default");
   await updateFileWebpackChunk(filesMetadata);
   const intraModuleDependencies = getIntraModuleDependencies(
     filesMetadata,
@@ -63,7 +64,6 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     spinner
   );
   console.log(intraModuleDependencies);
-  // console.log(filesMetadata.visitedFilesMapping)
 };
 
 if (config.deadFiles && config.deadFiles.check) {

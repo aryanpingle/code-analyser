@@ -8,10 +8,10 @@ const { buildIntraModuleDependencyRegex } = require("./regex");
 const { getDefaultFileObject } = require("../ast/utility");
 const fs = require("fs");
 
-const analyseCode = (allEntryFiles, filesMetadata, spinner) => {
+const analyseCode = (allEntryFiles, filesMetadata, spinner, webpackChunkName) => {
   addNewInstanceToSpinner(spinner, "id3", "Analysing codebase...");
   allEntryFiles.forEach((entryFile) =>
-    checkUsingEntryFile(entryFile, filesMetadata)
+    checkUsingEntryFile(entryFile, filesMetadata, webpackChunkName)
   );
   updateSpinnerInstance(spinner, "id3", {
     text: "Analysed code base",
@@ -32,8 +32,7 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
         filesMetadata.filesMapping[file].exportedVariables;
       if (
         allExportedVariables.referenceCount >
-        allExportedVariables.importReferenceCount +
-          allExportedVariables.exportReferenceCount
+        allExportedVariables.importReferenceCount 
       ) {
         isReferred = true;
       }
@@ -41,8 +40,7 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
         // console.log(allExportedVariables, variable)
         if (
           allExportedVariables[variable].referenceCount >
-          allExportedVariables[variable].importReferenceCount +
-            allExportedVariables[variable].exportReferenceCount
+          allExportedVariables[variable].importReferenceCount 
         ) {
           isReferred = true;
           break;
@@ -70,43 +68,47 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
   }
   return allDeadFiles;
 };
-const updateFileWebpackChunk = async (filesMetadata) => {
-  const filesMapping = filesMetadata.filesMapping;
-  const folders = [];
-  for (const file in filesMapping) {
-    if (
-      filesMapping[file].type !== "INBUILT_NODE_MODULE" &&
-      fs.statSync(file).isDirectory()
-    ) {
-      folders.push(filesMapping[file]);
-    }
-  }
-  for (const index in folders) {
-    const folder = folders[index];
-    const folderName = folder.fileLocation;
-    const folderWebpackConfiguration = folder.webpackChunkConfiguration;
-    const allFilesToCheck = await getAllFilesToCheck(
-      [folderName],
-      filesMetadata.excludedPointsRegex
-    );
-    allFilesToCheck.forEach((file) => {
-      for (const confgIndex in folderWebpackConfiguration) {
-        if (
-          folderWebpackConfiguration[confgIndex].webpackInclude.test(file) &&
-          !folderWebpackConfiguration[confgIndex].webpackExclude.test(file)
-        ) {
-          if (!filesMapping[file]) {
-            filesMapping[file] = getDefaultFileObject(file);
-          }
-          delete filesMapping[file].webpackChunkConfiguration["default"];
-          filesMapping[file].webpackChunkConfiguration[
-            folderWebpackConfiguration[confgIndex].webpackChunkName
-          ] = folderWebpackConfiguration[confgIndex];
-        }
-      }
-    });
-  }
-};
+
+const updateFileWebpackChunk = (filesMetadata) => {
+  
+}
+// const updateFileWebpackChunk = async (filesMetadata) => {
+//   const filesMapping = filesMetadata.filesMapping;
+//   const folders = [];
+//   for (const file in filesMapping) {
+//     if (
+//       filesMapping[file].type !== "INBUILT_NODE_MODULE" &&
+//       fs.statSync(file).isDirectory()
+//     ) {
+//       folders.push(filesMapping[file]);
+//     }
+//   }
+//   for (const index in folders) {
+//     const folder = folders[index];
+//     const folderName = folder.fileLocation;
+//     const folderWebpackConfiguration = folder.webpackChunkConfiguration;
+//     const allFilesToCheck = await getAllFilesToCheck(
+//       [folderName],
+//       filesMetadata.excludedPointsRegex
+//     );
+//     allFilesToCheck.forEach((file) => {
+//       for (const confgIndex in folderWebpackConfiguration) {
+//         if (
+//           folderWebpackConfiguration[confgIndex].webpackInclude.test(file) &&
+//           !folderWebpackConfiguration[confgIndex].webpackExclude.test(file)
+//         ) {
+//           if (!filesMapping[file]) {
+//             filesMapping[file] = getDefaultFileObject(file);
+//           }
+//           delete filesMapping[file].webpackChunkConfiguration["default"];
+//           filesMapping[file].webpackChunkConfiguration[
+//             folderWebpackConfiguration[confgIndex].webpackChunkName
+//           ] = folderWebpackConfiguration[confgIndex];
+//         }
+//       }
+//     });
+//   }
+// };
 const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
   addNewInstanceToSpinner(
     spinner,
@@ -124,7 +126,7 @@ const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
     if (
       intraModuleDependencyRegex.test(file) &&
       fs.statSync(file).isFile() &&
-      !excludedPointsRegex.test(file) &&
+      !excludedPointsRegex.test(file) && 
       isInSameWebpackChunk(file, moduleChunkMap, filesMetadata)
     ) {
       intraModuleImports.push(file);

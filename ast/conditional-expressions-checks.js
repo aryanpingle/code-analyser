@@ -39,6 +39,32 @@ const isModuleExportStatement = (node) =>
   node.property &&
   node.property.name === "exports";
 
+const isAccessingPropertyOfObject = (node) => {
+  let headObject = node;
+  while (headObject && headObject.type === "MemberExpression") {
+    headObject = headObject.object;
+  }
+  if (!headObject) return false;
+  return headObject.type === "Identifier";
+};
+
+const isNotExportTypeReference = (path) => {
+  const parentNode = path.findParent(
+    (path) => path.isExportNamespaceSpecifier() || path.isExportSpecifier()
+  );
+  const assignmentNode = path.findParent((path) =>
+    path.isAssignmentExpression()
+  );
+  return !(
+    parentNode ||
+    (assignmentNode &&
+      assignmentNode.left &&
+      assignmentNode.left.object &&
+      assignmentNode.left.object.name === "module" &&
+      assignmentNode.left.property &&
+      assignmentNode.left.property.node === "exports")
+  );
+};
 module.exports = {
   isExportFromTypeStatement,
   isFirstPartOfDynamicImports,
@@ -49,4 +75,6 @@ module.exports = {
   isImportStatementArgumentsPresent,
   isRequireStatement,
   isModuleExportStatement,
+  isNotExportTypeReference,
+  isAccessingPropertyOfObject,
 };
