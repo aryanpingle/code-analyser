@@ -26,7 +26,6 @@ const traverseFile = (fileLocation, filesMetadata) => {
     };
     traverseAST(ast, currentFileMetadata, "CHECK_IMPORTS");
     updateFilesMetadata(filesMetadata, currentFileMetadata);
-    // if(/reportWebVitals/.test(currentFileMetadata.fileLocation))console.log(currentFileMetadata.importedVariables)
     let importedFilesMapping = currentFileMetadata.importedFilesMapping;
     for (const file in importedFilesMapping) {
       if (
@@ -35,23 +34,15 @@ const traverseFile = (fileLocation, filesMetadata) => {
         isFileNotExcluded(file, filesMetadata.excludedPointsRegex)
       ) {
         if (!filesMetadata.filesMapping[file]) {
-          filesMetadata.filesMapping[file] =
-            getDefaultFileObject(file);
+          filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
         traverseFile(file, filesMetadata);
-      } else if (
-        isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(file, filesMetadata.excludedPointsRegex)
-      ) {
+      } else if (isFileMappingNotPresent(file, filesMetadata)) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }
     traverseAST(ast, currentFileMetadata, "CHECK_EXPORTS", filesMetadata);
-    // console.log(currentFileMetadata.exportedVariables)
-    // if(/reportWebVitals/.test(currentFileMetadata.fileLocation))console.log(filesMetadata.filesMapping[currentFileMetadata.fileLocation])
     updateFilesMetadata(filesMetadata, currentFileMetadata);
-
-    // if(/reportWebVitals/.test(currentFileMetadata.fileLocation))console.log(filesMetadata.filesMapping[currentFileMetadata.fileLocation])
     ast = null;
     currentFileMetadata = null;
     importedFilesMapping = null;

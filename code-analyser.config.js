@@ -7,12 +7,11 @@ module.exports = {
   },
   deadFiles: {
     check: true,
-    entry: [/index\.[jt]sx$/i],
-    // entry: ["./index.js"]
+    entry: [/index\.[jt]s$/i],
   },
   exclude: [/node_modules|(\.git)|(Icon)/], // Excluded files
-  directoriesToCheck: [
-    "../react-typescript-samples/old_class_components_samples/16 Custom Middleware/src/",
-  ],
-  // directoriesToCheck: ["./"],
+  // directoriesToCheck: [
+  //   "../react-typescript-samples/old_class_components_samples/19 LoginForm/",
+  // ],
+  directoriesToCheck: ["./"],
 };

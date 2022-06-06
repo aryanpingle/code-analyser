@@ -14,6 +14,7 @@ const {
   updateFileWebpackChunk,
   getAllImportsAndExportsOfEachFile,
 } = require("./utility/index");
+const { checkFileImportsExports } = require("./checker/file-imports-exports-checker.js");
 
 const excludedPointsRegex = buildExcludedPointsRegex(config.exclude);
 const filesMetadata = getDefaultFilesMetadata(excludedPointsRegex);

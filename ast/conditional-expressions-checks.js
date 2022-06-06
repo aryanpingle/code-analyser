@@ -58,11 +58,12 @@ const isNotExportTypeReference = (path) => {
   return !(
     parentNode ||
     (assignmentNode &&
-      assignmentNode.left &&
-      assignmentNode.left.object &&
-      assignmentNode.left.object.name === "module" &&
-      assignmentNode.left.property &&
-      assignmentNode.left.property.node === "exports")
+      assignmentNode.node &&
+      assignmentNode.node.left &&
+      assignmentNode.node.left.object &&
+      assignmentNode.node.left.object.name === "module" &&
+      assignmentNode.node.left.property &&
+      assignmentNode.node.left.property.name === "exports")
   );
 };
 module.exports = {

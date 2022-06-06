@@ -127,7 +127,6 @@ const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
       }
     },
     AssignmentExpression(path) {
-      // if (type === "CHECK_IMPORTS") path.skip();
       if (type === "CHECK_IMPORTS" || type === "CHECK_USAGE") {
         if (isRequireOrImportStatement(path.node.right)) {
           doRequireOrImportStatementOperations(
@@ -218,4 +217,5 @@ module.exports = {
   buildAST,
   traverseAST,
   getDefaultFileObject,
+  isNotExportTypeReference
 };

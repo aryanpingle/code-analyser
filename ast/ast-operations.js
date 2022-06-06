@@ -11,6 +11,7 @@ const {
   getValuesFromStatement,
   setExportedVariablesFromArray,
   getAllPropertiesFromNode,
+  setRequiredVariablesObjectsDuringImportsStage,
 } = require("./utility");
 const { getDirectoryFromPath } = require("../utility/resolver");
 const {
@@ -24,11 +25,6 @@ const {
 
 const doIdentifierOperations = (path, currentFileMetadata) => {
   const identifierName = path.node.name;
-  if (
-    /components\/app/.test(currentFileMetadata.fileLocation) &&
-    identifierName === "X"
-  )
-    console.log(identifierName, currentFileMetadata.importedVariables);
 
   if (currentFileMetadata.importedVariables[identifierName]) {
     try {
@@ -67,6 +63,12 @@ const doRequireOrImportStatementOperations = (
       importedFileAddress,
       filesMetadata,
       "RequireStatement"
+    );
+  } else {
+    setRequiredVariablesObjectsDuringImportsStage(
+      nodeToGetValues,
+      currentFileMetadata,
+      importedFileAddress
     );
   }
 };

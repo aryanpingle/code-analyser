@@ -48,7 +48,7 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
       default: getNewDefaultObject(fileLocation),
       importReferenceCount: 0,
       referenceCount: 0,
-    // If the whole object is referred
+      // If the whole object is referred
     },
     webpackChunkConfiguration: {},
     importedFilesMapping: {},
@@ -101,7 +101,33 @@ const updateExportSpecifierAndCurrentFileReferenceCount = (
     importedFrom: importedFileAddress,
   };
 };
-
+const setRequiredVariablesObjectsDuringImportsStage = (
+  node,
+  currentFileMetadata,
+  importedFileAddress
+) => {
+  if (!node) return;
+  if (node.type === "Identifier") {
+    const localName = node.name;
+    currentFileMetadata.importedVariables[localName] = {
+      name: null,
+      localName,
+      type: "ALL_EXPORTS_IMPORTED",
+      importedFrom: importedFileAddress,
+    };
+  } else if (node.type === "ObjectPattern") {
+    node.properties.forEach((property) => {
+      const localName = property.value.name;
+      const importedName = property.key.name;
+      currentFileMetadata.importedVariables[localName] = {
+        name: importedName,
+        localName,
+        type: "INDIVIDUAL_IMPORT",
+        importedFrom: importedFileAddress,
+      };
+    });
+  }
+};
 const setRequiredVariablesObjects = (
   node,
   currentFileMetadata,
@@ -306,6 +332,7 @@ const getNewDefaultObject = (fileLocation, name = "default") => {
     importReferenceCount: 0,
   };
 };
+
 const setExportedVariablesFromArray = (
   exportedVariablesArray,
   currentFileMetadata,
@@ -376,4 +403,5 @@ module.exports = {
   getValuesFromStatement,
   getAllPropertiesFromNode,
   setExportedVariablesFromArray,
+  setRequiredVariablesObjectsDuringImportsStage
 };
