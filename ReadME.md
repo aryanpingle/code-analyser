@@ -21,7 +21,7 @@ It contains a `code-analyser.config.js` file where a person has to be provide de
         directoriesToCheck: [String]
     }
 
-> <br>
+> 
 
 **_code-analyser.config.js description_**
 
