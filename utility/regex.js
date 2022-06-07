@@ -1,4 +1,3 @@
-const { idText } = require("typescript");
 const {
   directoryResolver,
   getPredecessorDirectory,
