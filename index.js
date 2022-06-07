@@ -11,14 +11,11 @@ const {
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
-  updateFileWebpackChunk,
   getAllImportsAndExportsOfEachFile,
 } = require("./utility/index");
-const { checkFileImportsExports } = require("./checker/file-imports-exports-checker.js");
-
+const { intraModuleDependencies } = require("./code-analyser.config.js");
 const excludedPointsRegex = buildExcludedPointsRegex(config.exclude);
 const filesMetadata = getDefaultFilesMetadata(excludedPointsRegex);
-
 const analyseCodeAndDetectDeadFiles = async (
   filesMetadata,
   config,
@@ -33,9 +30,18 @@ const analyseCodeAndDetectDeadFiles = async (
     excludedPointsRegex,
     spinner
   );
-  getAllImportsAndExportsOfEachFile(allEntryFiles, filesMetadata);
+  getAllImportsAndExportsOfEachFile(
+    allEntryFiles,
+    filesMetadata,
+    "DEADFILE_FINDER_TRAVERSE"
+  );
   filesMetadata.visitedFilesMapping = {};
-  analyseCode(allEntryFiles, filesMetadata, spinner);
+  analyseCode(
+    allEntryFiles,
+    filesMetadata,
+    spinner,
+    "DEADFILE_FINDER_TRAVERSE"
+  );
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
   console.log(allDeadFiles);
 };
@@ -54,15 +60,23 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     excludedPointsRegex,
     spinner
   );
-  getAllImportsAndExportsOfEachFile(allEntryFiles, filesMetadata);
-
+  getAllImportsAndExportsOfEachFile(
+    allEntryFiles,
+    filesMetadata,
+    "INTRA_MODULE_DEPENDENCY_TRAVERSE"
+  );
   filesMetadata.visitedFilesMapping = {};
-  analyseCode(allEntryFiles, filesMetadata, spinner, "default");
-  await updateFileWebpackChunk(filesMetadata);
+  analyseCode(
+    allEntryFiles,
+    filesMetadata,
+    spinner,
+    "INTRA_MODULE_DEPENDENCY_TRAVERSE"
+  );
   const intraModuleDependencies = getIntraModuleDependencies(
     filesMetadata,
     directoryResolver(__dirname, config.intraModuleDependencies.moduleToCheck),
-    spinner
+    spinner,
+    config.intraModuleDependencies.depth
   );
   console.log(intraModuleDependencies);
 };

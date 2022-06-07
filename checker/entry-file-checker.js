@@ -1,40 +1,36 @@
-const { updateFilesMetadata } = require("../utility/files");
 const { traverseAST, buildAST, getDefaultFileObject } = require("../ast/index");
 
-const checkUsingEntryFile = (
-  entyFileLocation,
-  filesMetadata,
-  webpackChunkName
-) => {
+const checkUsingEntryFile = (entyFileLocation, filesMetadata, traverseType) => {
   if (!filesMetadata.filesMapping[entyFileLocation]) {
     filesMetadata.filesMapping[entyFileLocation] =
       getDefaultFileObject(entyFileLocation);
   }
   filesMetadata.filesMapping[entyFileLocation].isEntryFile = true;
-  filesMetadata.filesMapping[entyFileLocation].webpackChunkConfiguration[
-    webpackChunkName
-  ] = true;
   if (
     isFileNotVisited(entyFileLocation, filesMetadata) &&
     isFileExtensionValid(entyFileLocation)
   ) {
-    traverseFile(entyFileLocation, filesMetadata, webpackChunkName);
+    traverseFile(entyFileLocation, filesMetadata, traverseType);
   }
 };
 
-const traverseFile = (fileLocation, filesMetadata, webpackChunkName) => {
+const traverseFile = (fileLocation, filesMetadata, traverseType) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
     let currentFileMetadata = {
       importedVariables: {},
       importedFilesMapping: {},
+      staticImportFilesMapping: {},
       fileLocation,
     };
     traverseAST(ast, currentFileMetadata, "CHECK_USAGE", filesMetadata);
     ast = null;
-    let importedFilesMapping = currentFileMetadata.importedFilesMapping;
-    for (const file in importedFilesMapping) {
+    let requiredImportedFilesMapping =
+      traverseType === "DEADFILE_FINDER_TRAVERSE"
+        ? currentFileMetadata.importedFilesMapping
+        : currentFileMetadata.staticImportFilesMapping;
+    for (const file in requiredImportedFilesMapping) {
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
@@ -42,14 +38,13 @@ const traverseFile = (fileLocation, filesMetadata, webpackChunkName) => {
       ) {
         traverseFile(file, filesMetadata);
       } else if (
-        isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(file, filesMetadata.excludedPointsRegex)
+        isFileMappingNotPresent(file, filesMetadata)
       ) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }
     currentFileMetadata = null;
-    importedFilesMapping = null;
+    requiredImportedFilesMapping = null;
   } catch (err) {
     filesMetadata.unparsableVistedFiles++;
     console.error("Unable to parse file:", fileLocation);

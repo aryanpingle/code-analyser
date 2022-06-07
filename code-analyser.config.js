@@ -1,17 +1,19 @@
 module.exports = {
   intraModuleDependencies: {
-    check: false, // True or false
-    entry: [/\.[jt]s/i], // Regex or can be absolute/relative file path
+    check: true, // True or false
+    entry: [/\.[jt]sx?/i], // Regex or can be absolute/relative file path
+    depth: 1,
     moduleToCheck:
-      "../react-typescript-samples/old_class_components_samples/16 Custom Middleware/src/index.ts", // module to check for intradependency
+      "./index.js", // module to check for intradependency
   },
   deadFiles: {
-    check: true,
+    check: false,
     entry: [/index\.[jt]s$/i],
   },
   exclude: [/node_modules|(\.git)|(Icon)/], // Excluded files
-  // directoriesToCheck: [
-  //   "../react-typescript-samples/old_class_components_samples/19 LoginForm/",
-  // ],
-  directoriesToCheck: ["./"],
+  rootDirectory: "./",
+  directoriesToCheck: [
+    "./",
+  ],
+  // directoriesToCheck: ["./"],
 };

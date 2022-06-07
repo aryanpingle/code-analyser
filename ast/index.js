@@ -160,6 +160,7 @@ const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
             currentFileMetadata,
             filesMetadata
           );
+          path.skip();
         }
       } else if (isFirstPartOfDynamicImports(callExpressionNode)) {
         if (type === "CHECK_USAGE" || type === "CHECK_IMPORTS") {
@@ -187,15 +188,14 @@ const traverseAST = (tree, currentFileMetadata, type, filesMetadata) => {
         isRequireStatement(path.node) &&
         (type === "CHECK_IMPORTS" || type === "CHECK_USAGE")
       ) {
-        if (isRequireOrImportStatement(path.node)) {
-          doRequireOrImportStatementOperations(
-            path.node,
-            null,
-            currentFileMetadata,
-            filesMetadata,
-            type
-          );
-        }
+        doRequireOrImportStatementOperations(
+          path.node,
+          null,
+          currentFileMetadata,
+          filesMetadata,
+          type
+        );
+        path.skip();
       }
     },
     Identifier(path) {
@@ -217,5 +217,5 @@ module.exports = {
   buildAST,
   traverseAST,
   getDefaultFileObject,
-  isNotExportTypeReference
+  isNotExportTypeReference,
 };

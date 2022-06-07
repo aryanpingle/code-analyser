@@ -5,13 +5,12 @@ const {
 const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
 const { addNewInstanceToSpinner, updateSpinnerInstance } = require("./cli");
 const { buildIntraModuleDependencyRegex } = require("./regex");
-const { getDefaultFileObject } = require("../ast/utility");
-const fs = require("fs");
+const { isFilePath } = require("./resolver");
 
-const analyseCode = (allEntryFiles, filesMetadata, spinner, webpackChunkName) => {
+const analyseCode = (allEntryFiles, filesMetadata, spinner, traverseType) => {
   addNewInstanceToSpinner(spinner, "id3", "Analysing codebase...");
   allEntryFiles.forEach((entryFile) =>
-    checkUsingEntryFile(entryFile, filesMetadata, webpackChunkName)
+    checkUsingEntryFile(entryFile, filesMetadata, traverseType)
   );
   updateSpinnerInstance(spinner, "id3", {
     text: "Analysed code base",
@@ -30,21 +29,24 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
     if (filesMetadata.filesMapping[file]) {
       const allExportedVariables =
         filesMetadata.filesMapping[file].exportedVariables;
-      if (
-        allExportedVariables.referenceCount >
-        allExportedVariables.importReferenceCount 
-      ) {
-        isReferred = true;
-      }
-      for (const variable in allExportedVariables) {
-        // console.log(allExportedVariables, variable)
+      try {
         if (
-          allExportedVariables[variable].referenceCount >
-          allExportedVariables[variable].importReferenceCount 
+          allExportedVariables.referenceCount >
+          allExportedVariables.importReferenceCount
         ) {
           isReferred = true;
-          break;
         }
+      } catch (_) {}
+      for (const variable in allExportedVariables) {
+        try {
+          if (
+            allExportedVariables[variable].referenceCount >
+            allExportedVariables[variable].importReferenceCount
+          ) {
+            isReferred = true;
+            break;
+          }
+        } catch (_) {}
       }
     }
     return (
@@ -69,65 +71,30 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
   return allDeadFiles;
 };
 
-const updateFileWebpackChunk = (filesMetadata) => {
-  
-}
-// const updateFileWebpackChunk = async (filesMetadata) => {
-//   const filesMapping = filesMetadata.filesMapping;
-//   const folders = [];
-//   for (const file in filesMapping) {
-//     if (
-//       filesMapping[file].type !== "INBUILT_NODE_MODULE" &&
-//       fs.statSync(file).isDirectory()
-//     ) {
-//       folders.push(filesMapping[file]);
-//     }
-//   }
-//   for (const index in folders) {
-//     const folder = folders[index];
-//     const folderName = folder.fileLocation;
-//     const folderWebpackConfiguration = folder.webpackChunkConfiguration;
-//     const allFilesToCheck = await getAllFilesToCheck(
-//       [folderName],
-//       filesMetadata.excludedPointsRegex
-//     );
-//     allFilesToCheck.forEach((file) => {
-//       for (const confgIndex in folderWebpackConfiguration) {
-//         if (
-//           folderWebpackConfiguration[confgIndex].webpackInclude.test(file) &&
-//           !folderWebpackConfiguration[confgIndex].webpackExclude.test(file)
-//         ) {
-//           if (!filesMapping[file]) {
-//             filesMapping[file] = getDefaultFileObject(file);
-//           }
-//           delete filesMapping[file].webpackChunkConfiguration["default"];
-//           filesMapping[file].webpackChunkConfiguration[
-//             folderWebpackConfiguration[confgIndex].webpackChunkName
-//           ] = folderWebpackConfiguration[confgIndex];
-//         }
-//       }
-//     });
-//   }
-// };
-const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
+const getIntraModuleDependencies = (
+  filesMetadata,
+  moduleLocation,
+  spinner,
+  depth
+) => {
   addNewInstanceToSpinner(
     spinner,
     "id5",
     "Identifying intra-module dependencies..."
   );
-  const intraModuleDependencyRegex =
-    buildIntraModuleDependencyRegex(moduleLocation);
+  const intraModuleDependencyRegex = buildIntraModuleDependencyRegex(
+    moduleLocation,
+    depth
+  );
   const excludedPointsRegex = filesMetadata.excludedPointsRegex;
 
   const intraModuleImports = [];
   const filesMapping = filesMetadata.filesMapping;
-  const moduleChunkMap = getWebChunkNamesMap(moduleLocation, filesMetadata);
   for (const file in filesMapping) {
     if (
       intraModuleDependencyRegex.test(file) &&
-      fs.statSync(file).isFile() &&
-      !excludedPointsRegex.test(file) && 
-      isInSameWebpackChunk(file, moduleChunkMap, filesMetadata)
+      isFilePath(file) &&
+      !excludedPointsRegex.test(file)
     ) {
       intraModuleImports.push(file);
     }
@@ -147,43 +114,6 @@ const getIntraModuleDependencies = (filesMetadata, moduleLocation, spinner) => {
   return intraModuleImports;
 };
 
-const getWebChunkNamesMap = (moduleLocation, filesMetadata) => {
-  let chunkNameMap = {};
-  const filesMapping = filesMetadata.filesMapping;
-  const checkValRegex = new RegExp(`^${moduleLocation}`);
-  for (const file in filesMapping) {
-    const webpackChunkConfiguration =
-      filesMapping[file].webpackChunkConfiguration;
-    for (const confgIndex in webpackChunkConfiguration) {
-      if (
-        checkValRegex.test(webpackChunkConfiguration[confgIndex].webpackPath) &&
-        (fs.statSync(moduleLocation).isDirectory() ||
-          (webpackChunkConfiguration[confgIndex].webpackInclude.test(
-            moduleLocation
-          ) &&
-            webpackChunkConfiguration[confgIndex].webpackInclude.test(
-              moduleLocation
-            )))
-      ) {
-        chunkNameMap[
-          webpackChunkConfiguration[confgIndex].webpackChunkName
-        ] = true;
-      }
-    }
-  }
-  return chunkNameMap;
-};
-const isInSameWebpackChunk = (file, moduleChunkNameMap, filesMetadata) => {
-  const webpackChunkConfiguration =
-    filesMetadata.filesMapping[file].webpackChunkConfiguration;
-  for (confgIndex in webpackChunkConfiguration) {
-    if (
-      moduleChunkNameMap[webpackChunkConfiguration[confgIndex].webpackChunkName]
-    )
-      return true;
-  }
-  return false;
-};
 const getAllRequiredFiles = async (config, excludedPointsRegex, spinner) => {
   addNewInstanceToSpinner(
     spinner,
@@ -212,9 +142,13 @@ const getAllRequiredFiles = async (config, excludedPointsRegex, spinner) => {
   return { allEntryFiles, allFilesToCheck };
 };
 
-const getAllImportsAndExportsOfEachFile = (allEntryFiles, filesMetadata) => {
+const getAllImportsAndExportsOfEachFile = (
+  allEntryFiles,
+  filesMetadata,
+  traverseType
+) => {
   allEntryFiles.forEach((file) => {
-    checkFileImportsExports(file, filesMetadata);
+    checkFileImportsExports(file, filesMetadata, traverseType);
   });
 };
 
@@ -223,6 +157,5 @@ module.exports = {
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
-  updateFileWebpackChunk,
   getAllImportsAndExportsOfEachFile,
 };

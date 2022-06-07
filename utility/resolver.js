@@ -1,10 +1,52 @@
 const path = require("path");
 const enhancedResolve = require("enhanced-resolve");
-const { existsSync } = require("fs");
+const { existsSync, statSync } = require("fs");
+const { rootDirectory } = require("../code-analyser.config");
 
-const enhancedResolver = new enhancedResolve.create.sync({
-  extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
-});
+const isPathAbsolute = (pathToCheck) =>
+  pathToCheck && path.isAbsolute(pathToCheck);
+
+const isFilePath = (file) => {
+  if (!file) return false;
+  return statSync(file).isFile();
+};
+
+const getDirectoryFromPath = (pathToRetrieveFrom) =>
+  path.dirname(pathToRetrieveFrom);
+
+const directoryResolver = (directoryName, givenDirectoryAddress) => {
+  if (!isPathAbsolute(givenDirectoryAddress)) {
+    return path.join(directoryName, givenDirectoryAddress);
+  }
+  return givenDirectoryAddress;
+};
+
+const getPredecessorDirectory = (
+  pathToRetrieveFrom,
+  distanceFromCurrentNode
+) => {
+  if (distanceFromCurrentNode === 0) return pathToRetrieveFrom;
+  return getPredecessorDirectory(
+    getDirectoryFromPath(pathToRetrieveFrom),
+    distanceFromCurrentNode - 1
+  );
+};
+
+let settings;
+try {
+  const webpackConfigFileAddress = directoryResolver(
+    directoryResolver(getPredecessorDirectory(__dirname, 2), rootDirectory),
+    "webpack.config.js"
+  );
+  settings = require(webpackConfigFileAddress).resolve;
+} catch (_) {
+  settings = {
+    extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
+  };
+}
+
+const enhancedResolver = new enhancedResolve.create.sync(settings);
+
 const pathResolver = (directoryName, fileAddress, pathType = "FILE") => {
   try {
     if (
@@ -21,7 +63,7 @@ const pathResolver = (directoryName, fileAddress, pathType = "FILE") => {
       fileAddress: enhancedResolver(directoryName, fileAddress),
     };
   } catch (_) {
-    if (existsSync(directoryResolver(directoryName, fileAddress))) {
+    if (fileAddress && existsSync(directoryResolver(directoryName, fileAddress))) {
       return {
         type: "FOLDER",
         fileAddress: directoryResolver(directoryName, fileAddress),
@@ -30,24 +72,6 @@ const pathResolver = (directoryName, fileAddress, pathType = "FILE") => {
     return { type: "INBUILT_NODE_MODULE", fileAddress };
   }
 };
-const directoryResolver = (directoryName, givenDirectoryAddress) => {
-  if (!isPathAbsolute(givenDirectoryAddress)){
-    return path.join(directoryName, givenDirectoryAddress);}
-  return givenDirectoryAddress;
-};
-
-const isPathAbsolute = (pathToCheck) => pathToCheck && path.isAbsolute(pathToCheck);
-
-const getDirectoryFromPath = (pathToRetrieveFrom) =>
-  path.dirname(pathToRetrieveFrom);
-
-const getPredecessorDirectory = (
-  pathToRetrieveFrom,
-  distanceFromCurrentNode
-) => {
-  if (!distanceFromCurrentNode) return pathToRetrieveFrom;
-  return path.dirname(pathToRetrieveFrom, distanceFromCurrentNode - 1);
-};
 
 module.exports = {
   pathResolver,
@@ -55,4 +79,5 @@ module.exports = {
   isPathAbsolute,
   getDirectoryFromPath,
   getPredecessorDirectory,
+  isFilePath,
 };

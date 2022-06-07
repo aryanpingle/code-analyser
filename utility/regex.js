@@ -1,5 +1,9 @@
-const { directoryResolver } = require("./resolver");
-const path = require("path");
+const { idText } = require("typescript");
+const {
+  directoryResolver,
+  getPredecessorDirectory,
+  getDirectoryFromPath,
+} = require("./resolver");
 
 const buildExcludedPointsRegex = (excludedPointsArray) => {
   let regexStr = "";
@@ -31,9 +35,19 @@ const buildExcludedPointsRegex = (excludedPointsArray) => {
   return excludedPointsRegex;
 };
 
-const buildIntraModuleDependencyRegex = (moduleLocation) => {
-  const siblingLocation = path.join(path.dirname(moduleLocation), ".+");
-  return new RegExp(`(?=^${siblingLocation})(?!^${moduleLocation})`);
+const buildIntraModuleDependencyRegex = (moduleLocation, depth) => {
+  const resolvedDepth = Math.max(depth - 1, 0);
+  const directoryToCheckAtGivenDepth = getPredecessorDirectory(
+    moduleLocation,
+    resolvedDepth
+  );
+  const siblingLocation = directoryResolver(
+    getDirectoryFromPath(directoryToCheckAtGivenDepth),
+    ".+"
+  );
+  return new RegExp(
+    `(?=^${siblingLocation})(?!^${directoryToCheckAtGivenDepth})`
+  );
 };
 
 module.exports = {

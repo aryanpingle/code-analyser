@@ -1,6 +1,10 @@
 const { traverseAST, buildAST, getDefaultFileObject } = require("../ast/index");
 const { updateFilesMetadata } = require("../utility/files");
-const checkFileImportsExports = (entyFileLocation, filesMetadata) => {
+const checkFileImportsExports = (
+  entyFileLocation,
+  filesMetadata,
+  traverseType
+) => {
   if (!filesMetadata.filesMapping[entyFileLocation]) {
     filesMetadata.filesMapping[entyFileLocation] =
       getDefaultFileObject(entyFileLocation);
@@ -10,11 +14,11 @@ const checkFileImportsExports = (entyFileLocation, filesMetadata) => {
     isFileNotVisited(entyFileLocation, filesMetadata) &&
     isFileExtensionValid(entyFileLocation)
   ) {
-    traverseFile(entyFileLocation, filesMetadata);
+    traverseFile(entyFileLocation, filesMetadata, traverseType);
   }
 };
 
-const traverseFile = (fileLocation, filesMetadata) => {
+const traverseFile = (fileLocation, filesMetadata, traverseType) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
@@ -22,12 +26,16 @@ const traverseFile = (fileLocation, filesMetadata) => {
       importedVariables: {},
       exportedVariables: {},
       importedFilesMapping: {},
+      staticImportFilesMapping: {},
       fileLocation,
     };
     traverseAST(ast, currentFileMetadata, "CHECK_IMPORTS");
     updateFilesMetadata(filesMetadata, currentFileMetadata);
-    let importedFilesMapping = currentFileMetadata.importedFilesMapping;
-    for (const file in importedFilesMapping) {
+    let requiredImportedFilesMapping =
+      traverseType === "DEADFILE_FINDER_TRAVERSE"
+        ? currentFileMetadata.importedFilesMapping
+        : currentFileMetadata.staticImportFilesMapping;
+    for (const file in requiredImportedFilesMapping) {
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
@@ -36,8 +44,10 @@ const traverseFile = (fileLocation, filesMetadata) => {
         if (!filesMetadata.filesMapping[file]) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
-        traverseFile(file, filesMetadata);
-      } else if (isFileMappingNotPresent(file, filesMetadata)) {
+        traverseFile(file, filesMetadata, traverseType);
+      } else if (
+        isFileMappingNotPresent(file, filesMetadata)
+      ) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }
@@ -45,7 +55,7 @@ const traverseFile = (fileLocation, filesMetadata) => {
     updateFilesMetadata(filesMetadata, currentFileMetadata);
     ast = null;
     currentFileMetadata = null;
-    importedFilesMapping = null;
+    requiredImportedFilesMapping = null;
   } catch (err) {
     filesMetadata.unparsableVistedFiles++;
     console.error("Unable to parse file:", fileLocation);

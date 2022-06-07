@@ -15,7 +15,6 @@ const {
 } = require("./utility");
 const { getDirectoryFromPath } = require("../utility/resolver");
 const {
-  isRequireOrImportStatement,
   isFileMappingNotPresentInCurrentFile,
   isSpecifiersPresent,
   isImportStatementArgumentsPresent,
@@ -56,6 +55,9 @@ const doRequireOrImportStatementOperations = (
     )
   )
     currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
+  if (isRequireStatement(nodeToGetAddress)) {
+    currentFileMetadata.staticImportFilesMapping[importedFileAddress] = true;
+  }
   if (operationType === "CHECK_USAGE") {
     setRequiredVariablesObjects(
       nodeToGetValues,
@@ -85,15 +87,19 @@ const doImportDeclartionOperations = (node, currentFileMetadata) => {
       importedFileAddress,
       currentFileMetadata
     )
-  )
+  ) {
     currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
+    currentFileMetadata.staticImportFilesMapping[importedFileAddress] = true;
+  }
   if (isSpecifiersPresent(node)) {
     node.specifiers.forEach((specifier) => {
-      updateImportSpecifierAndCurrentFileReferenceCount(
-        specifier,
-        currentFileMetadata,
-        importedFileAddress
-      );
+      try {
+        updateImportSpecifierAndCurrentFileReferenceCount(
+          specifier,
+          currentFileMetadata,
+          importedFileAddress
+        );
+      } catch (_) {}
     });
   }
 };
@@ -111,65 +117,70 @@ const doImportDeclartionOperationsAfterSetup = (
     givenSourceAdress
   );
   currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
-  if (isSpecifiersPresent(node) && operationType === "Import") {
-    node.specifiers.forEach((specifier) => {
-      let type = "ALL_EXPORTS_IMPORTED";
+  currentFileMetadata.staticImportFilesMapping[importedFileAddress] = true;
+  try {
+    if (isSpecifiersPresent(node) && operationType === "Import") {
+      node.specifiers.forEach((specifier) => {
+        let type = "ALL_EXPORTS_IMPORTED";
 
-      let localEntityName;
-      if (specifier.local) localEntityName = specifier.local.name;
-      else localEntityName = specifier.exported.name;
-      let importedEntityName = localEntityName;
-      if (specifier.type === "ImportSpecifier") {
-        importedEntityName = specifier.imported.name;
-        type = "INDIVIDUAL_IMPORT";
-      } else if (specifier.type === "ImportDefaultSpecifier") {
-        importedEntityName = "default";
-        type = "INDIVIDUAL_IMPORT";
-      }
-      try {
-        if (type === "ALL_EXPORTS_IMPORTED") {
-          currentFileMetadata.importedVariables[localEntityName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-          if (
-            !currentFileMetadata.importedVariables[localEntityName]
-              .referenceCount
-          ) {
-            currentFileMetadata.importedVariables[
-              localEntityName
-            ].referenceCount = 0;
-            currentFileMetadata.importedVariables[
-              localEntityName
-            ].importReferenceCount = 0;
-          }
-          if (currentFileMetadata.importedVariables[variable]) {
-            currentFileMetadata.importedVariables[variable].referenceCount += 1;
-            currentFileMetadata.importedVariables[
-              variable
-            ].importReferenceCount += 1;
-          }
-        } else if (type === "INDIVIDUAL_IMPORT") {
-          currentFileMetadata.importedVariables[localEntityName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-              importedEntityName
-            ];
-          if (currentFileMetadata.importedVariables[localEntityName]) {
-            currentFileMetadata.importedVariables[
-              localEntityName
-            ].referenceCount += 1;
-            currentFileMetadata.importedVariables[
-              localEntityName
-            ].importReferenceCount += 1;
-          }
+        let localEntityName;
+        if (specifier.local) localEntityName = specifier.local.name;
+        else localEntityName = specifier.exported.name;
+        let importedEntityName = localEntityName;
+        if (specifier.type === "ImportSpecifier") {
+          importedEntityName = specifier.imported.name;
+          type = "INDIVIDUAL_IMPORT";
+        } else if (specifier.type === "ImportDefaultSpecifier") {
+          importedEntityName = "default";
+          type = "INDIVIDUAL_IMPORT";
         }
-      } catch (_) {}
-    });
-  } else {
-    if (operationType === "Import") {
-      filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-        "default"
-      ].referenceCount += 1;
+        try {
+          if (type === "ALL_EXPORTS_IMPORTED") {
+            currentFileMetadata.importedVariables[localEntityName] =
+              filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+            if (
+              !currentFileMetadata.importedVariables[localEntityName]
+                .referenceCount
+            ) {
+              currentFileMetadata.importedVariables[
+                localEntityName
+              ].referenceCount = 0;
+              currentFileMetadata.importedVariables[
+                localEntityName
+              ].importReferenceCount = 0;
+            }
+            if (currentFileMetadata.importedVariables[variable]) {
+              currentFileMetadata.importedVariables[
+                variable
+              ].referenceCount += 1;
+              currentFileMetadata.importedVariables[
+                variable
+              ].importReferenceCount += 1;
+            }
+          } else if (type === "INDIVIDUAL_IMPORT") {
+            currentFileMetadata.importedVariables[localEntityName] =
+              filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+                importedEntityName
+              ];
+            if (currentFileMetadata.importedVariables[localEntityName]) {
+              currentFileMetadata.importedVariables[
+                localEntityName
+              ].referenceCount += 1;
+              currentFileMetadata.importedVariables[
+                localEntityName
+              ].importReferenceCount += 1;
+            }
+          }
+        } catch (_) {}
+      });
+    } else {
+      if (operationType === "Import") {
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+          "default"
+        ].referenceCount += 1;
+      }
     }
-  }
+  } catch (_) {}
 };
 const doModuleExportStatementOperations = (
   nodeToGetValues,
@@ -199,16 +210,20 @@ const doExportDeclarationOperations = (node, currentFileMetadata) => {
       importedFileAddress,
       currentFileMetadata
     )
-  )
+  ) {
     currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
+    currentFileMetadata.staticImportFilesMapping[importedFileAddress] = true;
+  }
 
   if (isSpecifiersPresent(node)) {
     node.specifiers.forEach((specifier) => {
-      updateExportSpecifierAndCurrentFileReferenceCount(
-        specifier,
-        currentFileMetadata,
-        importedFileAddress
-      );
+      try {
+        updateExportSpecifierAndCurrentFileReferenceCount(
+          specifier,
+          currentFileMetadata,
+          importedFileAddress
+        );
+      } catch (_) {}
     });
   }
 };
@@ -226,44 +241,40 @@ const doExportSpecifiersOperations = (
     );
     if (nodeToGetValues.specifiers) {
       nodeToGetValues.specifiers.forEach((specifier) => {
-        let specifierType = "ALL_EXPORTS_EXPORTED";
-        let importName = specifier.exported.name;
-        let localName = importName;
-        if (specifier.type === "ExportSpecifier") {
-          specifierType = "INDIVIDUAL_IMPORT";
-          localName = specifier.local.name;
-        } else if (specifier.type === "ExportNamespaceSpecifier") {
-          specifierType = "ALL_EXPORTS_AS_OBJECT";
-        }
-
-        if (
-          specifierType === "ALL_EXPORTS_EXPORTED" ||
-          specifierType === "ALL_EXPORTS_AS_OBJECT"
-        ) {
-          currentFileMetadata.exportedVariables[importName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-          if (
-            !currentFileMetadata.exportedVariables[importName].referenceCount
-          ) {
-            currentFileMetadata.exportedVariables[
-              importName
-            ].referenceCount = 0;
-            currentFileMetadata.exportedVariables[
-              importName
-            ].importReferenceCount = 0;
+        try {
+          let specifierType = "ALL_EXPORTS_EXPORTED";
+          let importName = specifier.exported.name;
+          let localName = importName;
+          if (specifier.type === "ExportSpecifier") {
+            specifierType = "INDIVIDUAL_IMPORT";
+            localName = specifier.local.name;
+          } else if (specifier.type === "ExportNamespaceSpecifier") {
+            specifierType = "ALL_EXPORTS_AS_OBJECT";
           }
-        } else if (specifierType === "INDIVIDUAL_IMPORT") {
-          // if(/components\/index/.test(currentFileMetadata.fileLocation))
-          // console.log(
-          //   filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-          //     localName
-          //   ]
-          // );
-          currentFileMetadata.exportedVariables[importName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-              localName
-            ];
-        }
+
+          if (
+            specifierType === "ALL_EXPORTS_EXPORTED" ||
+            specifierType === "ALL_EXPORTS_AS_OBJECT"
+          ) {
+            currentFileMetadata.exportedVariables[importName] =
+              filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+            if (
+              !currentFileMetadata.exportedVariables[importName].referenceCount
+            ) {
+              currentFileMetadata.exportedVariables[
+                importName
+              ].referenceCount = 0;
+              currentFileMetadata.exportedVariables[
+                importName
+              ].importReferenceCount = 0;
+            }
+          } else if (specifierType === "INDIVIDUAL_IMPORT") {
+            currentFileMetadata.exportedVariables[importName] =
+              filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+                localName
+              ];
+          }
+        } catch (_) {}
       });
     } else {
       for (const variable in filesMetadata.filesMapping[importedFileAddress]
@@ -284,7 +295,6 @@ const doExportSpecifiersOperations = (
       filesMetadata
     );
   }
-  // console.log(exportedVariablesArray, currentFileMetadata.fileLocation);
 };
 
 const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
@@ -293,7 +303,7 @@ const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
   const node = callExpressionNode.callee;
   const { type: importType, address: givenSourceAdress } =
     getImportedFileAddress(node.object);
-  const { type, importedFileAddress } = getResolvedPathFromGivenPath(
+  const { importedFileAddress } = getResolvedPathFromGivenPath(
     fileLocation,
     givenSourceAdress,
     importType
@@ -353,12 +363,14 @@ const doDynamicImportWithPromiseOperationsAfterSetup = (
   currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
   if (isImportStatementArgumentsPresent(callExpressionNode)) {
     callExpressionNode.arguments[0].params.forEach((specifier) => {
-      setRequiredVariablesObjects(
-        specifier,
-        currentFileMetadata,
-        importedFileAddress,
-        filesMetadata
-      );
+      try {
+        setRequiredVariablesObjects(
+          specifier,
+          currentFileMetadata,
+          importedFileAddress,
+          filesMetadata
+        );
+      } catch (_) {}
     });
   }
 };
@@ -369,51 +381,49 @@ const doDynamicImportsUsingLazyHookOperations = (
   filesMetadata,
   operationType
 ) => {
-  const fileLocation = currentFileMetadata.fileLocation;
-  const callExpressionNode = childNode;
-  const { type: importType, address: givenSourceAdress } =
-    getImportedFileAddress(callExpressionNode);
-  const { importedFileAddress } = getResolvedPathFromGivenPath(
-    fileLocation,
-    givenSourceAdress,
-    importType
-  );
-  if (
-    isFileMappingNotPresentInCurrentFile(
-      importedFileAddress,
-      currentFileMetadata
+  try {
+    const fileLocation = currentFileMetadata.fileLocation;
+    const callExpressionNode = childNode;
+    const { type: importType, address: givenSourceAdress } =
+      getImportedFileAddress(callExpressionNode);
+    const { importedFileAddress } = getResolvedPathFromGivenPath(
+      fileLocation,
+      givenSourceAdress,
+      importType
+    );
+    if (
+      isFileMappingNotPresentInCurrentFile(
+        importedFileAddress,
+        currentFileMetadata
+      )
     )
-  )
-    currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
-  let identifier = null;
-  if (parentNode.left) {
-    identifier = parentNode.left.name;
-  } else if (
-    parentNode.declarations &&
-    parentNode.declarations[0] &&
-    parentNode.declarations[0].id
-  ) {
-    identifier = parentNode.declarations[0].id.name;
-  }
-  if (identifier) {
-    if (operationType === "CHECK_USAGE") {
-      currentFileMetadata.importedVariables[identifier] =
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-      if (!currentFileMetadata.importedVariables[identifier].referenceCount) {
-        currentFileMetadata.importedVariables[identifier].referenceCount = 0;
-        currentFileMetadata.importedVariables[
-          identifier
-        ].importReferenceCount = 0;
-      }
-    } else {
-      currentFileMetadata.importedVariables[identifier] = {
-        name: null,
-        localName: identifier,
-        type: "ALL_EXPORTS_IMPORTED",
-        importedFrom: importedFileAddress,
-      };
+      currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
+    let identifier = null;
+    if (parentNode.left) {
+      identifier = parentNode.left.name;
+    } else if (
+      parentNode.declarations &&
+      parentNode.declarations[0] &&
+      parentNode.declarations[0].id
+    ) {
+      identifier = parentNode.declarations[0].id.name;
     }
-  }
+    if (identifier) {
+      if (operationType === "CHECK_USAGE") {
+        currentFileMetadata.importedVariables[identifier] =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            "default"
+          ];
+      } else {
+        currentFileMetadata.importedVariables[identifier] = {
+          name: "default",
+          localName: identifier,
+          type: "INDIVIDUAL_IMPORT",
+          importedFrom: importedFileAddress,
+        };
+      }
+    }
+  } catch (_) {}
 };
 const doOperationsOnFirstPartOfDynamicImports = (
   path,

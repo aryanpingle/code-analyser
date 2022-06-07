@@ -1,6 +1,7 @@
 const path = require("path");
 const { pathResolver, isPathAbsolute } = require("../utility/resolver");
 const { getDirectoryFromPath } = require("../utility/resolver");
+
 const astParserPlugins = [
   "jsx",
   ["typescript", { dts: true }],
@@ -50,6 +51,7 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
       referenceCount: 0,
       // If the whole object is referred
     },
+    staticImportFilesMapping: {},
     webpackChunkConfiguration: {},
     importedFilesMapping: {},
   };
@@ -143,21 +145,27 @@ const setRequiredVariablesObjects = (
     exportedVariable.importReferenceCount += 1;
     exportedVariable.referenceCount += 2;
   } else if (node.type === "Identifier") {
-    const localEntityName = node.name;
-    currentFileMetadata.importedVariables[localEntityName] =
-      filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-    if (
-      !currentFileMetadata.importedVariables[localEntityName].referenceCount
-    ) {
-      currentFileMetadata.importedVariables[localEntityName].referenceCount = 0;
+    try {
+      const localEntityName = node.name;
+      currentFileMetadata.importedVariables[localEntityName] =
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+      if (
+        !currentFileMetadata.importedVariables[localEntityName].referenceCount
+      ) {
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].referenceCount = 0;
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].importReferenceCount = 0;
+      }
       currentFileMetadata.importedVariables[
         localEntityName
-      ].importReferenceCount = 0;
-    }
-    currentFileMetadata.importedVariables[
-      localEntityName
-    ].importReferenceCount += 1;
-    currentFileMetadata.importedVariables[localEntityName].referenceCount += 1;
+      ].importReferenceCount += 1;
+      currentFileMetadata.importedVariables[
+        localEntityName
+      ].referenceCount += 1;
+    } catch (_) {}
   } else if (node.type === "ObjectPattern" || node.type === "ArrayPattern") {
     const patternToCheck =
       node.type === "ObjectPattern" ? node.properties : node.elements;
@@ -168,7 +176,6 @@ const setRequiredVariablesObjects = (
         importedEntityName === localEntityName && node.type === "ObjectPattern"
           ? 2
           : 1;
-      // console.log(filesMetadata.filesMapping[importedFileAddress], importedEntityName)
       try {
         currentFileMetadata.importedVariables[localEntityName] =
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
@@ -177,8 +184,9 @@ const setRequiredVariablesObjects = (
         currentFileMetadata.importedVariables[
           localEntityName
         ].importReferenceCount += importReferenceCount;
-        currentFileMetadata.importedVariables[localEntityName].referenceCount +=
-          importReferenceCount;
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].referenceCount += importReferenceCount;
       } catch (_) {}
     });
   }
@@ -234,10 +242,12 @@ const updateWebpackConfigurationOfImportedFile = (
   webpackChunkConfiguration,
   filesMetadata
 ) => {
-  const currentwebpackConfiguration =
-    filesMetadata.filesMapping[importedFileAddress].webpackChunkConfiguration;
-  currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
-    webpackChunkConfiguration;
+  try {
+    const currentwebpackConfiguration =
+      filesMetadata.filesMapping[importedFileAddress].webpackChunkConfiguration;
+    currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
+      webpackChunkConfiguration;
+  } catch (_) {}
 };
 
 const parseComment = (comment) => {
@@ -282,7 +292,7 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
     const keyValuesPairArray = [];
     nodeToGetValues.properties.forEach((property) => {
       if (property.value && property.key)
-        keyValuesPairArray.push({ [property.value.name]: property.key.name });
+        keyValuesPairArray.push({ [property.key.name]: property.value.name });
     });
     return keyValuesPairArray;
   } else if (nodeToGetValues.specifiers && nodeToGetValues.specifiers.length) {
@@ -290,7 +300,7 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
     nodeToGetValues.specifiers.forEach((specifier) => {
       if (specifier.local)
         keyValuesPairArray.push({
-          [specifier.exported.name]: specifier.local.name,
+          [specifier.local.name]: specifier.exported.name,
         });
       else
         keyValuesPairArray.push({
@@ -403,5 +413,5 @@ module.exports = {
   getValuesFromStatement,
   getAllPropertiesFromNode,
   setExportedVariablesFromArray,
-  setRequiredVariablesObjectsDuringImportsStage
+  setRequiredVariablesObjectsDuringImportsStage,
 };
