@@ -1,19 +1,18 @@
 module.exports = {
   intraModuleDependencies: {
-    check: true, // True or false
+    check: false, // True or false
     entry: [/\.[jt]sx?/i], // Regex or can be absolute/relative file path
-    depth: 1,
+    depth: 2, // Integer
     moduleToCheck:
-      "./index.js", // module to check for intradependency
+    "../React-TypeScript-Netflix-Clone/src/compounds/FooterCompound.tsx", // module to check for intra-dependencies
   },
   deadFiles: {
-    check: false,
-    entry: [/index\.[jt]s$/i],
+    check: true,
+    entry: [/index\.[jt]sx?$/i],
   },
   exclude: [/node_modules|(\.git)|(Icon)/], // Excluded files
   rootDirectory: "./",
   directoriesToCheck: [
-    "./",
+    "../react-typescript-example/src",
   ],
-  // directoriesToCheck: ["./"],
 };

@@ -1,8 +1,10 @@
 const { getCallExpressionFromNode } = require("./utility");
 
 const isExportFromTypeStatement = (node) => node.source && node.source.value;
-const isFirstPartOfDynamicImports = (callExpressionNode) =>
+
+const isSubPartOfDynamicImport = (callExpressionNode) =>
   callExpressionNode.callee.type === "Import" && callExpressionNode.arguments;
+
 const isDynamicImportWithPromise = (memberNode) => {
   return (
     memberNode.type === "MemberExpression" &&
@@ -13,6 +15,7 @@ const isDynamicImportWithPromise = (memberNode) => {
     memberNode.property.name === "then"
   );
 };
+
 const isRequireOrImportStatement = (node) => {
   const callExpression = getCallExpressionFromNode(node);
   return (
@@ -22,16 +25,21 @@ const isRequireOrImportStatement = (node) => {
       callExpression.callee.name === "import")
   );
 };
+
 const isFileMappingNotPresentInCurrentFile = (
   fileAddress,
   currentFileMetadata
 ) => !currentFileMetadata.importedFilesMapping[fileAddress];
+
 const isSpecifiersPresent = (node) => node.specifiers && node.specifiers.length;
+
 const isImportStatementArgumentsPresent = (callExpressionNode) =>
   callExpressionNode.arguments.length &&
   callExpressionNode.arguments[0].params.length;
+
 const isRequireStatement = (node) =>
   node.callee && node.callee.name === "require";
+
 const isModuleExportStatement = (node) =>
   node.type === "MemberExpression" &&
   node.object &&
@@ -66,9 +74,10 @@ const isNotExportTypeReference = (path) => {
       assignmentNode.node.left.property.name === "exports")
   );
 };
+
 module.exports = {
   isExportFromTypeStatement,
-  isFirstPartOfDynamicImports,
+  isSubPartOfDynamicImport,
   isDynamicImportWithPromise,
   isRequireOrImportStatement,
   isFileMappingNotPresentInCurrentFile,

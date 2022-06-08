@@ -1,95 +1,117 @@
-const config = require("./code-analyser.config.js");
-const { buildExcludedPointsRegex } = require("./utility/regex");
-const { directoryResolver } = require("./utility/resolver");
+const programConfiguration = require("./code-analyser.config.js");
+const { buildExcludedFilesRegex } = require("./utility/regex");
+const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
 const { createNewCliSpinner } = require("./utility/cli");
-const {
-  getDefaultFilesMetadata,
-  setDefaultFilesMetadata,
-} = require("./utility/files");
+const { getDefaultFilesMetadata } = require("./utility/files");
 const {
   analyseCode,
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
-  getAllImportsAndExportsOfEachFile,
+  setAllImportsAndExportsOfEachFile,
 } = require("./utility/index");
-const { intraModuleDependencies } = require("./code-analyser.config.js");
-const excludedPointsRegex = buildExcludedPointsRegex(config.exclude);
-const filesMetadata = getDefaultFilesMetadata(excludedPointsRegex);
-const analyseCodeAndDetectDeadFiles = async (
+const {
+  isDeadfileCheckRequired,
+  isIntraModuleDependenciesCheckRequired,
+} = require("./utility/conditional-expressions-checks");
+
+const excludedFilesRegex = buildExcludedFilesRegex(
+  programConfiguration.exclude
+);
+
+/**
+ * Function which first analyses the code and prints the dead files present on the console
+ * @param {Object} filesMetadata Object which contains information related to all files parsed
+ * @param {Object} programConfiguration Object which contains information related to which files have to be checked
+ * @param {RegExp} excludedFilesRegex Regex of excluded files
+ */
+const analyseCodeAndDetectDeadfiles = async (
   filesMetadata,
-  config,
-  excludedPointsRegex
+  programConfiguration,
+  excludedFilesRegex
 ) => {
   const spinner = createNewCliSpinner();
   const { allEntryFiles, allFilesToCheck } = await getAllRequiredFiles(
     {
-      directoriesToCheck: config.directoriesToCheck,
-      entry: config.deadFiles.entry,
+      directoriesToCheck: programConfiguration.directoriesToCheck,
+      entry: programConfiguration.deadFiles.entry,
     },
-    excludedPointsRegex,
+    excludedFilesRegex,
     spinner
   );
-  getAllImportsAndExportsOfEachFile(
+  const traversalRelatedMetadata = {
     allEntryFiles,
-    filesMetadata,
-    "DEADFILE_FINDER_TRAVERSE"
-  );
+    traverseType: "DEADFILE_FINDER_TRAVERSE",
+  };
+
+  setAllImportsAndExportsOfEachFile(traversalRelatedMetadata, filesMetadata);
+  // Will re-itearte the code, so set the visited files mapping as empty
   filesMetadata.visitedFilesMapping = {};
-  analyseCode(
-    allEntryFiles,
-    filesMetadata,
-    spinner,
-    "DEADFILE_FINDER_TRAVERSE"
-  );
+  analyseCode(traversalRelatedMetadata, filesMetadata, spinner);
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
   console.log(allDeadFiles);
 };
 
+/**
+ * Function which first analyses the code and prints the intra-module dependencies present on the console
+ * @param {Object} filesMetadata Object which contains information related to all files parsed
+ * @param {Object} programConfiguration Object which contains information related to which files have to be checked
+ * @param {RegExp} excludedFilesRegex Regex of excluded files
+ */
 const analyseCodeAndDetectIntraModuleDependencies = async (
   filesMetadata,
-  config,
-  excludedPointsRegex
+  programConfiguration,
+  excludedFilesRegex
 ) => {
   const spinner = createNewCliSpinner();
   const { allEntryFiles } = await getAllRequiredFiles(
     {
-      directoriesToCheck: [config.intraModuleDependencies.moduleToCheck],
-      entry: config.intraModuleDependencies.entry,
+      directoriesToCheck: [
+        programConfiguration.intraModuleDependencies.moduleToCheck,
+      ],
+      entry: programConfiguration.intraModuleDependencies.entry,
     },
-    excludedPointsRegex,
+    excludedFilesRegex,
     spinner
   );
-  getAllImportsAndExportsOfEachFile(
+  const traversalRelatedMetadata = {
     allEntryFiles,
-    filesMetadata,
-    "INTRA_MODULE_DEPENDENCY_TRAVERSE"
-  );
+    traverseType: "INTRA_MODULE_DEPENDENCY_TRAVERSE",
+  };
+
+  setAllImportsAndExportsOfEachFile(traversalRelatedMetadata, filesMetadata);
+  // Will re-itearte the code, so set the visited files mapping as empty
   filesMetadata.visitedFilesMapping = {};
-  analyseCode(
-    allEntryFiles,
-    filesMetadata,
-    spinner,
-    "INTRA_MODULE_DEPENDENCY_TRAVERSE"
-  );
+  analyseCode(traversalRelatedMetadata, filesMetadata, spinner);
+  const dependencyCheckerRelatedMetadata = {
+    moduleLocation: resolveAddressWithProvidedDirectory(
+      __dirname,
+      programConfiguration.intraModuleDependencies.moduleToCheck
+    ),
+    depth: programConfiguration.intraModuleDependencies.depth,
+  };
   const intraModuleDependencies = getIntraModuleDependencies(
+    dependencyCheckerRelatedMetadata,
     filesMetadata,
-    directoryResolver(__dirname, config.intraModuleDependencies.moduleToCheck),
-    spinner,
-    config.intraModuleDependencies.depth
+    spinner
   );
   console.log(intraModuleDependencies);
 };
 
-if (config.deadFiles && config.deadFiles.check) {
-  analyseCodeAndDetectDeadFiles(filesMetadata, config, excludedPointsRegex);
+if (isDeadfileCheckRequired(programConfiguration)) {
+  const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
+  analyseCodeAndDetectDeadfiles(
+    filesMetadata,
+    programConfiguration,
+    excludedFilesRegex
+  );
 }
 
-if (config.intraModuleDependencies && config.intraModuleDependencies.check) {
-  setDefaultFilesMetadata(filesMetadata);
+if (isIntraModuleDependenciesCheckRequired(programConfiguration)) {
+  const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
   analyseCodeAndDetectIntraModuleDependencies(
     filesMetadata,
-    config,
-    excludedPointsRegex
+    programConfiguration,
+    excludedFilesRegex
   );
 }

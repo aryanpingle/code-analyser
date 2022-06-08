@@ -38,33 +38,22 @@ const astParserPlugins = [
   "privateIn",
   "topLevelAwait",
 ];
-
-const getDefaultFileObject = (fileLocation, type = "FILE") => {
-  return {
-    name: path.basename(fileLocation),
-    type,
-    fileLocation: fileLocation,
-    isEntryFile: false,
-    exportedVariables: {
-      default: getNewDefaultObject(fileLocation),
-      importReferenceCount: 0,
-      referenceCount: 0,
-      // If the whole object is referred
-    },
-    staticImportFilesMapping: {},
-    webpackChunkConfiguration: {},
-    importedFilesMapping: {},
-  };
-};
-
-const updateImportSpecifierAndCurrentFileReferenceCount = (
+/**
+ * This function parses the specifier and set this specifier as current file's imported variable
+ * @param {Object} specifier Node in AST which contains information related to the variable which will be imported
+ * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
+ * @param {String} importedFileAddress Absolute address of the imported file
+ */
+const setImportedVariableInCurrentFileMetadata = (
   specifier,
   currentFileMetadata,
   importedFileAddress
 ) => {
   const localEntityName = specifier.local.name;
   let importedEntityName;
+  // default case: "import * as ... from ..."
   let type = "ALL_EXPORTS_IMPORTED";
+  // used in "import ... from ..."
   if (
     specifier.type === "ImportSpecifier" ||
     specifier.type === "ImportDefaultSpecifier"
@@ -76,15 +65,42 @@ const updateImportSpecifierAndCurrentFileReferenceCount = (
     }
     type = "INDIVIDUAL_IMPORT";
   }
-  currentFileMetadata.importedVariables[localEntityName] = {
-    name: importedEntityName,
-    localName: localEntityName,
+  currentFileMetadata.importedVariables[localEntityName] =
+    getNewImportVariableObject(
+      importedEntityName,
+      localEntityName,
+      type,
+      importedFileAddress
+    );
+};
+
+/**
+ * Returns a new import object which will be used during the "CHECK_IMPORTS" stage
+ * @param {String} name Import name of the variable
+ * @param {String} localName Local name in the current file
+ * @param {String} type To tell whether all exports will be imported or a specific import will be taken
+ * @param {String} importedFileAddress Absolute address of the imported file
+ * @returns Object which contains the above information
+ */
+const getNewImportVariableObject = (
+  name,
+  localName,
+  type,
+  importedFileAddress
+) => {
+  return {
+    name,
+    localName,
     type,
     importedFrom: importedFileAddress,
   };
 };
 
-const updateExportSpecifierAndCurrentFileReferenceCount = (
+/**
+ * Will parse the export statement's specifier and set it as an import of the current file
+ * @param {Object} specifier Node in AST that corresponds to export from statement's specifier
+ */
+const setImportedVariablesFromExportFromStatementSpecifier = (
   specifier,
   currentFileMetadata,
   importedFileAddress
@@ -96,14 +112,89 @@ const updateExportSpecifierAndCurrentFileReferenceCount = (
     importName = specifier.local.name;
     type = "INDIVIDUAL_IMPORT";
   }
-  currentFileMetadata.importedVariables[importName] = {
-    name: exportName,
-    localName: importName,
-    type,
-    importedFrom: importedFileAddress,
-  };
+  currentFileMetadata.importedVariables[importName] =
+    getNewImportVariableObject(
+      exportName,
+      importName,
+      type,
+      importedFileAddress
+    );
 };
-const setRequiredVariablesObjectsDuringImportsStage = (
+
+/**
+ * Updates imported variables references count (including import reference count)
+ * Will be used inside require or dynamic import type statements
+ * @param {Object} node AST node from which values will be retrieved
+ * @param {String} importedFileAddress Absolute address of the imported file
+ */
+const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
+  (node, currentFileMetadata, importedFileAddress, filesMetadata) => {
+    if (!node) {
+      // no imported values used (eg. css, html imports)
+      const exportedVariable =
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+          "default"
+        ];
+      exportedVariable.importReferenceCount += 1;
+      exportedVariable.referenceCount += 2;
+      // Importing all exports of a file. Eg. const X = require(...);
+    } else if (node.type === "Identifier") {
+      try {
+        const localEntityName = node.name;
+        currentFileMetadata.importedVariables[localEntityName] =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+        if (
+          !currentFileMetadata.importedVariables[localEntityName].referenceCount
+        ) {
+          setDefaultReferenceCounts(
+            currentFileMetadata.importedVariables[localEntityName]
+          );
+        }
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].importReferenceCount += 1;
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].referenceCount += 1;
+      } catch (_) {}
+    }
+    // Selective imports, Eg. const {...} = require(...)
+    else if (node.type === "ObjectPattern" || node.type === "ArrayPattern") {
+      const patternToCheck =
+        node.type === "ObjectPattern" ? node.properties : node.elements;
+      patternToCheck.forEach((property) => {
+        const importedEntityName = getImportedNameFromProperty(property);
+        const localEntityName = getLocalNameFromProperty(property);
+        // An identifier will be referenced twice if local and import names are same
+        const importReferenceCount =
+          importedEntityName === localEntityName &&
+          node.type === "ObjectPattern"
+            ? 2
+            : 1;
+        try {
+          // Individual import
+          currentFileMetadata.importedVariables[localEntityName] =
+            filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+              importedEntityName
+            ];
+          // Update both references as it is an import type reference
+          currentFileMetadata.importedVariables[
+            localEntityName
+          ].importReferenceCount += importReferenceCount;
+          currentFileMetadata.importedVariables[
+            localEntityName
+          ].referenceCount += importReferenceCount;
+        } catch (_) {}
+      });
+    }
+  };
+
+/**
+ * Set require and dynamic import's imported variables which were parsed from the given node
+ * @param {Object} node AST node which will be parsed
+ * @param {String} importedFileAddress Absolute address of the imported file
+ */
+const setImportedVariablesDuringImportStage = (
   node,
   currentFileMetadata,
   importedFileAddress
@@ -111,98 +202,65 @@ const setRequiredVariablesObjectsDuringImportsStage = (
   if (!node) return;
   if (node.type === "Identifier") {
     const localName = node.name;
-    currentFileMetadata.importedVariables[localName] = {
-      name: null,
-      localName,
-      type: "ALL_EXPORTS_IMPORTED",
-      importedFrom: importedFileAddress,
-    };
+    currentFileMetadata.importedVariables[localName] =
+      getNewImportVariableObject(
+        null,
+        localName,
+        "ALL_EXPORTS_IMPORTED",
+        importedFileAddress
+      );
   } else if (node.type === "ObjectPattern") {
     node.properties.forEach((property) => {
       const localName = property.value.name;
       const importedName = property.key.name;
-      currentFileMetadata.importedVariables[localName] = {
-        name: importedName,
-        localName,
-        type: "INDIVIDUAL_IMPORT",
-        importedFrom: importedFileAddress,
-      };
+      currentFileMetadata.importedVariables[localName] =
+        getNewImportVariableObject(
+          importedName,
+          localName,
+          "INDIVIDUAL_IMPORT",
+          importedFileAddress
+        );
     });
   }
 };
-const setRequiredVariablesObjects = (
-  node,
-  currentFileMetadata,
-  importedFileAddress,
-  filesMetadata,
-  type = "ImportStatement"
-) => {
-  if (!node) {
-    const exportedVariable =
-      filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-        "default"
-      ];
-    exportedVariable.importReferenceCount += 1;
-    exportedVariable.referenceCount += 2;
-  } else if (node.type === "Identifier") {
-    try {
-      const localEntityName = node.name;
-      currentFileMetadata.importedVariables[localEntityName] =
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-      if (
-        !currentFileMetadata.importedVariables[localEntityName].referenceCount
-      ) {
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].referenceCount = 0;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].importReferenceCount = 0;
-      }
-      currentFileMetadata.importedVariables[
-        localEntityName
-      ].importReferenceCount += 1;
-      currentFileMetadata.importedVariables[
-        localEntityName
-      ].referenceCount += 1;
-    } catch (_) {}
-  } else if (node.type === "ObjectPattern" || node.type === "ArrayPattern") {
-    const patternToCheck =
-      node.type === "ObjectPattern" ? node.properties : node.elements;
-    patternToCheck.forEach((property) => {
-      const importedEntityName = getImportedNameFromProperty(property);
-      const localEntityName = getLocalNameFromProperty(property);
-      const importReferenceCount =
-        importedEntityName === localEntityName && node.type === "ObjectPattern"
-          ? 2
-          : 1;
-      try {
-        currentFileMetadata.importedVariables[localEntityName] =
-          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-            importedEntityName
-          ];
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].importReferenceCount += importReferenceCount;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].referenceCount += importReferenceCount;
-      } catch (_) {}
-    });
-  }
-};
+
+/**
+ * Used to get the local name from a given property, accepts multiple types of properties
+ * @param {Object} property AST node to traverse
+ * @returns String which denotes the retrieved local name
+ */
 const getLocalNameFromProperty = (property) => {
   if (property.type === "ObjectProperty") return property.value.name;
   else if (property.type === "Identifier") return property.name;
   else return "default";
 };
 
+/**
+ * Used to get the imported name from a given property, accepts multiple types of properties
+ * @param {Object} property AST node to traverse
+ * @returns String which denotes the retrieved import name
+ */
 const getImportedNameFromProperty = (property) => {
   if (property.type === "ObjectProperty") return property.key.name;
   else if (property.type === "Identifier") return property.name;
   else return "default";
 };
 
+/**
+ * Will parse the given node to get the child call expression node which will contain the import address
+ * @param {Object} node AST node which will be parsed
+ * @returns Object containing the type (FILE or UNRESOLVED TYPE), and the addresss
+ */
+const getImportedFileAddress = (node) => {
+  const callExpression = getCallExpressionFromNode(node);
+  return getValueFromStringOrTemplateLiteral(callExpression.arguments[0]);
+};
+
+/**
+ * Will retrieve the callExpression present inside this node
+ * @param {Object} node AST node which will be parsed
+ * @returns AST CallExpression node inside which the import address is present
+ */
 const getCallExpressionFromNode = (node) => {
   let callExpression;
   if (!node) return callExpression;
@@ -212,23 +270,61 @@ const getCallExpressionFromNode = (node) => {
   return callExpression;
 };
 
-const getImportedFileAddress = (node) => {
-  const callExpression = getCallExpressionFromNode(node);
-  return getValueFromStringOrTemplateLiteral(callExpression.arguments[0]);
-};
+/**
+ * File's path can be given in both string or template literal format
+ * @param {Object} argument Will parse it to get the file's given address
+ * @returns Object containing the type and address present inside the argument
+ */
 const getValueFromStringOrTemplateLiteral = (argument) => {
   if (argument.type === "StringLiteral")
     return { type: "FILE", address: argument.value };
   else if (argument.type === "TemplateLiteral" && argument.quasis.length)
     return {
-      type: "FOLDER",
+      type: "UNRESOLVED TYPE",
       address: getLastFeasibleAddress(argument.quasis[0].value.cooked),
     };
   else return { type: "NONE" };
 };
-const getLastFeasibleAddress = (path) => {
-  return path.replace(/(.{2,})\/(.*)$/, "$1");
+
+/**
+ * Will be called if parsing a path given as a template literal
+ * @param {String} givenPath Path which has to be parsed
+ * @returns String denoting the largest static part of the given path
+ */
+const getLastFeasibleAddress = (givenPath) => {
+  // If relative path given, then will return the address which is completely static
+  // Eg. parsing `/abc/${X}` will return /abc, as the last part of the given path is dynamic
+  return givenPath.replace(/(.{2,})\/(.*)$/, "$1");
 };
+
+/**
+ * Will be called to get the absolute source addresss from the given source address
+ * @param {String} currentFileLocation Address of the currently parsed file
+ * @param {String} givenSourceAdress Provided address (relative, absolute, node_modules)
+ * @param {String} importType Either address given as a string or template literal
+ * @returns Object containing type (FILE or UNRESOLVED TYPE), and absolute address of the given source
+ */
+const getResolvedPathFromGivenPath = (
+  currentFileLocation,
+  givenSourceAdress,
+  importType
+) => {
+  const { type, fileAddress: importedFileAddress } =
+    getResolvedImportedFileDetails(
+      getDirectoryFromPath(currentFileLocation),
+      givenSourceAdress,
+      importType
+    );
+  return { type, importedFileAddress };
+};
+
+/**
+ * Will return the absolute address of provided file's address
+ * @param {String} directoryAddress Used if address given in relative format
+ * @param {String} fileAddress Given source address
+ * @param {String} importType Either address given as a string or template literal
+ * @returns Absolute path of this source
+ */
 const getResolvedImportedFileDetails = (
   directoryAddress,
   fileAddress,
@@ -237,65 +333,81 @@ const getResolvedImportedFileDetails = (
   if (isPathAbsolute(fileAddress)) return { type: "FILE", fileAddress };
   return pathResolver(directoryAddress, fileAddress, importType);
 };
-const updateWebpackConfigurationOfImportedFile = (
-  importedFileAddress,
-  webpackChunkConfiguration,
-  filesMetadata
-) => {
-  try {
-    const currentwebpackConfiguration =
-      filesMetadata.filesMapping[importedFileAddress].webpackChunkConfiguration;
-    currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
-      webpackChunkConfiguration;
-  } catch (_) {}
+
+// Chunk's name set as the file's address, to simulate it is present in a different chunk
+const getNewWebpackConfigurationObject = (fileLocation) => {
+  return {
+    webpackChunkName: fileLocation,
+  };
 };
 
+/**
+ * Will parse the provided comment to get it's two sub parts representing key value pair of a magic comment
+ * @param {String} comment String which has to be parsed
+ * @returns Object containing information whether this comment may be a magic comment or not
+ */
 const parseComment = (comment) => {
   const commentSubParts = comment.value.split(":");
   if (commentSubParts.length === 2) {
     commentSubParts[0] = commentSubParts[0].trim();
     commentSubParts[1] = commentSubParts[1].trim();
     let parsedValue;
+    // If the value given as a string
     parsedValue = commentSubParts[1].replace(/^(['"])(.*)\1$/, "$2");
     if (parsedValue !== commentSubParts[1])
       return { key: commentSubParts[0], value: parsedValue, valid: true };
+    // If the value given as a regex
     parsedValue = commentSubParts[1].replace(/^\/(.*)\/(.*)/, "$1");
     parsedValue = new RegExp(parsedValue);
     return { key: commentSubParts[0], value: parsedValue, valid: true };
   }
+  // Invalid format
   return { valid: false };
 };
 
-const getNewWebpackConfigurationObject = (fileLocation) => {
-  return {
-    webpackChunkName: fileLocation,
-  };
-};
-const getResolvedPathFromGivenPath = (
-  fileLocation,
-  givenSourceAdress,
-  importType = ""
+/**
+ * Will update the webpack chunks in which the provided file is present
+ * @param {String} givenFileAddress Provided file address whose webpack configuration has to be updated
+ * @param {Object} webpackChunkConfiguration Object containing information related to the webpack chunk in which this file is present
+ * @param {Object} filesMetadata Contains information related to all files
+ */
+const updateWebpackConfigurationOfImportedFile = (
+  givenFileAddress,
+  webpackChunkConfiguration,
+  filesMetadata
 ) => {
-  const { type, fileAddress: importedFileAddress } =
-    getResolvedImportedFileDetails(
-      getDirectoryFromPath(fileLocation),
-      givenSourceAdress,
-      importType
-    );
-  return { type, importedFileAddress };
+  try {
+    const currentwebpackConfiguration =
+      filesMetadata.filesMapping[givenFileAddress].webpackChunkConfiguration;
+    // This file is now present inside the provided webpack chunk too
+    currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
+      webpackChunkConfiguration;
+  } catch (_) {}
 };
 
+/**
+ * Covers various types of export statements
+ * Covers both commonJs and ES6 type exports
+ * @param {Object} nodeToGetValues AST node to get values from
+ * @param {String} type To check whether it is a default export or not
+ * @returns Array of key value pairs representing local and exported name
+ */
 const getValuesFromStatement = (nodeToGetValues, type) => {
+  // module.exports = X type statements
   if (nodeToGetValues.type === "Identifier")
     return [{ [nodeToGetValues.name]: "default" }];
+  // module.exports = {X} type statements
   else if (nodeToGetValues.type === "ObjectExpression") {
     const keyValuesPairArray = [];
     nodeToGetValues.properties.forEach((property) => {
+      // Each individual element inside the {...} is a property
       if (property.value && property.key)
         keyValuesPairArray.push({ [property.key.name]: property.value.name });
     });
     return keyValuesPairArray;
-  } else if (nodeToGetValues.specifiers && nodeToGetValues.specifiers.length) {
+  }
+  // export {x as y} type statements
+  else if (nodeToGetValues.specifiers && nodeToGetValues.specifiers.length) {
     const keyValuesPairArray = [];
     nodeToGetValues.specifiers.forEach((specifier) => {
       if (specifier.local)
@@ -309,18 +421,20 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
     });
     return keyValuesPairArray;
   } else if (nodeToGetValues.declaration) {
+    // export default x type statements
     if (nodeToGetValues.declaration.name)
       return [{ [nodeToGetValues.declaration.name]: "default" }];
     else if (nodeToGetValues.declaration.declarations) {
-      // export const x = () => {} type
+      // export const x = () => {} type statements
       const keyValuesPairArray = [];
       nodeToGetValues.declaration.declarations.forEach((declaration) => {
         keyValuesPairArray.push({ [declaration.id.name]: declaration.id.name });
       });
       return keyValuesPairArray;
     } else if (nodeToGetValues.declaration.id) {
-      // export function x(){}
+      // export function x(){} type statements
       const keyValuesPairArray = [];
+      // export default function x(){} type statements
       if (type === "default") {
         keyValuesPairArray.push({
           [nodeToGetValues.declaration.id.name]: "default",
@@ -331,18 +445,19 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
             nodeToGetValues.declaration.id.name,
         });
       return keyValuesPairArray;
-    } else return [{ default: "default" }];
+    }
+    // Will cover any other case
+    else return [{ default: "default" }];
   } else return [];
 };
-const getNewDefaultObject = (fileLocation, name = "default") => {
-  return {
-    localName: name,
-    firstReferencedAt: fileLocation,
-    referenceCount: 0,
-    importReferenceCount: 0,
-  };
-};
 
+/**
+ * Will set the export variables of the current file
+ * If an export is also an imported variable, then it will simply refer it
+ * @param {Array} exportedVariablesArray Array of parsed exported variables each containing a key value pair
+ * @param {Object} currentFileMetadata To check whether a variable was imported or is a local one
+ * @param {Object} filesMetadata To get all exported variables of another file
+ */
 const setExportedVariablesFromArray = (
   exportedVariablesArray,
   currentFileMetadata,
@@ -350,9 +465,11 @@ const setExportedVariablesFromArray = (
 ) => {
   exportedVariablesArray.forEach((variable) => {
     try {
+      // If it is an imported variable
       if (currentFileMetadata.importedVariables[Object.keys(variable)[0]]) {
         const importedVariable =
           currentFileMetadata.importedVariables[Object.keys(variable)[0]];
+        // If the imported variable is importing all exports of another file inside it
         if (importedVariable.type === "ALL_EXPORTS_IMPORTED") {
           currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
             filesMetadata.filesMapping[
@@ -362,20 +479,19 @@ const setExportedVariablesFromArray = (
             !currentFileMetadata.exportedVariables[Object.values(variable)[0]]
               .referenceCount
           ) {
-            currentFileMetadata.exportedVariables[
-              Object.values(variable)[0]
-            ].referenceCount = 0;
-            currentFileMetadata.exportedVariables[
-              Object.values(variable)[0]
-            ].importReferenceCount = 0;
+            setDefaultReferenceCounts(
+              currentFileMetadata.exportedVariables[Object.values(variable)[0]]
+            );
           }
         } else {
+          // Individual import scenario
           currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
             filesMetadata.filesMapping[
               importedVariable.importedFrom
             ].exportedVariables[importedVariable.name];
         }
       } else {
+        // If it isn't an imported variable
         currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
           getNewDefaultObject(
             currentFileMetadata.fileLocation,
@@ -385,24 +501,56 @@ const setExportedVariablesFromArray = (
     } catch (_) {}
   });
 };
+/**
+ * If referenceCount and importReferenceCount variables are not present inside the given object
+ * Then it will add them and give default value
+ * @param {Object} variableObject Variable which has to be checked
+ */
+const setDefaultReferenceCounts = (variableObject) => {
+  variableObject.referenceCount = 0;
+  variableObject.importReferenceCount = 0;
+};
 
+/**
+ * Will generate a new object which will used by other file's to refer the exported variables
+ * @param {String} fileLocation Address of the file inside which the object was first generated
+ * @param {String} name Local name of the object
+ * @returns Object containing information which will used to check whether it has been used or not
+ */
+const getNewDefaultObject = (fileLocation, name = "default") => {
+  return {
+    localName: name,
+    firstReferencedAt: fileLocation,
+    referenceCount: 0,
+    importReferenceCount: 0,
+  };
+};
+
+/**
+ * Returns all individual properties present in a x.y.z or x["y"]["z"] type statements
+ * Eg. for the above case, will return [x, y, z]
+ * @param {Object} node AST node where this statement was encountered
+ * @returns Array containing the parsed properties
+ */
 const getAllPropertiesFromNode = (node) => {
   const allPropertiesArray = [];
   let headNode = node;
+  // while there still exists more than one property
   while (headNode && headNode.type === "MemberExpression") {
     allPropertiesArray.unshift(headNode.property.name);
     headNode = headNode.object;
   }
+  // The last property accessed
   allPropertiesArray.unshift(headNode.name);
   return allPropertiesArray;
 };
 
 module.exports = {
   astParserPlugins,
-  getDefaultFileObject,
-  updateImportSpecifierAndCurrentFileReferenceCount,
-  updateExportSpecifierAndCurrentFileReferenceCount,
-  setRequiredVariablesObjects,
+  getNewDefaultObject,
+  setImportedVariableInCurrentFileMetadata,
+  setImportedVariablesFromExportFromStatementSpecifier,
+  updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements,
   getImportedFileAddress,
   getResolvedImportedFileDetails,
   parseComment,
@@ -413,5 +561,7 @@ module.exports = {
   getValuesFromStatement,
   getAllPropertiesFromNode,
   setExportedVariablesFromArray,
-  setRequiredVariablesObjectsDuringImportsStage,
+  setImportedVariablesDuringImportStage,
+  setDefaultReferenceCounts,
+  getNewImportVariableObject,
 };

@@ -3,39 +3,15 @@ const enhancedResolve = require("enhanced-resolve");
 const { existsSync, statSync } = require("fs");
 const { rootDirectory } = require("../code-analyser.config");
 
-const isPathAbsolute = (pathToCheck) =>
-  pathToCheck && path.isAbsolute(pathToCheck);
-
-const isFilePath = (file) => {
-  if (!file) return false;
-  return statSync(file).isFile();
-};
-
-const getDirectoryFromPath = (pathToRetrieveFrom) =>
-  path.dirname(pathToRetrieveFrom);
-
-const directoryResolver = (directoryName, givenDirectoryAddress) => {
-  if (!isPathAbsolute(givenDirectoryAddress)) {
-    return path.join(directoryName, givenDirectoryAddress);
-  }
-  return givenDirectoryAddress;
-};
-
-const getPredecessorDirectory = (
-  pathToRetrieveFrom,
-  distanceFromCurrentNode
-) => {
-  if (distanceFromCurrentNode === 0) return pathToRetrieveFrom;
-  return getPredecessorDirectory(
-    getDirectoryFromPath(pathToRetrieveFrom),
-    distanceFromCurrentNode - 1
-  );
-};
-
 let settings;
+
 try {
-  const webpackConfigFileAddress = directoryResolver(
-    directoryResolver(getPredecessorDirectory(__dirname, 2), rootDirectory),
+  // If the provided root directory (in the configuration file contains a webpack.config.js file then set resolver's settings equal to it's provided resolve
+  const webpackConfigFileAddress = resolveAddressWithProvidedDirectory(
+    resolveAddressWithProvidedDirectory(
+      getPredecessorDirectory(__dirname, 2),
+      rootDirectory
+    ),
     "webpack.config.js"
   );
   settings = require(webpackConfigFileAddress).resolve;
@@ -45,39 +21,127 @@ try {
   };
 }
 
+/**
+ * Resolves the address and returns an absolute path to that module
+ * @param {String} parentDirectoryAddress Absolute address of the module's parent directory
+ * @param {String} givenModuleAddress Given module's path
+ * @returns Absolute address of the required module
+ */
+const resolveAddressWithProvidedDirectory = (
+  parentDirectoryAddress,
+  givenModuleAddress
+) => {
+  if (isPathAbsolute(givenModuleAddress)) return givenModuleAddress;
+  return path.join(parentDirectoryAddress, givenModuleAddress);
+};
+
+/**
+ * Checks if the given path is absolute or not
+ * @param {String} pathToCheck Path of the required module to check
+ * @returns Boolean value denoting whether the given path is absolute or not
+ */
+const isPathAbsolute = (pathToCheck) =>
+  pathToCheck && path.isAbsolute(pathToCheck);
+
+/**
+ * Function to get the address of a ancestor directory of the provided path
+ * @param {*} pathToRetrieveFrom Given path from which the predecessor directory's path will be retrieved
+ * @param {*} depthFromCurrentNode Smallest distance between the ancestor and current nodes
+ * @returns Address of the ancestory directory of the provided path at the given depth
+ */
+const getPredecessorDirectory = (pathToRetrieveFrom, depthFromCurrentNode) => {
+  // If current node is the required ancestor node
+  if (depthFromCurrentNode === 0) return pathToRetrieveFrom;
+  // Else recursicely traverse this node with one less depth
+  return getPredecessorDirectory(
+    getDirectoryFromPath(pathToRetrieveFrom),
+    depthFromCurrentNode - 1
+  );
+};
+
+/**
+ * Returns the provided path's directory address
+ * @param {String} pathToRetrieveFrom
+ * @returns Address of the path's directory
+ */
+const getDirectoryFromPath = (pathToRetrieveFrom) =>
+  path.dirname(pathToRetrieveFrom);
+
 const enhancedResolver = new enhancedResolve.create.sync(settings);
 
-const pathResolver = (directoryName, fileAddress, pathType = "FILE") => {
+/**
+ * Function will resolve the address of the required file using it's directory and file addresses
+ * @param {*} directoryAddress Absolute address of the required file/ folder's directory
+ * @param {*} fileAddress Given path of the file (relative, absolute, node module)
+ * @param {*} pathType Provided type of path (either FILE or UNRESOLVED TYPE), default: FILE
+ * @returns Resolved path of the given address
+ */
+const pathResolver = (directoryAddress, fileAddress, pathType = "FILE") => {
   try {
+    // Unresolved type is given to the paths which are declared using template literals (They can be dynamic strings)
     if (
-      pathType === "FOLDER" &&
-      existsSync(directoryResolver(directoryName, fileAddress))
+      pathType === "UNRESOLVED TYPE" &&
+      isGivenPathPresent(
+        resolveAddressWithProvidedDirectory(directoryAddress, fileAddress)
+      )
     ) {
       return {
-        type: "FOLDER",
-        fileAddress: directoryResolver(directoryName, fileAddress),
+        type: "UNRESOLVED TYPE",
+        fileAddress: resolveAddressWithProvidedDirectory(
+          directoryAddress,
+          fileAddress
+        ),
       };
     }
     return {
       type: "FILE",
-      fileAddress: enhancedResolver(directoryName, fileAddress),
+      fileAddress: enhancedResolver(directoryAddress, fileAddress),
     };
   } catch (_) {
-    if (fileAddress && existsSync(directoryResolver(directoryName, fileAddress))) {
+    if (
+      fileAddress &&
+      isGivenPathPresent(
+        resolveAddressWithProvidedDirectory(directoryAddress, fileAddress)
+      )
+    ) {
+      // If this path exists, then it means the program is unable to resolve it's type (file/ folder)
       return {
-        type: "FOLDER",
-        fileAddress: directoryResolver(directoryName, fileAddress),
+        type: "UNRESOLVED TYPE",
+        fileAddress: resolveAddressWithProvidedDirectory(
+          directoryAddress,
+          fileAddress
+        ),
       };
     }
     return { type: "INBUILT_NODE_MODULE", fileAddress };
   }
 };
 
+/**
+ * Checks if the provided path actually exists or not
+ * @param {String} givenPath Path which has to be checked
+ * @returns Boolean value which denotes whether the path is present or not
+ */
+const isGivenPathPresent = (givenPath) => givenPath && existsSync(givenPath);
+
+/**
+ * Checks if the given path represents a file
+ * @param {String} givenPath Address to check
+ * @returns Boolean value denoting whether the path is a file's address or not
+ */
+const isFilePath = (givenPath) => {
+  if (isGivenPathPresent(givenPath)) return statSync(givenPath).isFile();
+  return false;
+};
+
+const getPathBaseName = (fileLocation) => path.basename(fileLocation);
+
 module.exports = {
   pathResolver,
-  directoryResolver,
+  resolveAddressWithProvidedDirectory,
   isPathAbsolute,
   getDirectoryFromPath,
   getPredecessorDirectory,
   isFilePath,
+  getPathBaseName
 };
