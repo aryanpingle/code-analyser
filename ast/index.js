@@ -51,8 +51,8 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
   traverse(ast, {
     // ImportDeclaration will check for "import ... from ..." type statements
     ImportDeclaration(path) {
-      if (type === "CHECK_IMPORTS")
-        doImportDeclartionOperations(path.node, currentFileMetadata);
+      if (type === "CHECK_IMPORTS" || type === "CHECK_STATIC_IMPORTS_ADDRESSES")
+        doImportDeclartionOperations(path.node, currentFileMetadata, type);
       else if (type === "CHECK_USAGE") {
         doImportDeclartionOperationsAfterSetup(
           path.node,
@@ -62,10 +62,12 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       }
       path.skip();
     },
-    // Checks for "export * as ... from ...", "export ..., export ... from ..." type statements
+    // Checks for "export * as ... from ...", "export ...", "export ... from ..." type statements
     ExportNamedDeclaration(path) {
       if (
-        (type === "CHECK_IMPORTS" || type === "CHECK_USAGE") &&
+        (type === "CHECK_IMPORTS" ||
+          type === "CHECK_STATIC_IMPORTS_ADDRESSES" ||
+          type === "CHECK_USAGE") &&
         isExportFromTypeStatement(path.node)
       ) {
         doExportDeclarationOperations(path.node, currentFileMetadata, type);
@@ -81,7 +83,9 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
     // Checks for "export * from ..." type statements
     ExportAllDeclaration(path) {
       if (
-        (type === "CHECK_IMPORTS" || type === "CHECK_USAGE") &&
+        (type === "CHECK_IMPORTS" ||
+          type === "CHECK_STATIC_IMPORTS_ADDRESSES" ||
+          type === "CHECK_USAGE") &&
         isExportFromTypeStatement(path.node)
       ) {
         doExportDeclarationOperations(path.node, currentFileMetadata, type);
@@ -162,7 +166,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       // Checks for "import(...).then((...)=>...)" type statements
       if (isDynamicImportWithPromise(memberNode)) {
         if (type === "CHECK_IMPORTS")
-          doDynamicImportWithPromiseOperations(path, currentFileMetadata);
+          doDynamicImportWithPromiseOperations(path, currentFileMetadata, type);
         else if (type === "CHECK_USAGE") {
           doDynamicImportWithPromiseOperationsAfterSetup(
             path,
@@ -200,7 +204,9 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       // Checks for "require(...)" type statements
       else if (
         isRequireStatement(path.node) &&
-        (type === "CHECK_IMPORTS" || type === "CHECK_USAGE")
+        (type === "CHECK_IMPORTS" ||
+          type === "CHECK_USAGE" ||
+          type === "CHECK_STATIC_IMPORTS_ADDRESSES")
       ) {
         doRequireOrImportStatementOperations(
           path.node,

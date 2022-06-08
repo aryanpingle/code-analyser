@@ -15,13 +15,8 @@ const {
  * Will be used to check file to get it's import and export variables, which will be used in the next stage where there usage will be checked
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
- * @param {String} traverseType To decide whether deadfiles or intra-module dependencies have to be identified
  */
-const checkFileImportsExports = (
-  entyFileLocation,
-  filesMetadata,
-  traverseType
-) => {
+const checkFileImportsExports = (entyFileLocation, filesMetadata) => {
   if (isFileMappingNotPresent(entyFileLocation, filesMetadata)) {
     filesMetadata.filesMapping[entyFileLocation] =
       getDefaultFileObject(entyFileLocation);
@@ -34,7 +29,6 @@ const checkFileImportsExports = (
     traverseFileForImportsAndExports(
       entyFileLocation,
       filesMetadata,
-      traverseType  
     );
   }
 };
@@ -44,13 +38,8 @@ const checkFileImportsExports = (
  * Will also set their corresponding objects (imports will refer exported variables' objects)
  * @param {String} fileLocation Address of the file which has to be traversed
  * @param {Object} filesMetadata Object containing information related to all files
- * @param {String} traverseType To decide whether deadfiles or intra-module dependencies have to be identified
  */
-const traverseFileForImportsAndExports = (
-  fileLocation,
-  filesMetadata,
-  traverseType
-) => {
+const traverseFileForImportsAndExports = (fileLocation, filesMetadata) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
@@ -66,11 +55,7 @@ const traverseFileForImportsAndExports = (
     ast = null;
     traversalRelatedMetadata.ast = null;
 
-    // If we are checking dead file then check all imported files of this file else traverse only statically imported files
-    // Because statically imported files will be present in the same chunk
-    let requiredImportedFilesMapping = "DEADFILE_FINDER_TRAVERSE"
-      ? currentFileMetadata.importedFilesMapping
-      : currentFileMetadata.staticImportFilesMapping;
+    let requiredImportedFilesMapping = currentFileMetadata.importedFilesMapping;
 
     for (const file in requiredImportedFilesMapping) {
       if (
@@ -81,7 +66,7 @@ const traverseFileForImportsAndExports = (
         if (!filesMetadata.filesMapping[file]) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
-        traverseFileForImportsAndExports(file, filesMetadata, traverseType);
+        traverseFileForImportsAndExports(file, filesMetadata);
       } else if (isFileMappingNotPresent(file, filesMetadata)) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }

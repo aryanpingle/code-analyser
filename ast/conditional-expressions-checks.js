@@ -26,11 +26,6 @@ const isRequireOrImportStatement = (node) => {
   );
 };
 
-const isFileMappingNotPresentInCurrentFile = (
-  fileAddress,
-  currentFileMetadata
-) => !currentFileMetadata.importedFilesMapping[fileAddress];
-
 const isSpecifiersPresent = (node) => node.specifiers && node.specifiers.length;
 
 const isImportStatementArgumentsPresent = (callExpressionNode) =>
@@ -80,7 +75,6 @@ module.exports = {
   isSubPartOfDynamicImport,
   isDynamicImportWithPromise,
   isRequireOrImportStatement,
-  isFileMappingNotPresentInCurrentFile,
   isSpecifiersPresent,
   isImportStatementArgumentsPresent,
   isRequireStatement,

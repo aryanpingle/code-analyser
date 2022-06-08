@@ -2,39 +2,45 @@ const { checkFileUsage } = require("../checker/file-usage-checker");
 const {
   checkFileImportsExports,
 } = require("../checker/file-imports-exports-checker");
+const {
+  checkFileStaticImport,
+} = require("../checker/file-static-imports-checker");
 const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
 const { addNewInstanceToSpinner, updateSpinnerInstance } = require("./cli");
 const { buildIntraModuleDependencyRegex } = require("./regex");
 const { isFilePath } = require("./resolver");
 const { isFileNotExcluded } = require("./conditional-expressions-checks");
+
+const setAllStaticallyImportedFilesMapping = (allEntryFiles, filesMetadata) => {
+  allEntryFiles.forEach((file) => {
+    checkFileStaticImport(file, filesMetadata);
+  });
+};
 /**
  * Used to get all imports and exports of each file, and sets corresponding import/ export variable objects
- * @param {Object} traversalRelatedMetadata Object containing information related to entry files and traversal type (traversing to find dead-files or intra-module dependencies)
+ * @param {Array} allEntryFiles Array containing all entry files
  * @param {Object} filesMetadata Contains information related to all files
  */
-const setAllImportsAndExportsOfEachFile = (
-  { allEntryFiles, traverseType },
-  filesMetadata
-) => {
+const setAllImportsAndExportsOfEachFile = (allEntryFiles, filesMetadata) => {
   allEntryFiles.forEach((file) => {
-    checkFileImportsExports(file, filesMetadata, traverseType);
+    checkFileImportsExports(file, filesMetadata);
   });
 };
 
 /**
  * Analyses the code and updates the references of parsed files
- * @param {Object} traversalRelatedMetadata Object containing information related to entry files and traversal type (traversing to find dead-files or intra-module dependencies)
+ * @param {Array} allEntryFiles Array containing all entry files
  * @param {Object} filesMetadata Contains information related to all files
  * @param {Object} spinner Spinner container contaning multiple spinner instances
  */
 const analyseCode = (
-  { allEntryFiles, traverseType },
+  allEntryFiles,
   filesMetadata,
   spinner
 ) => {
   addNewInstanceToSpinner(spinner, "id3", "Analysing codebase...");
   allEntryFiles.forEach((entryFile) =>
-    checkFileUsage(entryFile, filesMetadata, traverseType)
+    checkFileUsage(entryFile, filesMetadata)
   );
   updateSpinnerInstance(spinner, "id3", {
     text: "Analysed code base",
@@ -110,8 +116,7 @@ const getIntraModuleDependencies = (
       // If the file is not excluded, satisfies intra-module dependency condition, and is also reffered
       intraModuleDependencyRegex.test(file) &&
       isFilePath(file) &&
-      isFileNotExcluded(excludedFilesRegex, file) &&
-      isFileReferred(filesMapping, file)
+      isFileNotExcluded(excludedFilesRegex, file)
     ) {
       intraModuleDependenciesArray.push(file);
     }
@@ -205,6 +210,7 @@ const getAllRequiredFiles = async (
 };
 
 module.exports = {
+  setAllStaticallyImportedFilesMapping,
   analyseCode,
   getDeadFiles,
   getIntraModuleDependencies,

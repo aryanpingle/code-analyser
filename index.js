@@ -9,6 +9,7 @@ const {
   getIntraModuleDependencies,
   getAllRequiredFiles,
   setAllImportsAndExportsOfEachFile,
+  setAllStaticallyImportedFilesMapping,
 } = require("./utility/index");
 const {
   isDeadfileCheckRequired,
@@ -39,15 +40,10 @@ const analyseCodeAndDetectDeadfiles = async (
     excludedFilesRegex,
     spinner
   );
-  const traversalRelatedMetadata = {
-    allEntryFiles,
-    traverseType: "DEADFILE_FINDER_TRAVERSE",
-  };
-
-  setAllImportsAndExportsOfEachFile(traversalRelatedMetadata, filesMetadata);
+  setAllImportsAndExportsOfEachFile(allEntryFiles, filesMetadata);
   // Will re-itearte the code, so set the visited files mapping as empty
   filesMetadata.visitedFilesMapping = {};
-  analyseCode(traversalRelatedMetadata, filesMetadata, spinner);
+  analyseCode(allEntryFiles, filesMetadata, spinner);
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
   console.log(allDeadFiles);
 };
@@ -74,15 +70,7 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     excludedFilesRegex,
     spinner
   );
-  const traversalRelatedMetadata = {
-    allEntryFiles,
-    traverseType: "INTRA_MODULE_DEPENDENCY_TRAVERSE",
-  };
-
-  setAllImportsAndExportsOfEachFile(traversalRelatedMetadata, filesMetadata);
-  // Will re-itearte the code, so set the visited files mapping as empty
-  filesMetadata.visitedFilesMapping = {};
-  analyseCode(traversalRelatedMetadata, filesMetadata, spinner);
+  setAllStaticallyImportedFilesMapping(allEntryFiles, filesMetadata);
   const dependencyCheckerRelatedMetadata = {
     moduleLocation: resolveAddressWithProvidedDirectory(
       __dirname,
