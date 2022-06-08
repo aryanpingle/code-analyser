@@ -2,9 +2,8 @@ module.exports = {
   intraModuleDependencies: {
     check: true, // True or false
     entry: [/\.[jt]sx?/i], // Regex or can be absolute/relative file path
-    depth: 2, // Integer
-    moduleToCheck:
-    "../react-typescript-example/src/components/XxxHeader", // module to check for intra-dependencies
+    depth: 1, // Integer
+    moduleToCheck: "./index.js", // module to check for intra-dependencies
   },
   deadFiles: {
     check: true,
@@ -12,7 +11,5 @@ module.exports = {
   },
   exclude: [/node_modules|(\.git)|(Icon)/], // Excluded files
   rootDirectory: "./",
-  directoriesToCheck: [
-    "../react-typescript-example/src",
-  ],
+  directoriesToCheck: ["./"],
 };

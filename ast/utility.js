@@ -1,4 +1,3 @@
-const path = require("path");
 const { pathResolver, isPathAbsolute } = require("../utility/resolver");
 const { getDirectoryFromPath } = require("../utility/resolver");
 
@@ -40,20 +39,24 @@ const astParserPlugins = [
 ];
 /**
  * This function parses the specifier and set this specifier as current file's imported variable
+ * Will update necessary metadata and import variable mappings
  * @param {Object} specifier Node in AST which contains information related to the variable which will be imported
- * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  * @param {String} importedFileAddress Absolute address of the imported file
+ * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
+ * @param {Object} filesMetadata Contains inforamtion related to all files
  */
 const setImportedVariableInCurrentFileMetadata = (
   specifier,
+  importedFileAddress,
   currentFileMetadata,
-  importedFileAddress
+  filesMetadata
 ) => {
   const localEntityName = specifier.local.name;
-  let importedEntityName;
+  let importedEntityName = localEntityName;
+
   // default case: "import * as ... from ..."
   let type = "ALL_EXPORTS_IMPORTED";
-  // used in "import ... from ..."
+  // If import ... from ... or import {...} from ... type statements
   if (
     specifier.type === "ImportSpecifier" ||
     specifier.type === "ImportDefaultSpecifier"
@@ -65,10 +68,75 @@ const setImportedVariableInCurrentFileMetadata = (
     }
     type = "INDIVIDUAL_IMPORT";
   }
-  currentFileMetadata.importedVariables[localEntityName] =
+  currentFileMetadata.importedVariablesMetadata[localEntityName] =
     getNewImportVariableObject(
       importedEntityName,
       localEntityName,
+      type,
+      importedFileAddress
+    );
+
+  try {
+    // import * as ... from ... type statements
+    if (type === "ALL_EXPORTS_IMPORTED") {
+      currentFileMetadata.importedVariables[localEntityName] =
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+      if (
+        !currentFileMetadata.importedVariables[localEntityName].referenceCount
+      ) {
+        setDefaultReferenceCounts(
+          currentFileMetadata.importedVariables[localEntityName]
+        );
+      }
+      // If export of that variable present at current instance
+      if (currentFileMetadata.importedVariables[localEntityName]) {
+        updateImportAnd;
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].referenceCount += 1;
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].importReferenceCount += 1;
+      }
+    }
+    // If import ... from ... or import {...} from ... type statements
+    else if (type === "INDIVIDUAL_IMPORT") {
+      currentFileMetadata.importedVariables[localEntityName] =
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+          importedEntityName
+        ];
+      if (currentFileMetadata.importedVariables[localEntityName]) {
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].referenceCount += 1;
+        currentFileMetadata.importedVariables[
+          localEntityName
+        ].importReferenceCount += 1;
+      }
+    }
+  } catch (_) {}
+};
+
+/**
+ * Will parse the export statement's specifier and set it as an import of the current file
+ * @param {Object} specifier Node in AST that corresponds to export from statement's specifier
+ */
+const setImportedVariablesFromExportFromStatementSpecifier = (
+  specifier,
+  currentFileMetadata,
+  importedFileAddress
+) => {
+  const exportName = specifier.exported.name;
+  let importName = exportName;
+  let type = "ALL_EXPORTS_IMPORTED";
+  if (specifier.local) {
+    importName = specifier.local.name;
+    type = "INDIVIDUAL_IMPORT";
+  }
+  currentFileMetadata.importedVariablesMetadata[importName] =
+    getNewImportVariableObject(
+      exportName,
+      importName,
       type,
       importedFileAddress
     );
@@ -94,31 +162,6 @@ const getNewImportVariableObject = (
     type,
     importedFrom: importedFileAddress,
   };
-};
-
-/**
- * Will parse the export statement's specifier and set it as an import of the current file
- * @param {Object} specifier Node in AST that corresponds to export from statement's specifier
- */
-const setImportedVariablesFromExportFromStatementSpecifier = (
-  specifier,
-  currentFileMetadata,
-  importedFileAddress
-) => {
-  const exportName = specifier.exported.name;
-  let importName = exportName;
-  let type = "ALL_EXPORTS_IMPORTED";
-  if (specifier.local) {
-    importName = specifier.local.name;
-    type = "INDIVIDUAL_IMPORT";
-  }
-  currentFileMetadata.importedVariables[importName] =
-    getNewImportVariableObject(
-      exportName,
-      importName,
-      type,
-      importedFileAddress
-    );
 };
 
 /**
@@ -202,7 +245,7 @@ const setImportedVariablesDuringImportStage = (
   if (!node) return;
   if (node.type === "Identifier") {
     const localName = node.name;
-    currentFileMetadata.importedVariables[localName] =
+    currentFileMetadata.importedVariablesMetadata[localName] =
       getNewImportVariableObject(
         null,
         localName,
@@ -213,7 +256,7 @@ const setImportedVariablesDuringImportStage = (
     node.properties.forEach((property) => {
       const localName = property.value.name;
       const importedName = property.key.name;
-      currentFileMetadata.importedVariables[localName] =
+      currentFileMetadata.importedVariablesMetadata[localName] =
         getNewImportVariableObject(
           importedName,
           localName,
@@ -401,8 +444,12 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
     const keyValuesPairArray = [];
     nodeToGetValues.properties.forEach((property) => {
       // Each individual element inside the {...} is a property
-      if (property.value && property.key)
-        keyValuesPairArray.push({ [property.key.name]: property.value.name });
+      if (property.value && property.key) {
+        if (property.value.name)
+          keyValuesPairArray.push({ [property.key.name]: property.value.name });
+        else
+          keyValuesPairArray.push({ [property.key.name]: property.key.name });
+      }
     });
     return keyValuesPairArray;
   }
@@ -466,9 +513,13 @@ const setExportedVariablesFromArray = (
   exportedVariablesArray.forEach((variable) => {
     try {
       // If it is an imported variable
-      if (currentFileMetadata.importedVariables[Object.keys(variable)[0]]) {
+      if (
+        currentFileMetadata.importedVariablesMetadata[Object.keys(variable)[0]]
+      ) {
         const importedVariable =
-          currentFileMetadata.importedVariables[Object.keys(variable)[0]];
+          currentFileMetadata.importedVariablesMetadata[
+            Object.keys(variable)[0]
+          ];
         // If the imported variable is importing all exports of another file inside it
         if (importedVariable.type === "ALL_EXPORTS_IMPORTED") {
           currentFileMetadata.exportedVariables[Object.values(variable)[0]] =

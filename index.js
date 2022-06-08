@@ -4,11 +4,10 @@ const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
 const { createNewCliSpinner } = require("./utility/cli");
 const { getDefaultFilesMetadata } = require("./utility/files");
 const {
-  analyseCode,
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
-  setAllImportsAndExportsOfEachFile,
+  analyseCode,
   setAllStaticallyImportedFilesMapping,
 } = require("./utility/index");
 const {
@@ -40,9 +39,6 @@ const analyseCodeAndDetectDeadfiles = async (
     excludedFilesRegex,
     spinner
   );
-  setAllImportsAndExportsOfEachFile(allEntryFiles, filesMetadata);
-  // Will re-itearte the code, so set the visited files mapping as empty
-  filesMetadata.visitedFilesMapping = {};
   analyseCode(allEntryFiles, filesMetadata, spinner);
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
   console.log(allDeadFiles);

@@ -1,7 +1,6 @@
-const { checkFileUsage } = require("../checker/file-usage-checker");
 const {
-  checkFileImportsExports,
-} = require("../checker/file-imports-exports-checker");
+  checkFileUsage,
+} = require("../checker/file-usage-checker");
 const {
   checkFileStaticImport,
 } = require("../checker/file-static-imports-checker");
@@ -11,19 +10,14 @@ const { buildIntraModuleDependencyRegex } = require("./regex");
 const { isFilePath } = require("./resolver");
 const { isFileNotExcluded } = require("./conditional-expressions-checks");
 
-const setAllStaticallyImportedFilesMapping = (allEntryFiles, filesMetadata) => {
-  allEntryFiles.forEach((file) => {
-    checkFileStaticImport(file, filesMetadata);
-  });
-};
 /**
- * Used to get all imports and exports of each file, and sets corresponding import/ export variable objects
+ * Used to get all statically imported files addresses on which the entry files depend
  * @param {Array} allEntryFiles Array containing all entry files
  * @param {Object} filesMetadata Contains information related to all files
  */
-const setAllImportsAndExportsOfEachFile = (allEntryFiles, filesMetadata) => {
+const setAllStaticallyImportedFilesMapping = (allEntryFiles, filesMetadata) => {
   allEntryFiles.forEach((file) => {
-    checkFileImportsExports(file, filesMetadata);
+    checkFileStaticImport(file, filesMetadata);
   });
 };
 
@@ -215,5 +209,4 @@ module.exports = {
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
-  setAllImportsAndExportsOfEachFile,
 };

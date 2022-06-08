@@ -46,6 +46,7 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
 const getDefaultCurrentFileMetadata = (fileLocation) => {
   return {
     importedVariables: {},
+    importedVariablesMetadata: {},
     exportedVariables: {},
     importedFilesMapping: {},
     staticImportFilesMapping: {},
