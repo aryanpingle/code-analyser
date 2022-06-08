@@ -80,5 +80,5 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
     console.error(err);
   }
 };
-      
+
 module.exports = { checkFileUsage };

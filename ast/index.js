@@ -99,15 +99,18 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       }
     },
     MemberExpression(path) {
-      if (type === "CHECK_USAGE") {
-        if (isAccessingPropertyOfObject(path.node)) {
-          // Checks for x.y or x["y"] type statements where parent's property is being accessed
-          doAccessingPropertiesOfObjectOperations(
-            path.node,
-            currentFileMetadata
-          );
-          path.skip();
-        }
+      if (type === "CHECK_USAGE" && isAccessingPropertyOfObject(path.node)) {
+        // Checks for x.y or x["y"] type statements where parent's property is being accessed
+        doAccessingPropertiesOfObjectOperations(path.node, currentFileMetadata);
+        path.skip();
+      }
+    },
+    TSQualifiedName(path) {
+      // console.log(path.node);
+      if (type === "CHECK_USAGE" && isAccessingPropertyOfObject(path.node)) {
+        // Checks for x.y or x["y"] type statements where parent's property is being accessed
+        doAccessingPropertiesOfObjectOperations(path.node, currentFileMetadata);
+        path.skip();
       }
     },
     VariableDeclarator(path) {

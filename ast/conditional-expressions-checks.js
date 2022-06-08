@@ -43,12 +43,21 @@ const isModuleExportStatement = (node) =>
   node.property.name === "exports";
 
 const isAccessingPropertyOfObject = (node) => {
-  let headObject = node;
-  while (headObject && headObject.type === "MemberExpression") {
-    headObject = headObject.object;
+  let headNode = node;
+  let typeToCheck, childPropertyToCheck;
+  if (headNode.type === "TSQualifiedName") {
+    typeToCheck = "TSQualifiedName";
+    childPropertyToCheck = "left";
+  } else {
+    typeToCheck = "MemberExpression";
+    childPropertyToCheck = "object";
   }
-  if (!headObject) return false;
-  return headObject.type === "Identifier";
+  // while there still exists more than one property
+  while (headNode && headNode.type === typeToCheck) {
+    headNode = headNode[childPropertyToCheck];
+  }
+  if (!headNode) return false;
+  return headNode.type === "Identifier";
 };
 
 const isNotExportTypeReference = (path) => {

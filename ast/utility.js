@@ -586,13 +586,24 @@ const getNewDefaultObject = (fileLocation, name = "default") => {
 const getAllPropertiesFromNode = (node) => {
   const allPropertiesArray = [];
   let headNode = node;
+  let typeToCheck, childPropertyToCheck, nodePropertyToCheck;
+  if (headNode.type === "TSQualifiedName") {
+    typeToCheck = "TSQualifiedName";
+    childPropertyToCheck = "left";
+    nodePropertyToCheck = "right";
+  } else {
+    typeToCheck = "MemberExpression";
+    childPropertyToCheck = "object";
+    nodePropertyToCheck = "property";
+  }
   // while there still exists more than one property
-  while (headNode && headNode.type === "MemberExpression") {
-    allPropertiesArray.unshift(headNode.property.name);
-    headNode = headNode.object;
+  while (headNode && headNode.type === typeToCheck) {
+    allPropertiesArray.unshift(headNode[nodePropertyToCheck].name);
+    headNode = headNode[childPropertyToCheck];
   }
   // The last property accessed
   allPropertiesArray.unshift(headNode.name);
+
   return allPropertiesArray;
 };
 
