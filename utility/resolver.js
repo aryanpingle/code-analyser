@@ -3,38 +3,6 @@ const enhancedResolve = require("enhanced-resolve");
 const { existsSync, statSync } = require("fs");
 const { rootDirectory } = require("../code-analyser.config");
 
-let settings;
-
-try {
-  // If the provided root directory (in the configuration file contains a webpack.config.js file then set resolver's settings equal to it's provided resolve
-  const webpackConfigFileAddress = resolveAddressWithProvidedDirectory(
-    resolveAddressWithProvidedDirectory(
-      getPredecessorDirectory(__dirname, 2),
-      rootDirectory
-    ),
-    "webpack.config.js"
-  );
-  settings = require(webpackConfigFileAddress).resolve;
-} catch (_) {
-  settings = {
-    extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
-  };
-}
-
-/**
- * Resolves the address and returns an absolute path to that module
- * @param {String} parentDirectoryAddress Absolute address of the module's parent directory
- * @param {String} givenModuleAddress Given module's path
- * @returns Absolute address of the required module
- */
-const resolveAddressWithProvidedDirectory = (
-  parentDirectoryAddress,
-  givenModuleAddress
-) => {
-  if (isPathAbsolute(givenModuleAddress)) return givenModuleAddress;
-  return path.join(parentDirectoryAddress, givenModuleAddress);
-};
-
 /**
  * Checks if the given path is absolute or not
  * @param {String} pathToCheck Path of the required module to check
@@ -42,6 +10,14 @@ const resolveAddressWithProvidedDirectory = (
  */
 const isPathAbsolute = (pathToCheck) =>
   pathToCheck && path.isAbsolute(pathToCheck);
+
+/**
+ * Returns the provided path's directory address
+ * @param {String} pathToRetrieveFrom
+ * @returns Address of the path's directory
+ */
+const getDirectoryFromPath = (pathToRetrieveFrom) =>
+  path.dirname(pathToRetrieveFrom);
 
 /**
  * Function to get the address of a ancestor directory of the provided path
@@ -60,12 +36,37 @@ const getPredecessorDirectory = (pathToRetrieveFrom, depthFromCurrentNode) => {
 };
 
 /**
- * Returns the provided path's directory address
- * @param {String} pathToRetrieveFrom
- * @returns Address of the path's directory
+ * Resolves the address and returns an absolute path to that module
+ * @param {String} parentDirectoryAddress Absolute address of the module's parent directory
+ * @param {String} givenModuleAddress Given module's path
+ * @returns Absolute address of the required module
  */
-const getDirectoryFromPath = (pathToRetrieveFrom) =>
-  path.dirname(pathToRetrieveFrom);
+const resolveAddressWithProvidedDirectory = (
+  parentDirectoryAddress,
+  givenModuleAddress
+) => {
+  if (isPathAbsolute(givenModuleAddress)) return givenModuleAddress;
+  return path.join(parentDirectoryAddress, givenModuleAddress);
+};
+
+let settings;
+
+try {
+  // If the provided root directory (in the configuration file contains a webpack.config.js file then set resolver's settings equal to it's provided resolve
+  const webpackConfigFileAddress = resolveAddressWithProvidedDirectory(
+    resolveAddressWithProvidedDirectory(
+      getPredecessorDirectory(__dirname, 1),
+      rootDirectory
+    ),
+    "webpack.config.js"
+  );
+  settings = require(webpackConfigFileAddress).resolve;
+} catch (err) {
+  console.log(err);
+  settings = {
+    extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
+  };
+}
 
 const enhancedResolver = new enhancedResolve.create.sync(settings);
 
@@ -143,5 +144,5 @@ module.exports = {
   getDirectoryFromPath,
   getPredecessorDirectory,
   isFilePath,
-  getPathBaseName
+  getPathBaseName,
 };

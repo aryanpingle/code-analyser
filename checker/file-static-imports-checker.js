@@ -46,12 +46,12 @@ const traverseFileForStaticImports = (fileLocation, filesMetadata) => {
       filesMetadata,
     };
     traverseAST(traversalRelatedMetadata, "CHECK_STATIC_IMPORTS_ADDRESSES");
-    // Setting ast as null, to save memory
-    ast = null;
-    traversalRelatedMetadata = null;
-
     let requiredImportedFilesMapping =
       currentFileMetadata.staticImportFilesMapping;
+    // Setting ast as null, to save memory
+    ast = null;
+    currentFileMetadata = null;
+    traversalRelatedMetadata = null;
 
     for (const file in requiredImportedFilesMapping) {
       if (
