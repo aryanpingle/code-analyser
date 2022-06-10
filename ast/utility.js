@@ -2,7 +2,6 @@ const { pathResolver, isPathAbsolute } = require("../utility/resolver");
 const { getDirectoryFromPath } = require("../utility/resolver");
 
 const astParserPlugins = [
-  "jsx",
   ["typescript", { dts: true }],
   ["pipelineOperator", { proposal: "minimal" }],
   "asyncDoExpressions",
@@ -37,6 +36,17 @@ const astParserPlugins = [
   "privateIn",
   "topLevelAwait",
 ];
+
+const astOtherSettings = {
+  sourceType: "module",
+  allowImportExportEverywhere: true,
+  allowAwaitOutsideFunction: true,
+  allowReturnOutsideFunction: true,
+  allowSuperOutsideMethod: true,
+  allowUndeclaredExports: true,
+  errorRecovery: true,
+};
+
 /**
  * This function parses the specifier and set this specifier as current file's imported variable
  * Will update necessary metadata and import variable mappings
@@ -81,13 +91,6 @@ const setImportedVariableInCurrentFileMetadata = (
     if (type === "ALL_EXPORTS_IMPORTED") {
       currentFileMetadata.importedVariables[localEntityName] =
         filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-      if (
-        !currentFileMetadata.importedVariables[localEntityName].referenceCount
-      ) {
-        setDefaultReferenceCounts(
-          currentFileMetadata.importedVariables[localEntityName]
-        );
-      }
       // If export of that variable present at current instance
       if (currentFileMetadata.importedVariables[localEntityName]) {
         updateImportAnd;
@@ -186,13 +189,6 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
         const localEntityName = node.name;
         currentFileMetadata.importedVariables[localEntityName] =
           filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-        if (
-          !currentFileMetadata.importedVariables[localEntityName].referenceCount
-        ) {
-          setDefaultReferenceCounts(
-            currentFileMetadata.importedVariables[localEntityName]
-          );
-        }
         currentFileMetadata.importedVariables[
           localEntityName
         ].importReferenceCount += 1;
@@ -526,14 +522,6 @@ const setExportedVariablesFromArray = (
             filesMetadata.filesMapping[
               importedVariable.importedFrom
             ].exportedVariables;
-          if (
-            !currentFileMetadata.exportedVariables[Object.values(variable)[0]]
-              .referenceCount
-          ) {
-            setDefaultReferenceCounts(
-              currentFileMetadata.exportedVariables[Object.values(variable)[0]]
-            );
-          }
         } else {
           // Individual import scenario
           currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
@@ -551,15 +539,6 @@ const setExportedVariablesFromArray = (
       }
     } catch (_) {}
   });
-};
-/**
- * If referenceCount and importReferenceCount variables are not present inside the given object
- * Then it will add them and give default value
- * @param {Object} variableObject Variable which has to be checked
- */
-const setDefaultReferenceCounts = (variableObject) => {
-  variableObject.referenceCount = 0;
-  variableObject.importReferenceCount = 0;
 };
 
 /**
@@ -609,6 +588,7 @@ const getAllPropertiesFromNode = (node) => {
 
 module.exports = {
   astParserPlugins,
+  astOtherSettings,
   getNewDefaultObject,
   setImportedVariableInCurrentFileMetadata,
   setImportedVariablesFromExportFromStatementSpecifier,
@@ -624,6 +604,5 @@ module.exports = {
   getAllPropertiesFromNode,
   setExportedVariablesFromArray,
   setImportedVariablesDuringImportStage,
-  setDefaultReferenceCounts,
   getNewImportVariableObject,
 };

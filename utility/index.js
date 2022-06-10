@@ -134,7 +134,7 @@ const getIntraModuleDependencies = (
 /**
  * Checks if a file is not a dead file and was actually used by some other file
  * @param {Object} filesMapping Contains information related to all files
- * @param {*} fileLocation Address of the file which has to be check
+ * @param {String} fileLocation Address of the file which has to be check
  * @returns Boolean value denoting whether this file was referred or not
  */
 const isFileReferred = (filesMapping, fileLocation) => {

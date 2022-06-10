@@ -12,7 +12,6 @@ const {
   setExportedVariablesFromArray,
   getAllPropertiesFromNode,
   setImportedVariablesDuringImportStage,
-  setDefaultReferenceCounts,
   getNewImportVariableObject,
 } = require("./utility");
 const { getDirectoryFromPath } = require("../utility/resolver");
@@ -154,13 +153,6 @@ const doExportSpecifiersOperations = (
           ) {
             currentFileMetadata.exportedVariables[exportName] =
               filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-            if (
-              !currentFileMetadata.exportedVariables[exportName].referenceCount
-            ) {
-              setDefaultReferenceCounts(
-                currentFileMetadata.exportedVariables[exportName]
-              );
-            }
           } else if (specifierType === "INDIVIDUAL_IMPORT") {
             currentFileMetadata.exportedVariables[exportName] =
               filesMetadata.filesMapping[importedFileAddress].exportedVariables[
@@ -217,9 +209,6 @@ const doAccessingPropertiesOfObjectOperations = (node, currentFileMetadata) => {
       exportedVariableToUpdate[allPropertiesArray[currentIndex]]
     ) {
       // Traverse from this variable to another export variable which will be present as an object inside this exported variable
-      if (!exportedVariableToUpdate.referenceCount) {
-        setDefaultReferenceCounts(exportedVariableToUpdate);
-      }
       exportedVariableToUpdate.referenceCount++;
       // Update the exported variable to it's child property object
       exportedVariableToUpdate =

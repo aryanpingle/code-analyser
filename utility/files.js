@@ -47,7 +47,11 @@ const getDefaultCurrentFileMetadata = (fileLocation) => {
   return {
     importedVariables: {},
     importedVariablesMetadata: {},
-    exportedVariables: {},
+    exportedVariables: {
+      default: getNewDefaultObject(fileLocation),
+      importReferenceCount: 0,
+      referenceCount: 0,
+    },
     importedFilesMapping: {},
     staticImportFilesMapping: {},
     fileLocation,
@@ -67,7 +71,7 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
     isEntryFile: false,
     exportedVariables: {
       default: getNewDefaultObject(fileLocation),
-      // If the whole exportVaroables object is referred
+      // If the whole exportVariables object is referred
       importReferenceCount: 0,
       referenceCount: 0,
     },

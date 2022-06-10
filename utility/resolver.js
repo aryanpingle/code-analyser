@@ -21,8 +21,8 @@ const getDirectoryFromPath = (pathToRetrieveFrom) =>
 
 /**
  * Function to get the address of a ancestor directory of the provided path
- * @param {*} pathToRetrieveFrom Given path from which the predecessor directory's path will be retrieved
- * @param {*} depthFromCurrentNode Smallest distance between the ancestor and current nodes
+ * @param {String} pathToRetrieveFrom Given path from which the predecessor directory's path will be retrieved
+ * @param {Integer} depthFromCurrentNode Smallest distance between the ancestor and current nodes
  * @returns Address of the ancestory directory of the provided path at the given depth
  */
 const getPredecessorDirectory = (pathToRetrieveFrom, depthFromCurrentNode) => {
@@ -61,8 +61,7 @@ try {
     "webpack.config.js"
   );
   settings = require(webpackConfigFileAddress).resolve;
-} catch (err) {
-  console.log(err);
+} catch (_) {
   settings = {
     extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
   };
@@ -72,9 +71,9 @@ const enhancedResolver = new enhancedResolve.create.sync(settings);
 
 /**
  * Function will resolve the address of the required file using it's directory and file addresses
- * @param {*} directoryAddress Absolute address of the required file/ folder's directory
- * @param {*} fileAddress Given path of the file (relative, absolute, node module)
- * @param {*} pathType Provided type of path (either FILE or UNRESOLVED TYPE), default: FILE
+ * @param {String} directoryAddress Absolute address of the required file/ folder's directory
+ * @param {String} fileAddress Given path of the file (relative, absolute, node module)
+ * @param {String} pathType Provided type of path (either FILE or UNRESOLVED TYPE), default: FILE
  * @returns Resolved path of the given address
  */
 const pathResolver = (directoryAddress, fileAddress, pathType = "FILE") => {

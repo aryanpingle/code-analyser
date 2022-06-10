@@ -1,7 +1,7 @@
 const { default: traverse } = require("@babel/traverse");
 const { parse } = require("@babel/parser");
 const fs = require("fs");
-const { astParserPlugins } = require("./utility");
+const { astParserPlugins, astOtherSettings } = require("./utility");
 const {
   isExportFromTypeStatement,
   isSubPartOfDynamicImport,
@@ -33,11 +33,17 @@ const {
  */
 const buildAST = (fileLocation) => {
   const code = fs.readFileSync(fileLocation).toString();
-  return parse(code, {
-    sourceType: "module",
-    plugins: astParserPlugins,
-    errorRecovery: true,
-  });
+  try {
+    return parse(code, {
+      plugins: [...astParserPlugins, "jsx"],
+      ...astOtherSettings,
+    });
+  } catch (_) {
+    return parse(code, {
+      plugins: astParserPlugins,
+      ...astOtherSettings,
+    });
+  }
 };
 
 /**

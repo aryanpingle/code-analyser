@@ -23,9 +23,14 @@ const buildExcludedFilesRegex = (excludedModulesArray) => {
       regexElementsString += `${file.source}|`;
       pathWithRegexReferenceCount++;
     } else {
-      const moduleAbsoluteAddress = resolveAddressWithProvidedDirectory(__dirname, file);
+      const moduleAbsoluteAddress = resolveAddressWithProvidedDirectory(
+        getDirectoryFromPath(__dirname),
+        file
+      );
       // Either match this module's address or another module's address
-      addressToRegexString += `${moduleAbsoluteAddress}|`;
+      addressToRegexString += `${convertAddressIntoRegexCompatibleFormat(
+        moduleAbsoluteAddress
+      )}|`;
       pathWithoutRegexReferenceCount++;
     }
   });
@@ -61,16 +66,34 @@ const buildIntraModuleDependencyRegex = (moduleLocation, depth) => {
     resolvedDepth
   );
   // Address of the sibling modules of the module's directory at the given depth
-  const siblingLocation = resolveAddressWithProvidedDirectory(
-    getDirectoryFromPath(directoryToCheckAtGivenDepth),
+  const siblingLocation = getDirectoryFromPath(directoryToCheckAtGivenDepth);
+  const regexCompatibleSiblingLocation = resolveAddressWithProvidedDirectory(
+    convertAddressIntoRegexCompatibleFormat(siblingLocation),
     ".+"
   );
+  const regexCompatibleDirectoryLocation =
+    convertAddressIntoRegexCompatibleFormat(directoryToCheckAtGivenDepth);
   // Regex denotes any module which starts with the siblingLocation's path but doesn't start with module's ancestor directory at the given depth
   return new RegExp(
-    `(?=^${siblingLocation})(?!^${directoryToCheckAtGivenDepth})`
+    `(?=^${regexCompatibleSiblingLocation})(?!^${regexCompatibleDirectoryLocation})`
   );
 };
 
+/**
+ * Converts the given address into a format whose meaning will not change when placed inside a regex expression
+ * @param {String} addressString
+ * @returns Regex compatible address string
+ */
+const convertAddressIntoRegexCompatibleFormat = (addressString) => {
+  let convertedAddress = "";
+  for (const character of addressString) {
+    // Use regex to check for any special character used
+    convertedAddress += /[\/\[\]\*\+\?\.\|\^\{\}\-\$\,]/.test(character)
+      ? `\\${character}`
+      : character;
+  }
+  return convertedAddress;
+};
 module.exports = {
   buildExcludedFilesRegex,
   buildIntraModuleDependencyRegex,
