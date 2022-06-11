@@ -9,7 +9,8 @@ const {
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
-} = require("./conditional-expressions-checker");
+  getUsedFilesMapping,
+} = require("./utility");
 
 /**
  * Will be used to check file to get it's import and export variables, which will be used in the next stage where there usage will be checked
@@ -49,7 +50,7 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
     traverseAST(traversalRelatedMetadata, "CHECK_IMPORTED_FILES_ADDRESSES");
     updateFilesMetadata(filesMetadata, currentFileMetadata);
     // Setting ast as null, to save memory, will build it again after traversing all imported files of the current file
-    let requiredImportedFilesMapping = currentFileMetadata.importedFilesMapping;
+    let requiredImportedFilesMapping = getUsedFilesMapping(currentFileMetadata);
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;

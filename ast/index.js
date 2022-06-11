@@ -58,11 +58,12 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
     // ImportDeclaration will check for "import ... from ..." type statements
     ImportDeclaration(path) {
       doImportDeclartionOperations(path.node, currentFileMetadata);
-      if (type === "CHECK_USAGE") {
+      if (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES") {
         doImportDeclartionOperationsAfterSetup(
           path.node,
           currentFileMetadata,
-          filesMetadata
+          filesMetadata,
+          type
         );
       }
       path.skip();
@@ -121,7 +122,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
     },
     VariableDeclarator(path) {
       if (
-        type === "CHECK_USAGE" &&
+        (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES") &&
         isRequireOrImportStatement(path.node.init)
       ) {
         // Checks for "const ... = require(...)", "const ... = import(...)" type statements
@@ -161,8 +162,11 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       const callExpressionNode = path.node;
       const memberNode = callExpressionNode.callee;
       // Checks for "import(...).then((...)=>...)" type statements
-      if (isDynamicImportWithPromise(memberNode) && type === "CHECK_USAGE") {
-        doDynamicImportWithPromiseOperations(path, currentFileMetadata, type);
+      if (
+        isDynamicImportWithPromise(memberNode) &&
+        (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES")
+      ) {
+        doDynamicImportWithPromiseOperations(path, currentFileMetadata);
         doDynamicImportWithPromiseOperationsAfterSetup(
           path,
           currentFileMetadata,
@@ -191,8 +195,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
             parentAssignmentPath.node,
             path.node,
             currentFileMetadata,
-            filesMetadata,
-            type
+            filesMetadata
           );
         }
       }
@@ -209,16 +212,22 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       }
     },
     Identifier(path) {
-      if (type === "CHECK_USAGE") {
+      if (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES") {
         // Checks for variables names present in the code and if it is not used in export reference then will do the operation
-        if (isNotExportTypeReference(path))
+        if (
+          type === "CHECK_IMPORTED_FILES_ADDRESSES" ||
+          (type === "CHECK_USAGE" && isNotExportTypeReference(path))
+        )
           doIdentifierOperations(path, currentFileMetadata);
       }
     },
     JSXIdentifier(path) {
-      if (type === "CHECK_USAGE") {
+      if (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES") {
         // Checks for variables names present in the code and if it is not used in export reference then will do the operation
-        if (isNotExportTypeReference(path))
+        if (
+          type === "CHECK_IMPORTED_FILES_ADDRESSES" ||
+          (type === "CHECK_USAGE" && isNotExportTypeReference(path))
+        )
           doIdentifierOperations(path, currentFileMetadata);
       }
     },

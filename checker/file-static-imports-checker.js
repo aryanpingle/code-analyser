@@ -1,6 +1,5 @@
 const { traverseAST, buildAST } = require("../ast/index");
 const {
-  updateFilesMetadata,
   getDefaultFileObject,
   getDefaultCurrentFileMetadata,
 } = require("../utility/files");
@@ -9,7 +8,7 @@ const {
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
-} = require("./conditional-expressions-checker");
+} = require("./utility");
 
 /**
  * Will be used to check file to get it's statically imported variables, which will be used to find intra-module dependencies

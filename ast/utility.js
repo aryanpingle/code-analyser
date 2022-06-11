@@ -50,14 +50,13 @@ const astOtherSettings = {
 /**
  * This function parses the specifier and set this specifier as current file's imported variable
  * Will update necessary metadata and import variable mappings
- * @param {Object} specifier Node in AST which contains information related to the variable which will be imported
+ * @param {Object} specifierMetadata Contain information like specifier's AST node, from which file it has been imported, and in which stage it is been checked
  * @param {String} importedFileAddress Absolute address of the imported file
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  * @param {Object} filesMetadata Contains inforamtion related to all files
  */
 const setImportedVariableInCurrentFileMetadata = (
-  specifier,
-  importedFileAddress,
+  { specifier, importedFileAddress, traverseType },
   currentFileMetadata,
   filesMetadata
 ) => {
@@ -85,39 +84,40 @@ const setImportedVariableInCurrentFileMetadata = (
       type,
       importedFileAddress
     );
-
-  try {
-    // import * as ... from ... type statements
-    if (type === "ALL_EXPORTS_IMPORTED") {
-      currentFileMetadata.importedVariables[localEntityName] =
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-      // If export of that variable present at current instance
-      if (currentFileMetadata.importedVariables[localEntityName]) {
-        updateImportAnd;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].referenceCount += 1;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].importReferenceCount += 1;
+  if (traverseType === "CHECK_USAGE") {
+    try {
+      // import * as ... from ... type statements
+      if (type === "ALL_EXPORTS_IMPORTED") {
+        currentFileMetadata.importedVariables[localEntityName] =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+        // If export of that variable present at current instance
+        if (currentFileMetadata.importedVariables[localEntityName]) {
+          updateImportAnd;
+          currentFileMetadata.importedVariables[
+            localEntityName
+          ].referenceCount += 1;
+          currentFileMetadata.importedVariables[
+            localEntityName
+          ].importReferenceCount += 1;
+        }
       }
-    }
-    // If import ... from ... or import {...} from ... type statements
-    else if (type === "INDIVIDUAL_IMPORT") {
-      currentFileMetadata.importedVariables[localEntityName] =
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-          importedEntityName
-        ];
-      if (currentFileMetadata.importedVariables[localEntityName]) {
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].referenceCount += 1;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].importReferenceCount += 1;
+      // If import ... from ... or import {...} from ... type statements
+      else if (type === "INDIVIDUAL_IMPORT") {
+        currentFileMetadata.importedVariables[localEntityName] =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            importedEntityName
+          ];
+        if (currentFileMetadata.importedVariables[localEntityName]) {
+          currentFileMetadata.importedVariables[
+            localEntityName
+          ].referenceCount += 1;
+          currentFileMetadata.importedVariables[
+            localEntityName
+          ].importReferenceCount += 1;
+        }
       }
-    }
-  } catch (_) {}
+    } catch (_) {}
+  }
 };
 
 /**
@@ -164,6 +164,7 @@ const getNewImportVariableObject = (
     localName,
     type,
     importedFrom: importedFileAddress,
+    referenceCount: 0,
   };
 };
 
