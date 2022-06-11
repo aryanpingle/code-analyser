@@ -12,7 +12,6 @@ const {
   isNotExportTypeReference,
 } = require("./conditional-expressions-checks");
 const {
-  doIdentifierOperations,
   doRequireOrImportStatementOperations,
   doImportDeclartionOperations,
   doExportDeclarationOperations,
@@ -24,6 +23,8 @@ const {
   doDynamicImportWithPromiseOperationsAfterSetup,
   doDynamicImportsUsingLazyHookOperations,
   doAccessingPropertiesOfObjectOperations,
+  doIdentifierOperationsOnImportedVariables,
+  doIdentifierOperationsOnImportedVariablesMetadata,
 } = require("./ast-operations");
 
 /**
@@ -58,7 +59,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
     // ImportDeclaration will check for "import ... from ..." type statements
     ImportDeclaration(path) {
       doImportDeclartionOperations(path.node, currentFileMetadata);
-      if (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES") {
+      if (type !== "CHECK_STATIC_IMPORTS_ADDRESSES") {
         doImportDeclartionOperationsAfterSetup(
           path.node,
           currentFileMetadata,
@@ -73,7 +74,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       if (isExportFromTypeStatement(path.node)) {
         doExportDeclarationOperations(path.node, currentFileMetadata, type);
       }
-      if (type === "CHECK_USAGE") {
+      if (type === "CHECK_EXPORTS") {
         doExportSpecifiersOperations(
           path.node,
           currentFileMetadata,
@@ -86,7 +87,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       if (isExportFromTypeStatement(path.node)) {
         doExportDeclarationOperations(path.node, currentFileMetadata, type);
       }
-      if (type === "CHECK_USAGE") {
+      if (type === "CHECK_EXPORTS") {
         doExportSpecifiersOperations(
           path.node,
           currentFileMetadata,
@@ -96,7 +97,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
     },
     // Checks for "export default ..." type statements
     ExportDefaultDeclaration(path) {
-      if (type === "CHECK_USAGE") {
+      if (type === "CHECK_EXPORTS") {
         doExportSpecifiersOperations(
           path.node,
           currentFileMetadata,
@@ -113,7 +114,6 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       }
     },
     TSQualifiedName(path) {
-      // console.log(path.node);
       if (type === "CHECK_USAGE" && isAccessingPropertyOfObject(path.node)) {
         // Checks for x.y or x["y"] type statements where parent's property is being accessed
         doAccessingPropertiesOfObjectOperations(path.node, currentFileMetadata);
@@ -122,7 +122,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
     },
     VariableDeclarator(path) {
       if (
-        (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES") &&
+        type !== "CHECK_STATIC_IMPORTS_ADDRESSES" &&
         isRequireOrImportStatement(path.node.init)
       ) {
         // Checks for "const ... = require(...)", "const ... = import(...)" type statements
@@ -137,14 +137,15 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       }
     },
     AssignmentExpression(path) {
-      if (type === "CHECK_USAGE") {
+      if (type !== "CHECK_STATIC_IMPORTS_ADDRESSES") {
         // Checks for "module.exports = {...}" type statements
-        doModuleExportStatementOperations(
-          path.node.right,
-          path.node.left,
-          currentFileMetadata,
-          filesMetadata
-        );
+        if (type === "CHECK_EXPORTS")
+          doModuleExportStatementOperations(
+            path.node.right,
+            path.node.left,
+            currentFileMetadata,
+            filesMetadata
+          );
         // Checks for "... = require(...)",  "... = import(...)"" type statements
         if (isRequireOrImportStatement(path.node.right)) {
           doRequireOrImportStatementOperations(
@@ -164,20 +165,20 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       // Checks for "import(...).then((...)=>...)" type statements
       if (
         isDynamicImportWithPromise(memberNode) &&
-        (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES")
+        type !== "CHECK_STATIC_IMPORTS_ADDRESSES"
       ) {
         doDynamicImportWithPromiseOperations(path, currentFileMetadata);
-        doDynamicImportWithPromiseOperationsAfterSetup(
-          path,
-          currentFileMetadata,
-          filesMetadata
-        );
-        path.skip();
+        if (type === "CHECK_USAGE")
+          doDynamicImportWithPromiseOperationsAfterSetup(
+            path,
+            currentFileMetadata,
+            filesMetadata,
+          );
       }
       // Checks for "import(...)" type statements
       else if (
         isSubPartOfDynamicImport(callExpressionNode) &&
-        (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES")
+        type !== "CHECK_STATIC_IMPORTS_ADDRESSES"
       ) {
         doOperationsOnSubPartOfDynamicImports(
           path,
@@ -195,7 +196,8 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
             parentAssignmentPath.node,
             path.node,
             currentFileMetadata,
-            filesMetadata
+            filesMetadata,
+            type
           );
         }
       }
@@ -212,23 +214,25 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       }
     },
     Identifier(path) {
-      if (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES") {
+      if (type !== "CHECK_STATIC_IMPORTS_ADDRESSES") {
         // Checks for variables names present in the code and if it is not used in export reference then will do the operation
-        if (
-          type === "CHECK_IMPORTED_FILES_ADDRESSES" ||
-          (type === "CHECK_USAGE" && isNotExportTypeReference(path))
-        )
-          doIdentifierOperations(path, currentFileMetadata);
+        if (isNotExportTypeReference(path) && type === "CHECK_USAGE")
+          doIdentifierOperationsOnImportedVariables(path, currentFileMetadata);
+        doIdentifierOperationsOnImportedVariablesMetadata(
+          path,
+          currentFileMetadata
+        );
       }
     },
     JSXIdentifier(path) {
-      if (type === "CHECK_USAGE" || type === "CHECK_IMPORTED_FILES_ADDRESSES") {
+      if (type !== "CHECK_STATIC_IMPORTS_ADDRESSES") {
         // Checks for variables names present in the code and if it is not used in export reference then will do the operation
-        if (
-          type === "CHECK_IMPORTED_FILES_ADDRESSES" ||
-          (type === "CHECK_USAGE" && isNotExportTypeReference(path))
-        )
-          doIdentifierOperations(path, currentFileMetadata);
+        if (isNotExportTypeReference(path) && type === "CHECK_USAGE")
+          doIdentifierOperationsOnImportedVariables(path, currentFileMetadata);
+        doIdentifierOperationsOnImportedVariablesMetadata(
+          path,
+          currentFileMetadata
+        );
       }
     },
   });

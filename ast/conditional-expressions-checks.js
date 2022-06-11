@@ -26,7 +26,7 @@ const isRequireOrImportStatement = (node) => {
   );
 };
 
-const isSpecifiersPresent = (node) => node.specifiers && node.specifiers.length;
+const isSpecifiersPresent = (node) => node.specifiers && node.specifiers.length > 0;
 
 const isImportStatementArgumentsPresent = (callExpressionNode) =>
   callExpressionNode.arguments.length &&

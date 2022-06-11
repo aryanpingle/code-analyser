@@ -1,6 +1,7 @@
+const { checkFileUsage } = require("../checker/file-usage-checker");
 const {
-  checkFileUsage,
-} = require("../checker/file-usage-checker");
+  checkFileImportExports,
+} = require("../checker/file-imports-exports-checker");
 const {
   checkFileStaticImport,
 } = require("../checker/file-static-imports-checker");
@@ -22,16 +23,22 @@ const setAllStaticallyImportedFilesMapping = (allEntryFiles, filesMetadata) => {
 };
 
 /**
+ * Sets each file's exported variable which will used later on during the CHECK_USAGE stage
+ * @param {Array} allEntryFiles
+ * @param {Object} filesMetadata
+ */
+const setAllFileExports = (allEntryFiles, filesMetadata) => {
+  allEntryFiles.forEach((entryFile) =>
+    checkFileImportExports(entryFile, filesMetadata)
+  );
+};
+/**
  * Analyses the code and updates the references of parsed files
  * @param {Array} allEntryFiles Array containing all entry files
  * @param {Object} filesMetadata Contains information related to all files
  * @param {Object} spinner Spinner container contaning multiple spinner instances
  */
-const analyseCode = (
-  allEntryFiles,
-  filesMetadata,
-  spinner
-) => {
+const analyseCode = (allEntryFiles, filesMetadata, spinner) => {
   addNewInstanceToSpinner(spinner, "id3", "Analysing codebase...");
   allEntryFiles.forEach((entryFile) =>
     checkFileUsage(entryFile, filesMetadata)
@@ -205,6 +212,7 @@ const getAllRequiredFiles = async (
 
 module.exports = {
   setAllStaticallyImportedFilesMapping,
+  setAllFileExports,
   analyseCode,
   getDeadFiles,
   getIntraModuleDependencies,

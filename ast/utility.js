@@ -92,7 +92,6 @@ const setImportedVariableInCurrentFileMetadata = (
           filesMetadata.filesMapping[importedFileAddress].exportedVariables;
         // If export of that variable present at current instance
         if (currentFileMetadata.importedVariables[localEntityName]) {
-          updateImportAnd;
           currentFileMetadata.importedVariables[
             localEntityName
           ].referenceCount += 1;
@@ -157,14 +156,15 @@ const getNewImportVariableObject = (
   name,
   localName,
   type,
-  importedFileAddress
+  importedFileAddress,
+  count = 0
 ) => {
   return {
     name,
     localName,
     type,
     importedFrom: importedFileAddress,
-    referenceCount: 0,
+    referenceCount: count,
   };
 };
 
@@ -175,7 +175,13 @@ const getNewImportVariableObject = (
  * @param {String} importedFileAddress Absolute address of the imported file
  */
 const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
-  (node, currentFileMetadata, importedFileAddress, filesMetadata) => {
+  (
+    node,
+    currentFileMetadata,
+    importedFileAddress,
+    filesMetadata,
+    type = "UPDATE_REFERENCE_COUNT"
+  ) => {
     if (!node) {
       // no imported values used (eg. css, html imports)
       const exportedVariable =
@@ -193,9 +199,10 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
         currentFileMetadata.importedVariables[
           localEntityName
         ].importReferenceCount += 1;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].referenceCount += 1;
+        if (type === "UPDATE_REFERENCE_COUNT")
+          currentFileMetadata.importedVariables[
+            localEntityName
+          ].referenceCount += 1;
       } catch (_) {}
     }
     // Selective imports, Eg. const {...} = require(...)
@@ -221,9 +228,10 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
           currentFileMetadata.importedVariables[
             localEntityName
           ].importReferenceCount += importReferenceCount;
-          currentFileMetadata.importedVariables[
-            localEntityName
-          ].referenceCount += importReferenceCount;
+          if (type === "UPDATE_REFERENCE_COUNT")
+            currentFileMetadata.importedVariables[
+              localEntityName
+            ].referenceCount += importReferenceCount;
         } catch (_) {}
       });
     }

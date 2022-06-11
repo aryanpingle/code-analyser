@@ -9,6 +9,7 @@ const {
   getAllRequiredFiles,
   analyseCode,
   setAllStaticallyImportedFilesMapping,
+  setAllFileExports,
 } = require("./utility/index");
 const {
   isDeadfileCheckRequired,
@@ -39,6 +40,8 @@ const analyseCodeAndDetectDeadfiles = async (
     excludedFilesRegex,
     spinner
   );
+  setAllFileExports(allEntryFiles, filesMetadata);
+  filesMetadata.visitedFilesMapping = {};
   analyseCode(allEntryFiles, filesMetadata, spinner);
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
   console.log(allDeadFiles);

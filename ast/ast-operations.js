@@ -63,12 +63,12 @@ const doImportDeclartionOperationsAfterSetup = (
   try {
     // If some variables are being imported from the import statement
     if (isSpecifiersPresent(importNode)) {
-      const specifierMetadata = {
-        specifier,
-        traverseType,
-        importedFileAddress,
-      };
       importNode.specifiers.forEach((specifier) => {
+        const specifierMetadata = {
+          specifier,
+          traverseType,
+          importedFileAddress,
+        };
         setImportedVariableInCurrentFileMetadata(
           specifierMetadata,
           currentFileMetadata,
@@ -106,8 +106,7 @@ const doExportDeclarationOperations = (
   currentFileMetadata.staticImportFilesMapping[importedFileAddress] = true;
 
   if (
-    (traverseType === "CHECK_USAGE" ||
-      traverseType === "CHECK_IMPORTED_FILES_ADDRESSES") &&
+    traverseType !== "CHECK_STATIC_IMPORTS_ADDRESSES" &&
     isSpecifiersPresent(exportNode)
   ) {
     exportNode.specifiers.forEach((specifier) => {
@@ -254,10 +253,7 @@ const doRequireOrImportStatementOperations = (
   if (isRequireStatement(nodeToGetAddress)) {
     currentFileMetadata.staticImportFilesMapping[importedFileAddress] = true;
   }
-  if (
-    operationType === "CHECK_USAGE" ||
-    operationType === "CHECK_IMPORTED_FILES_ADDRESSES"
-  ) {
+  if (operationType !== "CHECK_STATIC_IMPORTS_ADDRESSES") {
     setImportedVariablesDuringImportStage(
       nodeToGetValues,
       currentFileMetadata,
@@ -320,16 +316,18 @@ const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
         // Specific exports called by this file
         if (specifier.type === "ObjectPattern") {
           specifier.properties.forEach((property) => {
-            const localEntityName = property.key.name;
-            let importedEntityName = localEntityName;
+            const localEntityName = property.value.name;
+            let importedEntityName = property.key.name;
             let exportType = "INDIVIDUAL_IMPORT";
-
+            const importReferenceCount =
+              localEntityName === importedEntityName ? 2 : 1;
             currentFileMetadata.importedVariablesMetadata[localEntityName] =
               getNewImportVariableObject(
                 importedEntityName,
                 localEntityName,
                 exportType,
-                importedFileAddress
+                importedFileAddress,
+                -importReferenceCount
               );
           });
         } else if (specifier.type === "Identifier") {
@@ -341,7 +339,8 @@ const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
               localEntityName,
               localEntityName,
               exportType,
-              importedFileAddress
+              importedFileAddress,
+              -1
             );
         }
       });
@@ -369,7 +368,6 @@ const doDynamicImportWithPromiseOperationsAfterSetup = (
     givenSourceAddress,
     importType
   );
-  currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
   if (isImportStatementArgumentsPresent(callExpressionNode)) {
     // Will update reference count of each parsed variable, (present inside specifier AST node)
     callExpressionNode.arguments[0].params.forEach((specifier) => {
@@ -378,7 +376,8 @@ const doDynamicImportWithPromiseOperationsAfterSetup = (
           specifier,
           currentFileMetadata,
           importedFileAddress,
-          filesMetadata
+          filesMetadata,
+          "DONT_UPDATE_REFERENCE_COUNT"
         );
       } catch (_) {}
     });
@@ -436,12 +435,14 @@ const doOperationsOnSubPartOfDynamicImports = (
  * Will be called inside const ... = lazy(()=>import(...)) type statements
  * @param {Object} parentNode AST node using which imported variable will be decided
  * @param {Object} childNode AST node using which address of the imported file will be retrieved
+ * @param {String} type Stage at which this function was called
  */
 const doDynamicImportsUsingLazyHookOperations = (
   parentNode,
   childNode,
   currentFileMetadata,
-  filesMetadata
+  filesMetadata,
+  type
 ) => {
   try {
     const fileLocation = currentFileMetadata.fileLocation;
@@ -475,11 +476,12 @@ const doDynamicImportsUsingLazyHookOperations = (
           "INDIVIDUAL_IMPORT",
           importedFileAddress
         );
-      // As we will get only the default exported variable using this statement
-      currentFileMetadata.importedVariables[identifier] =
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-          "default"
-        ];
+      if (type === "CHECK_USAGE")
+        // As we will get only the default exported variable using this statement
+        currentFileMetadata.importedVariables[identifier] =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            "default"
+          ];
     }
   } catch (_) {}
 };
@@ -489,7 +491,10 @@ const doDynamicImportsUsingLazyHookOperations = (
  * @param {Object} path AST path inside which node containing the imported variable's name will be present
  * @param {Object} currentFileMetadata Contains imported variables of the current file
  */
-const doIdentifierOperations = (path, currentFileMetadata) => {
+const doIdentifierOperationsOnImportedVariables = (
+  path,
+  currentFileMetadata
+) => {
   const identifierName = path.node.name;
   // If the token parsed represents an imported variable
   if (currentFileMetadata.importedVariables[identifierName]) {
@@ -497,6 +502,19 @@ const doIdentifierOperations = (path, currentFileMetadata) => {
       currentFileMetadata.importedVariables[identifierName].referenceCount++;
     } catch (_) {}
   }
+};
+
+/**
+ * Updates the references of the imported variable's metadata when used (Used for pre-check whether a file is used or not)
+ * @param {Object} path AST path inside which node containing the imported variable's name will be present
+ * @param {Object} currentFileMetadata Contains imported variables of the current file
+ */
+const doIdentifierOperationsOnImportedVariablesMetadata = (
+  path,
+  currentFileMetadata
+) => {
+  const identifierName = path.node.name;
+  // If the token parsed represents an imported variable
   if (currentFileMetadata.importedVariablesMetadata[identifierName]) {
     try {
       currentFileMetadata.importedVariablesMetadata[identifierName]
@@ -504,8 +522,10 @@ const doIdentifierOperations = (path, currentFileMetadata) => {
     } catch (_) {}
   }
 };
+
 module.exports = {
-  doIdentifierOperations,
+  doIdentifierOperationsOnImportedVariables,
+  doIdentifierOperationsOnImportedVariablesMetadata,
   doRequireOrImportStatementOperations,
   doImportDeclartionOperations,
   doExportDeclarationOperations,

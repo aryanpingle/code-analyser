@@ -13,11 +13,11 @@ const {
 } = require("./utility");
 
 /**
- * Will be used to check file to update the imported, exported variables when they are regerred
+ * Will be used to check file to get it's import and export variables, which will be used in the next stage where there usage will be checked
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
  */
-const checkFileUsage = (entyFileLocation, filesMetadata) => {
+const checkFileImportExports = (entyFileLocation, filesMetadata) => {
   if (isFileMappingNotPresent(entyFileLocation, filesMetadata)) {
     filesMetadata.filesMapping[entyFileLocation] =
       getDefaultFileObject(entyFileLocation);
@@ -27,16 +27,17 @@ const checkFileUsage = (entyFileLocation, filesMetadata) => {
     isFileNotVisited(entyFileLocation, filesMetadata) &&
     isFileExtensionValid(entyFileLocation)
   ) {
-    traverseFileForCheckingUsage(entyFileLocation, filesMetadata);
+    traverseFileForCheckingImportsExports(entyFileLocation, filesMetadata);
   }
 };
 
 /**
- * This function will traverse a file to find usage of each imported, and exported variable
+ * This function will traverse a file to get all imports and exports variable
+ * Will also set their corresponding objects (imports will refer exported variables' objects)
  * @param {String} fileLocation Address of the file which has to be traversed
  * @param {Object} filesMetadata Object containing information related to all files
  */
-const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
+const traverseFileForCheckingImportsExports = (fileLocation, filesMetadata) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
@@ -46,7 +47,8 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
       currentFileMetadata,
       filesMetadata,
     };
-    traverseAST(traversalRelatedMetadata, "CHECK_USAGE");
+    traverseAST(traversalRelatedMetadata, "CHECK_IMPORTED_FILES_ADDRESSES");
+    updateFilesMetadata(filesMetadata, currentFileMetadata);
     let requiredImportedFilesMapping = getUsedFilesMapping(currentFileMetadata);
     // Setting ast as null, to save memory, will build it again after traversing all imported files of the current file
     ast = null;
@@ -61,11 +63,17 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
         if (!filesMetadata.filesMapping[file]) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
-        traverseFileForCheckingUsage(file, filesMetadata);
+        traverseFileForCheckingImportsExports(file, filesMetadata);
       } else if (isFileMappingNotPresent(file, filesMetadata)) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }
+
+    ast = buildAST(fileLocation);
+    currentFileMetadata = getDefaultCurrentFileMetadata(fileLocation);
+    traversalRelatedMetadata = { ast, currentFileMetadata, filesMetadata };
+    traverseAST(traversalRelatedMetadata, "CHECK_EXPORTS");
+    updateFilesMetadata(filesMetadata, currentFileMetadata);
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;
@@ -74,4 +82,4 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
   }
 };
 
-module.exports = { checkFileUsage };
+module.exports = { checkFileImportExports };
