@@ -64,6 +64,7 @@ try {
 } catch (_) {
   settings = {
     extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
+    modules: ["src", "node_modules"]
   };
 }
 

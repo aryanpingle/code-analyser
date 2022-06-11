@@ -58,7 +58,6 @@ const doImportDeclartionOperationsAfterSetup = (
     fileLocation,
     givenSourceAddress
   );
-
   try {
     // If some variables are being imported from the import statement
     if (isSpecifiersPresent(importNode)) {
@@ -463,22 +462,18 @@ const doDynamicImportsUsingLazyHookOperations = (
       identifier = parentNode.declarations[0].id.name;
     }
     if (identifier) {
-      if (operationType === "CHECK_USAGE") {
-        // As we will get only the default exported variable using this statement
-        currentFileMetadata.importedVariables[identifier] =
-          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-            "default"
-          ];
-      } else {
-        // CHECK_IMPORTS stage
-        currentFileMetadata.importedVariablesMetadata[identifier] =
-          getNewImportVariableObject(
-            "default",
-            identifier,
-            "INDIVIDUAL_IMPORT",
-            importedFileAddress
-          );
-      }
+      currentFileMetadata.importedVariablesMetadata[identifier] =
+        getNewImportVariableObject(
+          "default",
+          identifier,
+          "INDIVIDUAL_IMPORT",
+          importedFileAddress
+        );
+      // As we will get only the default exported variable using this statement
+      currentFileMetadata.importedVariables[identifier] =
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+          "default"
+        ];
     }
   } catch (_) {}
 };
