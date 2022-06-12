@@ -10,6 +10,7 @@ const {
   analyseCode,
   setAllStaticallyImportedFilesMapping,
   setAllFileExports,
+  buildEntryFilesMappingFromArray,
 } = require("./utility/index");
 const {
   isDeadfileCheckRequired,
@@ -40,7 +41,8 @@ const analyseCodeAndDetectDeadfiles = async (
     excludedFilesRegex,
     spinner
   );
-  setAllFileExports(allEntryFiles, filesMetadata);
+  const entryFilesMapping = buildEntryFilesMappingFromArray(allEntryFiles);
+  setAllFileExports(allEntryFiles, filesMetadata, entryFilesMapping);
   filesMetadata.visitedFilesMapping = {};
   analyseCode(allEntryFiles, filesMetadata, spinner);
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);

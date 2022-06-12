@@ -17,7 +17,11 @@ const {
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
  */
-const checkFileImportExports = (entyFileLocation, filesMetadata) => {
+const checkFileImportExports = (
+  entyFileLocation,
+  filesMetadata,
+  entryFilesMapping
+) => {
   if (isFileMappingNotPresent(entyFileLocation, filesMetadata)) {
     filesMetadata.filesMapping[entyFileLocation] =
       getDefaultFileObject(entyFileLocation);
@@ -27,7 +31,11 @@ const checkFileImportExports = (entyFileLocation, filesMetadata) => {
     isFileNotVisited(entyFileLocation, filesMetadata) &&
     isFileExtensionValid(entyFileLocation)
   ) {
-    traverseFileForCheckingImportsExports(entyFileLocation, filesMetadata);
+    traverseFileForCheckingImportsExports(
+      entyFileLocation,
+      filesMetadata,
+      entryFilesMapping
+    );
   }
 };
 
@@ -36,8 +44,13 @@ const checkFileImportExports = (entyFileLocation, filesMetadata) => {
  * Will also set their corresponding objects (imports will refer exported variables' objects)
  * @param {String} fileLocation Address of the file which has to be traversed
  * @param {Object} filesMetadata Object containing information related to all files
+ * @param {Object} entryFilesMapping To check whether a file is entry file or not
  */
-const traverseFileForCheckingImportsExports = (fileLocation, filesMetadata) => {
+const traverseFileForCheckingImportsExports = (
+  fileLocation,
+  filesMetadata,
+  entryFilesMapping
+) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
@@ -63,15 +76,27 @@ const traverseFileForCheckingImportsExports = (fileLocation, filesMetadata) => {
         if (!filesMetadata.filesMapping[file]) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
-        traverseFileForCheckingImportsExports(file, filesMetadata);
+        traverseFileForCheckingImportsExports(
+          file,
+          filesMetadata,
+          entryFilesMapping
+        );
       } else if (isFileMappingNotPresent(file, filesMetadata)) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }
 
     ast = buildAST(fileLocation);
-    currentFileMetadata = getDefaultCurrentFileMetadata(fileLocation);
-    traversalRelatedMetadata = { ast, currentFileMetadata, filesMetadata };
+    let isEntryFile = entryFilesMapping[fileLocation] ? true : false;
+    currentFileMetadata = getDefaultCurrentFileMetadata(
+      fileLocation,
+      isEntryFile
+    );
+    traversalRelatedMetadata = {
+      ast,
+      currentFileMetadata,
+      filesMetadata,
+    };
     traverseAST(traversalRelatedMetadata, "CHECK_EXPORTS");
     updateFilesMetadata(filesMetadata, currentFileMetadata);
   } catch (err) {

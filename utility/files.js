@@ -43,18 +43,20 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
  * @param {String} fileLocation Address of the file whose metadata has to be returned
  * @returns Object containing current file's default metadata
  */
-const getDefaultCurrentFileMetadata = (fileLocation) => {
+const getDefaultCurrentFileMetadata = (fileLocation, isEntryFile = false) => {
   return {
     importedVariables: {},
     importedVariablesMetadata: {},
     exportedVariables: {
-      default: getNewDefaultObject(fileLocation),
+      default: getNewDefaultObject(fileLocation, "default", isEntryFile),
       importReferenceCount: 0,
       referenceCount: 0,
+      isEntryFileObject: isEntryFile,
     },
     importedFilesMapping: {},
     staticImportFilesMapping: {},
     fileLocation,
+    isEntryFile: isEntryFile,
   };
 };
 /**

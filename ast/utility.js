@@ -56,7 +56,7 @@ const astOtherSettings = {
  * @param {Object} filesMetadata Contains inforamtion related to all files
  */
 const setImportedVariableInCurrentFileMetadata = (
-  { specifier, importedFileAddress, traverseType },
+  { specifier, importedFileAddress, traverseType, addReferences },
   currentFileMetadata,
   filesMetadata
 ) => {
@@ -92,12 +92,13 @@ const setImportedVariableInCurrentFileMetadata = (
           filesMetadata.filesMapping[importedFileAddress].exportedVariables;
         // If export of that variable present at current instance
         if (currentFileMetadata.importedVariables[localEntityName]) {
+          const valueToAdd = addReferences === true ? 1 : -1;
           currentFileMetadata.importedVariables[
             localEntityName
-          ].referenceCount += 1;
+          ].referenceCount += valueToAdd;
           currentFileMetadata.importedVariables[
             localEntityName
-          ].importReferenceCount += 1;
+          ].importReferenceCount += valueToAdd;
         }
       }
       // If import ... from ... or import {...} from ... type statements
@@ -107,12 +108,13 @@ const setImportedVariableInCurrentFileMetadata = (
             importedEntityName
           ];
         if (currentFileMetadata.importedVariables[localEntityName]) {
+          const valueToAdd = addReferences === true ? 1 : -1;
           currentFileMetadata.importedVariables[
             localEntityName
-          ].referenceCount += 1;
+          ].referenceCount += valueToAdd;
           currentFileMetadata.importedVariables[
             localEntityName
-          ].importReferenceCount += 1;
+          ].importReferenceCount += valueToAdd;
         }
       }
     } catch (_) {}
@@ -173,23 +175,26 @@ const getNewImportVariableObject = (
  * Will be used inside require or dynamic import type statements
  * @param {Object} node AST node from which values will be retrieved
  * @param {String} importedFileAddress Absolute address of the imported file
+ * @param {Boolean} addReferences To decide whether the references have to be added or subtracted
  */
 const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
   (
     node,
+    addReferences,
     currentFileMetadata,
     importedFileAddress,
     filesMetadata,
     type = "UPDATE_REFERENCE_COUNT"
   ) => {
+    const valueToMultiplyWith = addReferences ? 1 : -1;
     if (!node) {
       // no imported values used (eg. css, html imports)
       const exportedVariable =
         filesMetadata.filesMapping[importedFileAddress].exportedVariables[
           "default"
         ];
-      exportedVariable.importReferenceCount += 1;
-      exportedVariable.referenceCount += 2;
+      exportedVariable.importReferenceCount += 1 * valueToMultiplyWith;
+      exportedVariable.referenceCount += 2 * valueToMultiplyWith;
       // Importing all exports of a file. Eg. const X = require(...);
     } else if (node.type === "Identifier") {
       try {
@@ -198,11 +203,11 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
           filesMetadata.filesMapping[importedFileAddress].exportedVariables;
         currentFileMetadata.importedVariables[
           localEntityName
-        ].importReferenceCount += 1;
+        ].importReferenceCount += 1 * valueToMultiplyWith;
         if (type === "UPDATE_REFERENCE_COUNT")
           currentFileMetadata.importedVariables[
             localEntityName
-          ].referenceCount += 1;
+          ].referenceCount += 1 * valueToMultiplyWith;
       } catch (_) {}
     }
     // Selective imports, Eg. const {...} = require(...)
@@ -227,11 +232,11 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
           // Update both references as it is an import type reference
           currentFileMetadata.importedVariables[
             localEntityName
-          ].importReferenceCount += importReferenceCount;
+          ].importReferenceCount += importReferenceCount * valueToMultiplyWith;
           if (type === "UPDATE_REFERENCE_COUNT")
             currentFileMetadata.importedVariables[
               localEntityName
-            ].referenceCount += importReferenceCount;
+            ].referenceCount += importReferenceCount * valueToMultiplyWith;
         } catch (_) {}
       });
     }
@@ -531,12 +536,18 @@ const setExportedVariablesFromArray = (
             filesMetadata.filesMapping[
               importedVariable.importedFrom
             ].exportedVariables;
+          currentFileMetadata.exportedVariables[
+            Object.values(variable)[0]
+          ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
         } else {
           // Individual import scenario
           currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
             filesMetadata.filesMapping[
               importedVariable.importedFrom
             ].exportedVariables[importedVariable.name];
+          currentFileMetadata.exportedVariables[
+            Object.values(variable)[0]
+          ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
         }
       } else {
         // If it isn't an imported variable
@@ -545,6 +556,9 @@ const setExportedVariablesFromArray = (
             currentFileMetadata.fileLocation,
             Object.values(variable)[0]
           );
+        currentFileMetadata.exportedVariables[
+          Object.values(variable)[0]
+        ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
       }
     } catch (_) {}
   });
@@ -556,12 +570,17 @@ const setExportedVariablesFromArray = (
  * @param {String} name Local name of the object
  * @returns Object containing information which will used to check whether it has been used or not
  */
-const getNewDefaultObject = (fileLocation, name = "default") => {
+const getNewDefaultObject = (
+  fileLocation,
+  name = "default",
+  isEntryFileObject = false
+) => {
   return {
     localName: name,
     firstReferencedAt: fileLocation,
     referenceCount: 0,
     importReferenceCount: 0,
+    isEntryFileObject,
   };
 };
 

@@ -47,12 +47,14 @@ const doImportDeclartionOperations = (importNode, currentFileMetadata) => {
  * @param {Object} currentFileMetadata Contains information related to the current file
  * @param {Object} filesMetadata Contains information related to all files
  * @param {String} traverseType Information in which stage this function is being called
+ * @param {Boolean} addReferences Used to decide whether the references have to be added or subtract
  */
 const doImportDeclartionOperationsAfterSetup = (
   importNode,
   currentFileMetadata,
   filesMetadata,
-  traverseType
+  traverseType,
+  addReferences
 ) => {
   const fileLocation = currentFileMetadata.fileLocation;
   const givenSourceAddress = importNode.source.value;
@@ -68,6 +70,7 @@ const doImportDeclartionOperationsAfterSetup = (
           specifier,
           traverseType,
           importedFileAddress,
+          addReferences,
         };
         setImportedVariableInCurrentFileMetadata(
           specifierMetadata,
@@ -77,9 +80,10 @@ const doImportDeclartionOperationsAfterSetup = (
       });
     } else {
       // import "..." type statements
+      const valueToAdd = addReferences ? 1 : -1;
       filesMetadata.filesMapping[importedFileAddress].exportedVariables[
         "default"
-      ].referenceCount += 1;
+      ].referenceCount += valueToAdd;
     }
   } catch (_) {}
 };
@@ -161,22 +165,33 @@ const doExportSpecifiersOperations = (
           ) {
             currentFileMetadata.exportedVariables[exportName] =
               filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+            currentFileMetadata.exportedVariables[
+              exportName
+            ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
           } else if (specifierType === "INDIVIDUAL_IMPORT") {
             currentFileMetadata.exportedVariables[exportName] =
               filesMetadata.filesMapping[importedFileAddress].exportedVariables[
                 importName
               ];
+            currentFileMetadata.exportedVariables[
+              exportName
+            ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
           }
         } catch (_) {}
       });
     } else {
       // "export * from ..." type statements
       for (const variable in filesMetadata.filesMapping[importedFileAddress]
-        .exportedVariables)
+        .exportedVariables) {
         currentFileMetadata.exportedVariables[variable] =
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
             variable
           ];
+        try {
+          currentFileMetadata.exportedVariables[variable].isEntryFileObject ||=
+            currentFileMetadata.isEntryFile;
+        } catch (_) {}
+      }
     }
   } else {
     const exportedVariablesArray = getValuesFromStatement(
@@ -193,8 +208,13 @@ const doExportSpecifiersOperations = (
 /**
  * Helps to update individual exports inside an exported variable which contains multiple children exports (eg. factory code)
  * @param {Object} node AST node to parse
+ * @param {Boolean} addReferences To decide whether references have to be added or subtracted
  */
-const doAccessingPropertiesOfObjectOperations = (node, currentFileMetadata) => {
+const doAccessingPropertiesOfObjectOperations = (
+  node,
+  currentFileMetadata,
+  addReferences
+) => {
   const allPropertiesArray = getAllPropertiesFromNode(node);
   if (allPropertiesArray.length === 0) return;
 
@@ -209,6 +229,11 @@ const doAccessingPropertiesOfObjectOperations = (node, currentFileMetadata) => {
       currentFileMetadata.importedVariables[
         headPropertyWhichIsPresentInsideCurrentFile
       ];
+    const valueToAdd = addReferences ? 1 : -1;
+    currentFileMetadata.importedVariablesMetadata[
+      headPropertyWhichIsPresentInsideCurrentFile
+    ].referenceCount += valueToAdd;
+
     let currentIndex = 1,
       arrayLength = allPropertiesArray.length;
 
@@ -217,13 +242,13 @@ const doAccessingPropertiesOfObjectOperations = (node, currentFileMetadata) => {
       exportedVariableToUpdate[allPropertiesArray[currentIndex]]
     ) {
       // Traverse from this variable to another export variable which will be present as an object inside this exported variable
-      exportedVariableToUpdate.referenceCount++;
+      exportedVariableToUpdate.referenceCount += valueToAdd;
       // Update the exported variable to it's child property object
       exportedVariableToUpdate =
         exportedVariableToUpdate[allPropertiesArray[currentIndex]];
       currentIndex++;
     }
-    exportedVariableToUpdate.referenceCount++;
+    exportedVariableToUpdate.referenceCount += valueToAdd;
   }
 };
 
@@ -231,6 +256,7 @@ const doAccessingPropertiesOfObjectOperations = (node, currentFileMetadata) => {
  * Set dynamic imports and require statements support, update reference counts depending upon the provided format
  * @param {Object} nodeToGetAddress AST node which will be used to parse file's address
  * @param {Object} nodeToGetValues AST node which will be used to parse file's imported variables
+ * @param {Boolean} addReferences To decide whether the references have to be added or removed
  * @param {String} operationType Stage where this function is called, either CHECK_USAGE or CHECK_IMPORTS or CHECK_STATIC_IMPORTS_ADDRESSES
  */
 const doRequireOrImportStatementOperations = (
@@ -238,6 +264,7 @@ const doRequireOrImportStatementOperations = (
   nodeToGetValues,
   currentFileMetadata,
   filesMetadata,
+  addReferences,
   operationType = "CHECK_USAGE"
 ) => {
   const { type: importType, address: givenSourceAddress } =
@@ -262,6 +289,7 @@ const doRequireOrImportStatementOperations = (
     if (operationType === "CHECK_USAGE")
       updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements(
         nodeToGetValues,
+        addReferences,
         currentFileMetadata,
         importedFileAddress,
         filesMetadata
@@ -296,8 +324,13 @@ const doModuleExportStatementOperations = (
  * Will set imported variables during the CHECK_IMPORTS stage
  * @param {Object} path AST path inside which node corresponding to this statement is present
  * @param {Object} currentFileMetadata Will be used to update the imported variables of the current file
+ * @param {Boolean} addReferences To decide whether the references have to be added or subtracted
  */
-const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
+const doDynamicImportWithPromiseOperations = (
+  path,
+  currentFileMetadata,
+  addReferences
+) => {
   const fileLocation = currentFileMetadata.fileLocation;
   const callExpressionNode = path.node;
   const node = callExpressionNode.callee;
@@ -309,6 +342,7 @@ const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
     importType
   );
   currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
+  const valueToMultiplyWith = addReferences ? 1 : -1;
   // No need to check for variables if we are checking for intra-module dependencies
   try {
     if (isImportStatementArgumentsPresent(callExpressionNode)) {
@@ -321,13 +355,14 @@ const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
             let exportType = "INDIVIDUAL_IMPORT";
             const importReferenceCount =
               localEntityName === importedEntityName ? 2 : 1;
+              
             currentFileMetadata.importedVariablesMetadata[localEntityName] =
               getNewImportVariableObject(
                 importedEntityName,
                 localEntityName,
                 exportType,
                 importedFileAddress,
-                -importReferenceCount
+                -importReferenceCount * valueToMultiplyWith
               );
           });
         } else if (specifier.type === "Identifier") {
@@ -340,7 +375,7 @@ const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
               localEntityName,
               exportType,
               importedFileAddress,
-              -1
+              -1 * valueToMultiplyWith
             );
         }
       });
@@ -352,11 +387,13 @@ const doDynamicImportWithPromiseOperations = (path, currentFileMetadata) => {
  * Called by import(...).then(...) type statements at CHECK_USAGE stage
  * Will update reference and import reference counts of imported variables
  * @param {Object} path AST path which contains the node corresponding to this statement
+ * @param {Boolean} addReferences To decide whether the references have to be added or subtracted
  */
 const doDynamicImportWithPromiseOperationsAfterSetup = (
   path,
   currentFileMetadata,
-  filesMetadata
+  filesMetadata,
+  addReferences
 ) => {
   const fileLocation = currentFileMetadata.fileLocation;
   const callExpressionNode = path.node;
@@ -374,6 +411,7 @@ const doDynamicImportWithPromiseOperationsAfterSetup = (
       try {
         updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements(
           specifier,
+          addReferences,
           currentFileMetadata,
           importedFileAddress,
           filesMetadata,
@@ -490,16 +528,20 @@ const doDynamicImportsUsingLazyHookOperations = (
  * Updates the references of the imported variable when used
  * @param {Object} path AST path inside which node containing the imported variable's name will be present
  * @param {Object} currentFileMetadata Contains imported variables of the current file
+ * @param {Boolean} addReferences To decide whether the values have to be added or subtracted
  */
 const doIdentifierOperationsOnImportedVariables = (
   path,
-  currentFileMetadata
+  currentFileMetadata,
+  addReferences
 ) => {
   const identifierName = path.node.name;
   // If the token parsed represents an imported variable
   if (currentFileMetadata.importedVariables[identifierName]) {
     try {
-      currentFileMetadata.importedVariables[identifierName].referenceCount++;
+      const valueToAdd = addReferences ? 1 : -1;
+      currentFileMetadata.importedVariables[identifierName].referenceCount +=
+        valueToAdd;
     } catch (_) {}
   }
 };
@@ -508,17 +550,21 @@ const doIdentifierOperationsOnImportedVariables = (
  * Updates the references of the imported variable's metadata when used (Used for pre-check whether a file is used or not)
  * @param {Object} path AST path inside which node containing the imported variable's name will be present
  * @param {Object} currentFileMetadata Contains imported variables of the current file
+ * @param {Boolean} addReferences To decide whether the values have to be added/ subtracted
  */
 const doIdentifierOperationsOnImportedVariablesMetadata = (
   path,
-  currentFileMetadata
+  currentFileMetadata,
+  addReferences
 ) => {
   const identifierName = path.node.name;
   // If the token parsed represents an imported variable
   if (currentFileMetadata.importedVariablesMetadata[identifierName]) {
     try {
-      currentFileMetadata.importedVariablesMetadata[identifierName]
-        .referenceCount++;
+      const valueToAdd = addReferences ? 1 : -1;
+      currentFileMetadata.importedVariablesMetadata[
+        identifierName
+      ].referenceCount += valueToAdd;
     } catch (_) {}
   }
 };

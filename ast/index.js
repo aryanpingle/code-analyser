@@ -52,7 +52,10 @@ const buildAST = (fileLocation) => {
  * @param {Object} traversalRelatedMetadata Metadata which contains information related to traversal like AST to traverse, current and all files' metadata
  * @param {String} type Traversal type (traverse according to requirement i.e. identifying deadfile/ intra-module dependencies)
  */
-const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
+const traverseAST = (
+  { ast, currentFileMetadata, filesMetadata, addReferences = true },
+  type
+) => {
   /* Takes two parameters ast and an object which contains types of nodes to visit as the key
      Will visit the entire AST but will report only for visited nodes provided inside the argument */
   traverse(ast, {
@@ -64,7 +67,8 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
           path.node,
           currentFileMetadata,
           filesMetadata,
-          type
+          type,
+          addReferences
         );
       }
       path.skip();
@@ -109,14 +113,22 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
     MemberExpression(path) {
       if (type === "CHECK_USAGE" && isAccessingPropertyOfObject(path.node)) {
         // Checks for x.y or x["y"] type statements where parent's property is being accessed
-        doAccessingPropertiesOfObjectOperations(path.node, currentFileMetadata);
+        doAccessingPropertiesOfObjectOperations(
+          path.node,
+          currentFileMetadata,
+          addReferences
+        );
         path.skip();
       }
     },
     TSQualifiedName(path) {
       if (type === "CHECK_USAGE" && isAccessingPropertyOfObject(path.node)) {
         // Checks for x.y or x["y"] type statements where parent's property is being accessed
-        doAccessingPropertiesOfObjectOperations(path.node, currentFileMetadata);
+        doAccessingPropertiesOfObjectOperations(
+          path.node,
+          currentFileMetadata,
+          addReferences
+        );
         path.skip();
       }
     },
@@ -131,6 +143,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
           path.node.id,
           currentFileMetadata,
           filesMetadata,
+          addReferences,
           type
         );
         path.skip();
@@ -153,6 +166,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
             path.node.left,
             currentFileMetadata,
             filesMetadata,
+            addReferences,
             type
           );
           path.skip();
@@ -167,12 +181,17 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
         isDynamicImportWithPromise(memberNode) &&
         type !== "CHECK_STATIC_IMPORTS_ADDRESSES"
       ) {
-        doDynamicImportWithPromiseOperations(path, currentFileMetadata);
+        doDynamicImportWithPromiseOperations(
+          path,
+          currentFileMetadata,
+          addReferences
+        );
         if (type === "CHECK_USAGE")
           doDynamicImportWithPromiseOperationsAfterSetup(
             path,
             currentFileMetadata,
             filesMetadata,
+            addReferences
           );
       }
       // Checks for "import(...)" type statements
@@ -208,6 +227,7 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
           null,
           currentFileMetadata,
           filesMetadata,
+          addReferences,
           type
         );
         path.skip();
@@ -217,10 +237,15 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       if (type !== "CHECK_STATIC_IMPORTS_ADDRESSES") {
         // Checks for variables names present in the code and if it is not used in export reference then will do the operation
         if (isNotExportTypeReference(path) && type === "CHECK_USAGE")
-          doIdentifierOperationsOnImportedVariables(path, currentFileMetadata);
+          doIdentifierOperationsOnImportedVariables(
+            path,
+            currentFileMetadata,
+            addReferences
+          );
         doIdentifierOperationsOnImportedVariablesMetadata(
           path,
-          currentFileMetadata
+          currentFileMetadata,
+          addReferences
         );
       }
     },
@@ -228,10 +253,15 @@ const traverseAST = ({ ast, currentFileMetadata, filesMetadata }, type) => {
       if (type !== "CHECK_STATIC_IMPORTS_ADDRESSES") {
         // Checks for variables names present in the code and if it is not used in export reference then will do the operation
         if (isNotExportTypeReference(path) && type === "CHECK_USAGE")
-          doIdentifierOperationsOnImportedVariables(path, currentFileMetadata);
+          doIdentifierOperationsOnImportedVariables(
+            path,
+            currentFileMetadata,
+            addReferences
+          );
         doIdentifierOperationsOnImportedVariablesMetadata(
           path,
-          currentFileMetadata
+          currentFileMetadata,
+          addReferences
         );
       }
     },

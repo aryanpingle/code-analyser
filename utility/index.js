@@ -1,4 +1,7 @@
-const { checkFileUsage } = require("../checker/file-usage-checker");
+const {
+  checkFileUsage,
+  checkDeadFileImportsUsage,
+} = require("../checker/file-usage-checker");
 const {
   checkFileImportExports,
 } = require("../checker/file-imports-exports-checker");
@@ -26,10 +29,11 @@ const setAllStaticallyImportedFilesMapping = (allEntryFiles, filesMetadata) => {
  * Sets each file's exported variable which will used later on during the CHECK_USAGE stage
  * @param {Array} allEntryFiles
  * @param {Object} filesMetadata
+ * @param {Object} entryFilesMapping
  */
-const setAllFileExports = (allEntryFiles, filesMetadata) => {
+const setAllFileExports = (allEntryFiles, filesMetadata, entryFilesMapping) => {
   allEntryFiles.forEach((entryFile) =>
-    checkFileImportExports(entryFile, filesMetadata)
+    checkFileImportExports(entryFile, filesMetadata, entryFilesMapping)
   );
 };
 /**
@@ -62,15 +66,7 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
     "id4",
     "Identifying all deadfiles inside the directories to check..."
   );
-  const filesMapping = filesMetadata.filesMapping;
-  const allDeadFiles = allFilesToCheck.filter((file) => {
-    return (
-      // Either file was never imported/ referred or if imported but never used
-      !filesMapping[file] ||
-      (filesMapping[file].isEntryFile === false &&
-        !isFileReferred(filesMapping, file))
-    );
-  });
+  const allDeadFiles = getAllDeadFiles(filesMetadata, allFilesToCheck);
   // If no errors were found while parsing these files
   if (filesMetadata.unparsableVistedFiles === 0)
     updateSpinnerInstance(spinner, "id4", {
@@ -139,6 +135,47 @@ const getIntraModuleDependencies = (
 };
 
 /**
+ * Will be used to retrieve all dead files present
+ * Will recursively check whether a dead file's imported files are dead files too or not
+ * @param {Object} filesMetadata Contains information related to all files
+ * @param {Array} allFilesToCheck Array consisting of all files we have to check to detect dead files
+ * @returns Array of dead files
+ */
+const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
+  const filesMapping = filesMetadata.filesMapping;
+  const deadFilesArray = allFilesToCheck.filter((file) => {
+    return (
+      // Either file was never imported/ referred or if imported but never used
+      !filesMapping[file] ||
+      (filesMapping[file].isEntryFile === false &&
+        !isFileReferred(filesMapping, file))
+    );
+  });
+  const deadFileVisitedMapping = {};
+
+  for (const file of deadFilesArray) {
+    deadFileVisitedMapping[file] = true;
+    if (filesMapping[file]) {
+      // Will be used to check whether imports of a dead file where referred inside this file only, if so then they will also become dead file now
+      checkDeadFileImportsUsage(file, filesMetadata);
+      for (const importedFile in filesMapping[file].importedFilesMapping) {
+        if (
+          // Either we haven't check that file
+          !deadFileVisitedMapping[importedFile] &&
+          // Else it is a dead file
+          (!filesMapping[importedFile] ||
+            (filesMapping[importedFile].isEntryFile === false &&
+              !isFileReferred(filesMapping, importedFile)))
+        ) {
+          deadFileVisitedMapping[importedFile] = true;
+          deadFilesArray.push(importedFile);
+        }
+      }
+    }
+  }
+  return deadFilesArray;
+};
+/**
  * Checks if a file is not a dead file and was actually used by some other file
  * @param {Object} filesMapping Contains information related to all files
  * @param {String} fileLocation Address of the file which has to be check
@@ -152,16 +189,19 @@ const isFileReferred = (filesMapping, fileLocation) => {
     // If the entire object of the file was referred
     if (
       allExportedVariables.referenceCount >
-      allExportedVariables.importReferenceCount
+        allExportedVariables.importReferenceCount ||
+      allExportedVariables.isEntryFileObject
     ) {
       isReferred = true;
     }
   } catch (_) {}
+  if (isReferred) return true;
   for (const variable in allExportedVariables) {
     try {
       if (
         allExportedVariables[variable].referenceCount >
-        allExportedVariables[variable].importReferenceCount
+          allExportedVariables[variable].importReferenceCount ||
+        allExportedVariables[variable].isEntryFileObject
       ) {
         isReferred = true;
         break;
@@ -210,6 +250,11 @@ const getAllRequiredFiles = async (
   return { allEntryFiles, allFilesToCheck };
 };
 
+const buildEntryFilesMappingFromArray = (entryFilesArray) => {
+  const entryFilesMapping = {};
+  entryFilesArray.forEach((file) => (entryFilesMapping[file] = true));
+  return entryFilesMapping;
+};
 module.exports = {
   setAllStaticallyImportedFilesMapping,
   setAllFileExports,
@@ -217,4 +262,5 @@ module.exports = {
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
+  buildEntryFilesMappingFromArray,
 };

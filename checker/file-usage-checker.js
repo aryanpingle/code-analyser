@@ -1,6 +1,5 @@
 const { traverseAST, buildAST } = require("../ast/index");
 const {
-  updateFilesMetadata,
   getDefaultFileObject,
   getDefaultCurrentFileMetadata,
 } = require("../utility/files");
@@ -28,6 +27,33 @@ const checkFileUsage = (entyFileLocation, filesMetadata) => {
     isFileExtensionValid(entyFileLocation)
   ) {
     traverseFileForCheckingUsage(entyFileLocation, filesMetadata);
+  }
+};
+
+/**
+ * Will be used to remove imported file's references made for this file
+ * @param {String} deadFileLocation String denoting the absolute address of a dead file
+ * @param {Object} filesMetadata Contains information related to all files
+ */
+const checkDeadFileImportsUsage = (deadFileLocation, filesMetadata) => {
+  if (
+    isFileExtensionValid(deadFileLocation) &&
+    isFileNotExcluded(deadFileLocation, filesMetadata.excludedFilesRegex)
+  ) {
+    try {
+      let ast = buildAST(deadFileLocation);
+      let currentFileMetadata = getDefaultCurrentFileMetadata(deadFileLocation);
+      let traversalRelatedMetadata = {
+        ast,
+        currentFileMetadata,
+        filesMetadata,
+        addReferences: false,
+      };
+      traverseAST(traversalRelatedMetadata, "CHECK_USAGE");
+    } catch (_) {
+      console.error("Unable to parse file:", deadFileLocation);
+      console.error(err);
+    }
   }
 };
 
@@ -68,10 +94,9 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
     }
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
-    filesMetadata.unparsableVistedFiles++;
     console.error("Unable to parse file:", fileLocation);
     console.error(err);
   }
 };
 
-module.exports = { checkFileUsage };
+module.exports = { checkFileUsage, checkDeadFileImportsUsage };
