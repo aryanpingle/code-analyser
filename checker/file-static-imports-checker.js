@@ -62,7 +62,10 @@ const traverseFileForStaticImports = (fileLocation, filesMetadata) => {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
         traverseFileForStaticImports(file, filesMetadata);
-      } else if (isFileMappingNotPresent(file, filesMetadata)) {
+      } else if (
+        isFileMappingNotPresent(file, filesMetadata) &&
+        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+      ) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }

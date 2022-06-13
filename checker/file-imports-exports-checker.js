@@ -81,7 +81,10 @@ const traverseFileForCheckingImportsExports = (
           filesMetadata,
           entryFilesMapping
         );
-      } else if (isFileMappingNotPresent(file, filesMetadata)) {
+      } else if (
+        isFileMappingNotPresent(file, filesMetadata) &&
+        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+      ) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }

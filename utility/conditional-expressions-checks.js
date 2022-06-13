@@ -1,3 +1,5 @@
+const { isFilePath } = require("./resolver");
+
 const isDeadfileCheckRequired = (programConfiguration) =>
   programConfiguration &&
   programConfiguration.deadFiles &&
@@ -12,6 +14,7 @@ const isInstanceofRegexExpression = (givenString) =>
   givenString instanceof RegExp;
 
 const isFileNotExcluded = (excludedFilesRegex, directoyAbsoluteAddress) =>
+  isFilePath(directoyAbsoluteAddress) &&
   !excludedFilesRegex.test(directoyAbsoluteAddress);
 
 module.exports = {

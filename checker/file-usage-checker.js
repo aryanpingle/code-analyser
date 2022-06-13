@@ -88,7 +88,10 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
         traverseFileForCheckingUsage(file, filesMetadata);
-      } else if (isFileMappingNotPresent(file, filesMetadata)) {
+      } else if (
+        isFileMappingNotPresent(file, filesMetadata) &&
+        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+      ) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }

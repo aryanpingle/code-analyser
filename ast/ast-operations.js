@@ -21,6 +21,7 @@ const {
   isModuleExportStatement,
   isRequireStatement,
   isExportFromTypeStatement,
+  isNotExportTypeReference,
 } = require("./conditional-expressions-checks");
 
 /**
@@ -146,7 +147,7 @@ const doExportSpecifiersOperations = (
     if (nodeToGetValues.specifiers) {
       nodeToGetValues.specifiers.forEach((specifier) => {
         try {
-          let specifierType = "ALL_EXPORTS_EXPORTED";
+          let specifierType = "INDIVIDUAL_IMPORT";
           let exportName = specifier.exported.name;
           let importName = exportName;
           // "export {...} from ..." type statements
@@ -159,24 +160,18 @@ const doExportSpecifiersOperations = (
             specifierType = "ALL_EXPORTS_AS_OBJECT";
           }
 
-          if (
-            specifierType === "ALL_EXPORTS_EXPORTED" ||
-            specifierType === "ALL_EXPORTS_AS_OBJECT"
-          ) {
+          if (specifierType === "ALL_EXPORTS_AS_OBJECT") {
             currentFileMetadata.exportedVariables[exportName] =
               filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-            currentFileMetadata.exportedVariables[
-              exportName
-            ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
-          } else if (specifierType === "INDIVIDUAL_IMPORT") {
+          } else {
             currentFileMetadata.exportedVariables[exportName] =
               filesMetadata.filesMapping[importedFileAddress].exportedVariables[
                 importName
               ];
-            currentFileMetadata.exportedVariables[
-              exportName
-            ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
           }
+          currentFileMetadata.exportedVariables[
+            exportName
+          ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
         } catch (_) {}
       });
     } else {
@@ -232,7 +227,7 @@ const doAccessingPropertiesOfObjectOperations = (
     const valueToAdd = addReferences ? 1 : -1;
     currentFileMetadata.importedVariablesMetadata[
       headPropertyWhichIsPresentInsideCurrentFile
-    ].referenceCount += valueToAdd;
+    ].referenceCountObject.referenceCount += valueToAdd;
 
     let currentIndex = 1,
       arrayLength = allPropertiesArray.length;
@@ -296,6 +291,7 @@ const doRequireOrImportStatementOperations = (
       );
   }
 };
+
 /**
  * Will check if it is a "module.exports = {...}" type statements, and if so will parse and set the file's exported variables
  * @param {Object} nodeToGetValues AST node from which exported variables will be retrieved
@@ -319,6 +315,7 @@ const doModuleExportStatementOperations = (
     );
   }
 };
+
 /**
  * Will be called by import(...).then(...) type statements
  * Will set imported variables during the CHECK_IMPORTS stage
@@ -355,7 +352,7 @@ const doDynamicImportWithPromiseOperations = (
             let exportType = "INDIVIDUAL_IMPORT";
             const importReferenceCount =
               localEntityName === importedEntityName ? 2 : 1;
-              
+
             currentFileMetadata.importedVariablesMetadata[localEntityName] =
               getNewImportVariableObject(
                 importedEntityName,
@@ -564,7 +561,10 @@ const doIdentifierOperationsOnImportedVariablesMetadata = (
       const valueToAdd = addReferences ? 1 : -1;
       currentFileMetadata.importedVariablesMetadata[
         identifierName
-      ].referenceCount += valueToAdd;
+      ].referenceCountObject.referenceCount += valueToAdd;
+      if (!isNotExportTypeReference(path))
+        currentFileMetadata.importedVariablesMetadata[identifierName]
+          .referenceCountObject.exportReferenceCount++;
     } catch (_) {}
   }
 };

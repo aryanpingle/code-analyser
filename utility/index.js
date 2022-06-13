@@ -152,7 +152,7 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
     );
   });
   const deadFileVisitedMapping = {};
-
+  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
   for (const file of deadFilesArray) {
     deadFileVisitedMapping[file] = true;
     if (filesMapping[file]) {
@@ -160,9 +160,11 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
       checkDeadFileImportsUsage(file, filesMetadata);
       for (const importedFile in filesMapping[file].importedFilesMapping) {
         if (
-          // Either we haven't check that file
+          // First we haven't checked that file
           !deadFileVisitedMapping[importedFile] &&
-          // Else it is a dead file
+          // File isn't excluded
+          isFileNotExcluded(excludedFilesRegex, importedFile) &&
+          // And it is a dead file too
           (!filesMapping[importedFile] ||
             (filesMapping[importedFile].isEntryFile === false &&
               !isFileReferred(filesMapping, importedFile)))
@@ -188,8 +190,7 @@ const isFileReferred = (filesMapping, fileLocation) => {
   try {
     // If the entire object of the file was referred
     if (
-      allExportedVariables.referenceCount >
-        allExportedVariables.importReferenceCount ||
+      allExportedVariables.referenceCount > 0 ||
       allExportedVariables.isEntryFileObject
     ) {
       isReferred = true;
@@ -198,9 +199,23 @@ const isFileReferred = (filesMapping, fileLocation) => {
   if (isReferred) return true;
   for (const variable in allExportedVariables) {
     try {
+      let referenceInsideThisFile = 0;
+      if (
+        allExportedVariables[variable].individualFileReferencesMapping[
+          fileLocation
+        ]
+      ) {
+        const exportedVariablesReferencesInsideThisFile =
+          allExportedVariables[variable].individualFileReferencesMapping[
+            fileLocation
+          ];
+        referenceInsideThisFile =
+          exportedVariablesReferencesInsideThisFile.referenceCount -
+          exportedVariablesReferencesInsideThisFile.exportReferenceCount;
+      }
       if (
         allExportedVariables[variable].referenceCount >
-          allExportedVariables[variable].importReferenceCount ||
+          referenceInsideThisFile ||
         allExportedVariables[variable].isEntryFileObject
       ) {
         isReferred = true;

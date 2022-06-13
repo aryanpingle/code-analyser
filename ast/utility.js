@@ -90,16 +90,6 @@ const setImportedVariableInCurrentFileMetadata = (
       if (type === "ALL_EXPORTS_IMPORTED") {
         currentFileMetadata.importedVariables[localEntityName] =
           filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-        // If export of that variable present at current instance
-        if (currentFileMetadata.importedVariables[localEntityName]) {
-          const valueToAdd = addReferences === true ? 1 : -1;
-          currentFileMetadata.importedVariables[
-            localEntityName
-          ].referenceCount += valueToAdd;
-          currentFileMetadata.importedVariables[
-            localEntityName
-          ].importReferenceCount += valueToAdd;
-        }
       }
       // If import ... from ... or import {...} from ... type statements
       else if (type === "INDIVIDUAL_IMPORT") {
@@ -107,15 +97,6 @@ const setImportedVariableInCurrentFileMetadata = (
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
             importedEntityName
           ];
-        if (currentFileMetadata.importedVariables[localEntityName]) {
-          const valueToAdd = addReferences === true ? 1 : -1;
-          currentFileMetadata.importedVariables[
-            localEntityName
-          ].referenceCount += valueToAdd;
-          currentFileMetadata.importedVariables[
-            localEntityName
-          ].importReferenceCount += valueToAdd;
-        }
       }
     } catch (_) {}
   }
@@ -166,7 +147,10 @@ const getNewImportVariableObject = (
     localName,
     type,
     importedFrom: importedFileAddress,
-    referenceCount: count,
+    referenceCountObject: {
+      referenceCount: count,
+      exportReferenceCount: 0,
+    },
   };
 };
 
@@ -193,21 +177,17 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
         filesMetadata.filesMapping[importedFileAddress].exportedVariables[
           "default"
         ];
-      exportedVariable.importReferenceCount += 1 * valueToMultiplyWith;
-      exportedVariable.referenceCount += 2 * valueToMultiplyWith;
+      exportedVariable.referenceCount += 1 * valueToMultiplyWith;
       // Importing all exports of a file. Eg. const X = require(...);
     } else if (node.type === "Identifier") {
       try {
         const localEntityName = node.name;
         currentFileMetadata.importedVariables[localEntityName] =
           filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-        currentFileMetadata.importedVariables[
-          localEntityName
-        ].importReferenceCount += 1 * valueToMultiplyWith;
-        if (type === "UPDATE_REFERENCE_COUNT")
+        if (type === "DONT_UPDATE_REFERENCE_COUNT")
           currentFileMetadata.importedVariables[
             localEntityName
-          ].referenceCount += 1 * valueToMultiplyWith;
+          ].referenceCount -= 1 * valueToMultiplyWith;
       } catch (_) {}
     }
     // Selective imports, Eg. const {...} = require(...)
@@ -229,14 +209,11 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
             filesMetadata.filesMapping[importedFileAddress].exportedVariables[
               importedEntityName
             ];
-          // Update both references as it is an import type reference
-          currentFileMetadata.importedVariables[
-            localEntityName
-          ].importReferenceCount += importReferenceCount * valueToMultiplyWith;
-          if (type === "UPDATE_REFERENCE_COUNT")
+          // Update references as it is an import type reference
+          if (type === "DONT_UPDATE_REFERENCE_COUNT")
             currentFileMetadata.importedVariables[
               localEntityName
-            ].referenceCount += importReferenceCount * valueToMultiplyWith;
+            ].referenceCount -= importReferenceCount * valueToMultiplyWith;
         } catch (_) {}
       });
     }
@@ -485,7 +462,11 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
       // export const x = () => {} type statements
       const keyValuesPairArray = [];
       nodeToGetValues.declaration.declarations.forEach((declaration) => {
-        keyValuesPairArray.push({ [declaration.id.name]: declaration.id.name });
+        if (declaration.id.name) {
+          keyValuesPairArray.push({
+            [declaration.id.name]: declaration.id.name,
+          });
+        }
       });
       return keyValuesPairArray;
     } else if (nodeToGetValues.declaration.id) {
@@ -502,6 +483,19 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
             nodeToGetValues.declaration.id.name,
         });
       return keyValuesPairArray;
+    }
+    // export default x  = () => {} type cases
+    else if (nodeToGetValues.declaration.left) {
+      const keyValuesPairArray = [];
+      if (type === "default") {
+        keyValuesPairArray.push({
+          [nodeToGetValues.declaration.left.name]: "default",
+        });
+      } else
+        keyValuesPairArray.push({
+          [nodeToGetValues.declaration.left.name]:
+            nodeToGetValues.declaration.left.name,
+        });
     }
     // Will cover any other case
     else return [{ default: "default" }];
@@ -536,19 +530,17 @@ const setExportedVariablesFromArray = (
             filesMetadata.filesMapping[
               importedVariable.importedFrom
             ].exportedVariables;
-          currentFileMetadata.exportedVariables[
-            Object.values(variable)[0]
-          ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
         } else {
           // Individual import scenario
           currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
             filesMetadata.filesMapping[
               importedVariable.importedFrom
             ].exportedVariables[importedVariable.name];
-          currentFileMetadata.exportedVariables[
-            Object.values(variable)[0]
-          ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
         }
+        currentFileMetadata.exportedVariables[
+          Object.values(variable)[0]
+        ].individualFileReferencesMapping[currentFileMetadata.fileLocation] =
+          importedVariable.referenceCountObject;
       } else {
         // If it isn't an imported variable
         currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
@@ -556,10 +548,10 @@ const setExportedVariablesFromArray = (
             currentFileMetadata.fileLocation,
             Object.values(variable)[0]
           );
-        currentFileMetadata.exportedVariables[
-          Object.values(variable)[0]
-        ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
       }
+      currentFileMetadata.exportedVariables[
+        Object.values(variable)[0]
+      ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
     } catch (_) {}
   });
 };
@@ -579,8 +571,8 @@ const getNewDefaultObject = (
     localName: name,
     firstReferencedAt: fileLocation,
     referenceCount: 0,
-    importReferenceCount: 0,
     isEntryFileObject,
+    individualFileReferencesMapping: {},
   };
 };
 

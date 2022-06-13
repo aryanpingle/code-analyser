@@ -19,7 +19,7 @@ const getUsedFilesMapping = (currentFileMetadata) => {
     currentFileMetadata.importedVariablesMetadata;
   for (const variable in importedVariablesMapping) {
     visitedFilesMapping[importedVariablesMapping[variable].importedFrom] = true;
-    if (importedVariablesMapping[variable].referenceCount) {
+    if (importedVariablesMapping[variable].referenceCountObject.referenceCount) {
       usedFilesMapping[importedVariablesMapping[variable].importedFrom] = true;
     }
   }
