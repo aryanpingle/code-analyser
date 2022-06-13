@@ -64,7 +64,7 @@ try {
 } catch (_) {
   settings = {
     extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
-    modules: ["src", "node_modules"]
+    modules: ["src", "node_modules"],
   };
 }
 
@@ -135,6 +135,38 @@ const isFilePath = (givenPath) => {
   return false;
 };
 
+/**
+ * Will find all sub-parts present in a given path
+ * For eg. path: A/B/C/D -> returned value [A, B, C, D]
+ * @param {String} givenPath Absolute address of the path from which sub-parts have to be retrieved
+ * @returns Array consisting of all sub-parts (in order) of the given path
+ */
+const getAllSubPartsOfGivenAbsolutePath = (givenPath) => {
+  const subPartsArray = [];
+  let pathToRetrieveFrom = givenPath;
+  while (pathToRetrieveFrom.length > 1) {
+    subPartsArray.unshift(getPathBaseName(pathToRetrieveFrom));
+    pathToRetrieveFrom = getDirectoryFromPath(pathToRetrieveFrom);
+  }
+  subPartsArray.unshift("");
+  return subPartsArray;
+};
+
+/**
+ * Will join together the sub-parts to form an absolute address which contains at most given depth's sub parts
+ * @param {Array} subPartsArray Array consisting of sub-parts
+ * @param {Integer} depth Will be used to decide till what level sub-parts should be present
+ * @returns Absolute address joined using the provided array and depth
+ */
+const joinSubPartsTillGivenDepth = (subPartsArray, depth) => {
+  const arrayAtGivenDepth = subPartsArray.filter((_, index) => index < depth);
+  const pathAtGivenDepth = arrayAtGivenDepth.reduce(
+    (reducer, subPart) => path.join(reducer, subPart),
+    " "
+  );
+  return pathAtGivenDepth.trim();
+};
+
 const getPathBaseName = (fileLocation) => path.basename(fileLocation);
 
 module.exports = {
@@ -145,4 +177,6 @@ module.exports = {
   getPredecessorDirectory,
   isFilePath,
   getPathBaseName,
+  getAllSubPartsOfGivenAbsolutePath,
+  joinSubPartsTillGivenDepth,
 };

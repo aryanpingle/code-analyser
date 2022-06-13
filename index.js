@@ -77,6 +77,8 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
       __dirname,
       programConfiguration.intraModuleDependencies.moduleToCheck
     ),
+    isDepthFromFront:
+      programConfiguration.intraModuleDependencies.isDepthFromFront,
     depth: programConfiguration.intraModuleDependencies.depth,
   };
   const intraModuleDependencies = getIntraModuleDependencies(

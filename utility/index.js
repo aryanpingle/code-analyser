@@ -91,7 +91,7 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
  * @returns Array of files which are intra-module dependencies of the provided module location and depth
  */
 const getIntraModuleDependencies = (
-  { moduleLocation, depth },
+  { moduleLocation, isDepthFromFront, depth },
   filesMetadata,
   spinner
 ) => {
@@ -102,12 +102,12 @@ const getIntraModuleDependencies = (
   );
   const intraModuleDependencyRegex = buildIntraModuleDependencyRegex(
     moduleLocation,
+    isDepthFromFront,
     depth
   );
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
   const intraModuleDependenciesArray = [];
   const filesMapping = filesMetadata.filesMapping;
-
   for (const file in filesMapping) {
     if (
       // If the file is not excluded, satisfies intra-module dependency condition, and is also reffered

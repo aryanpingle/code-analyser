@@ -1,7 +1,8 @@
 const {
   resolveAddressWithProvidedDirectory,
-  getPredecessorDirectory,
+  joinSubPartsTillGivenDepth,
   getDirectoryFromPath,
+  getAllSubPartsOfGivenAbsolutePath,
 } = require("./resolver");
 const {
   isInstanceofRegexExpression,
@@ -55,18 +56,30 @@ const buildExcludedFilesRegex = (excludedModulesArray) => {
 /**
  * Build a regex which will be used to set the intra-module dependencies' required condition
  * @param {String} moduleLocation Absolute/ Relative path of the module whose intra-module dependencies are required
+ * @param {Boolean} isDepthFromFront To check whether the depth has to be measured from front or back
  * @param {Integer} depth Depth at which intra-module dependencies should be checked
  * @returns Regex containg the intra-module dependencies required condition
  */
-const buildIntraModuleDependencyRegex = (moduleLocation, depth) => {
-  const resolvedDepth = Math.max(depth - 1, 0);
+const buildIntraModuleDependencyRegex = (
+  moduleLocation,
+  isDepthFromFront,
+  depth
+) => {
+  const pathSubPartsArray = getAllSubPartsOfGivenAbsolutePath(moduleLocation);
+  const pathSubPartsArrayLength = pathSubPartsArray.length;
+  const resolvedDepth = isDepthFromFront
+    ? depth + 1
+    : pathSubPartsArrayLength - depth;
   // Directory containg the required module which is at depth = resolvedDepth from the provided module's location
-  const directoryToCheckAtGivenDepth = getPredecessorDirectory(
-    moduleLocation,
+  const directoryToCheckAtGivenDepth = joinSubPartsTillGivenDepth(
+    pathSubPartsArray,
+    resolvedDepth + 1
+  )
+  // Address of the sibling modules of the module's directory at the given depth
+  const siblingLocation = joinSubPartsTillGivenDepth(
+    pathSubPartsArray,
     resolvedDepth
   );
-  // Address of the sibling modules of the module's directory at the given depth
-  const siblingLocation = getDirectoryFromPath(directoryToCheckAtGivenDepth);
   const regexCompatibleSiblingLocation = resolveAddressWithProvidedDirectory(
     convertAddressIntoRegexCompatibleFormat(siblingLocation),
     ".+"
