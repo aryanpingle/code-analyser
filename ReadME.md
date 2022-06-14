@@ -9,6 +9,7 @@ It contains a `code-analyser.config.js` file where a person has to be provide de
         intraModuleDependencies: {
             check: Boolean
             entry: [String or Regex]
+            isDepthFromFront: Boolean
             depth: Integer
             moduleToCheck: String
         },
@@ -31,7 +32,9 @@ It contains a `code-analyser.config.js` file where a person has to be provide de
 - `directoriesToCheck` can be used to specify which directories should be checked and hence if a file is not inside a directory present inside `directoriesToCheck`, then it won't be reported even if it is a deadfile or intra-module dependency. It accepts an array of relative or absolute paths.
 - `rootDirectory` will be used to find the `webpack.config.js` file to improve resolving power of the program.
 - Inside `intraModuleDependency`, one can provide the module for which we are checking the intra-module dependencies in `moduleToCheck` field. Accepts a string representing a module's relative or absolute path.
-- Use `Depth` to change the level where intra-module dependencies have to be checked from. For Eg. entry: A/B/C/D and depth: 3, then program will return intra-module dependencies of form A/* and not of the form A/B/*
+- Use `depth` to change the level where intra-module dependencies have to be checked from. 
+- Use `isDepthFromFront` to decide whether the depth should be calculated from front or back.
+- For Eg. entry: A/B/C/D and depth: 3 and isDepthFromFront: false, then program will return intra-module dependencies of form A/* and not of the form A/B/*
 
   **_Steps to run the program:_**
 
