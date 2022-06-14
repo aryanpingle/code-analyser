@@ -90,8 +90,8 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
  * @returns Array consisting of all entry files
  */
 const getAllEntryFiles = async (
-  entryArray,
-  allFilesToCheck,
+  entryArray = [/.[jt]sx?$/],
+  allFilesToCheck = [],
   excludedFilesRegex
 ) => {
   // Mapping required to remove redundant traversal of directories
@@ -126,7 +126,7 @@ const getAllEntryFiles = async (
  * @param {RegExp} excludedFilesRegex Regex denoting excluded files
  * @returns Array of feasible files present in any one of the directories which have to be checked
  */
-const getAllFilesToCheck = async (directoriesToCheck, excludedFilesRegex) => {
+const getAllFilesToCheck = async (directoriesToCheck = [], excludedFilesRegex) => {
   // Mapping required to remove redundant traversal of directories
   const visitedDirectoriesToCheckMapping = {};
   return await getAllFilesInsideProvidedDirectories(

@@ -189,17 +189,27 @@ const isFileReferred = (filesMapping, fileLocation) => {
   const allExportedVariables = filesMapping[fileLocation].exportedVariables;
   try {
     // If the entire object of the file was referred
+    let referencesUsingThisFile = allExportedVariables.referenceCount;
     if (
-      allExportedVariables.referenceCount > 0 ||
-      allExportedVariables.isEntryFileObject
+      allExportedVariables.individualFileReferencesMapping &&
+      allExportedVariables.individualFileReferencesMapping[fileLocation]
     ) {
+      referencesUsingThisFile -=
+        allExportedVariables.individualFileReferencesMapping[fileLocation]
+          .referenceCount -
+        allExportedVariables.individualFileReferencesMapping[fileLocation]
+          .exportReferenceCount;
+      console.log(referencesUsingThisFile);
+    }
+    if (referencesUsingThisFile || allExportedVariables.isEntryFileObject) {
       isReferred = true;
     }
   } catch (_) {}
   if (isReferred) return true;
   for (const variable in allExportedVariables) {
     try {
-      let referenceInsideThisFile = 0;
+      let referencesUsingThisFile =
+        allExportedVariables[variable].referenceCount;
       if (
         allExportedVariables[variable].individualFileReferencesMapping[
           fileLocation
@@ -209,13 +219,12 @@ const isFileReferred = (filesMapping, fileLocation) => {
           allExportedVariables[variable].individualFileReferencesMapping[
             fileLocation
           ];
-        referenceInsideThisFile =
+        referencesUsingThisFile -=
           exportedVariablesReferencesInsideThisFile.referenceCount -
           exportedVariablesReferencesInsideThisFile.exportReferenceCount;
       }
       if (
-        allExportedVariables[variable].referenceCount >
-          referenceInsideThisFile ||
+        referencesUsingThisFile ||
         allExportedVariables[variable].isEntryFileObject
       ) {
         isReferred = true;

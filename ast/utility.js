@@ -425,7 +425,7 @@ const updateWebpackConfigurationOfImportedFile = (
 const getValuesFromStatement = (nodeToGetValues, type) => {
   // module.exports = X type statements
   if (nodeToGetValues.type === "Identifier")
-    return [{ [nodeToGetValues.name]: "default" }];
+    return [{ [nodeToGetValues.name]: "" }];
   // module.exports = {X} type statements
   else if (nodeToGetValues.type === "ObjectExpression") {
     const keyValuesPairArray = [];
@@ -524,38 +524,69 @@ const setExportedVariablesFromArray = (
           currentFileMetadata.importedVariablesMetadata[
             Object.keys(variable)[0]
           ];
-        // If the imported variable is importing all exports of another file inside it
-        if (importedVariable.type === "ALL_EXPORTS_IMPORTED") {
-          currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-            filesMetadata.filesMapping[
-              importedVariable.importedFrom
-            ].exportedVariables;
-        } else {
-          // Individual import scenario
-          currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-            filesMetadata.filesMapping[
-              importedVariable.importedFrom
-            ].exportedVariables[importedVariable.name];
-        }
-        currentFileMetadata.exportedVariables[
-          Object.values(variable)[0]
-        ].individualFileReferencesMapping[currentFileMetadata.fileLocation] =
-          importedVariable.referenceCountObject;
+        setExportVariable(
+          currentFileMetadata,
+          filesMetadata,
+          variable,
+          importedVariable
+        );
       } else {
         // If it isn't an imported variable
-        currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-          getNewDefaultObject(
-            currentFileMetadata.fileLocation,
-            Object.values(variable)[0]
-          );
+        setExportVariable(currentFileMetadata, filesMetadata, variable, null);
       }
-      currentFileMetadata.exportedVariables[
-        Object.values(variable)[0]
-      ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
     } catch (_) {}
   });
 };
 
+/**
+ * Will set the current file's exported variable and it's corresponding attributes
+ * @param {Object} variable Contains the local and exported name of the exported variable
+ * @param {Object} importedVariable If this variable was first imported, then will use this imported variable
+ */
+const setExportVariable = (
+  currentFileMetadata,
+  filesMetadata,
+  variable,
+  importedVariable
+) => {
+  if (importedVariable) {
+    const importedVariableToSet =
+      importedVariable.type === "ALL_EXPORTS_IMPORTED"
+        ? filesMetadata.filesMapping[importedVariable.importedFrom]
+            .exportedVariables
+        : filesMetadata.filesMapping[importedVariable.importedFrom]
+            .exportedVariables[importedVariable.name];
+
+    if (Object.values(variable)[0] !== "")
+      currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+        importedVariableToSet;
+    else currentFileMetadata.exportedVariables = importedVariableToSet;
+
+    const exportedVariableToUpdate =
+      Object.values(variable)[0] !== ""
+        ? currentFileMetadata.exportedVariables[Object.values(variable)[0]]
+        : currentFileMetadata.exportedVariables;
+
+    exportedVariableToUpdate.individualFileReferencesMapping[
+      currentFileMetadata.fileLocation
+    ] = importedVariable.referenceCountObject;
+
+    exportedVariableToUpdate.isEntryFileObject ||=
+      currentFileMetadata.isEntryFile;
+  } else {
+    if (Object.values(variable)[0] !== "")
+      currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+        getNewDefaultObject(
+          currentFileMetadata.fileLocation,
+          Object.keys(variable)[0]
+        );
+    else
+      currentFileMetadata.exportedVariables = getNewDefaultObject(
+        currentFileMetadata.fileLocation,
+        Object.keys(variable)[0]
+      );
+  }
+};
 /**
  * Will generate a new object which will used by other file's to refer the exported variables
  * @param {String} fileLocation Address of the file inside which the object was first generated
