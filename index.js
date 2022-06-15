@@ -1,8 +1,15 @@
-const programConfiguration = require("./code-analyser.config.js");
+#!/usr/bin/env node
+const process = require("process");
+const {
+  createNewCliSpinner,
+  setConfiguration,
+} = require("./utility/cli");
+const codeAnalyerConfigurationObject = require("./utility/configuration-object");
+setConfiguration();
 const { buildExcludedFilesRegex } = require("./utility/regex");
 const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
-const { createNewCliSpinner } = require("./utility/cli");
 const { getDefaultFilesMetadata } = require("./utility/files");
+
 const {
   getDeadFiles,
   getIntraModuleDependencies,
@@ -16,9 +23,8 @@ const {
   isDeadfileCheckRequired,
   isIntraModuleDependenciesCheckRequired,
 } = require("./utility/conditional-expressions-checks");
-
 const excludedFilesRegex = buildExcludedFilesRegex(
-  programConfiguration.exclude
+  codeAnalyerConfigurationObject.exclude
 );
 
 /**
@@ -35,8 +41,8 @@ const analyseCodeAndDetectDeadfiles = async (
   const spinner = createNewCliSpinner();
   const { allEntryFiles, allFilesToCheck } = await getAllRequiredFiles(
     {
-      directoriesToCheck: programConfiguration.deadFiles.directoriesToCheck,
-      entry: programConfiguration.deadFiles.entry,
+      directoriesToCheck: programConfiguration.directoriesToCheck,
+      entry: programConfiguration.entry,
     },
     excludedFilesRegex,
     spinner
@@ -63,10 +69,8 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
   const spinner = createNewCliSpinner();
   const { allEntryFiles } = await getAllRequiredFiles(
     {
-      directoriesToCheck: [
-        programConfiguration.intraModuleDependencies.moduleToCheck,
-      ],
-      entry: programConfiguration.intraModuleDependencies.entry,
+      directoriesToCheck: [programConfiguration.moduleToCheck],
+      entry: programConfiguration.entry,
     },
     excludedFilesRegex,
     spinner
@@ -74,12 +78,11 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
   setAllStaticallyImportedFilesMapping(allEntryFiles, filesMetadata);
   const dependencyCheckerRelatedMetadata = {
     moduleLocation: resolveAddressWithProvidedDirectory(
-      __dirname,
-      programConfiguration.intraModuleDependencies.moduleToCheck
+      process.cwd(),
+      programConfiguration.moduleToCheck
     ),
-    isDepthFromFront:
-      programConfiguration.intraModuleDependencies.isDepthFromFront,
-    depth: programConfiguration.intraModuleDependencies.depth,
+    isDepthFromFront: programConfiguration.isDepthFromFront,
+    depth: programConfiguration.depth,
   };
   const intraModuleDependencies = getIntraModuleDependencies(
     dependencyCheckerRelatedMetadata,
@@ -89,20 +92,20 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
   console.log(intraModuleDependencies);
 };
 
-if (isDeadfileCheckRequired(programConfiguration)) {
+if (isDeadfileCheckRequired(codeAnalyerConfigurationObject)) {
   const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
   analyseCodeAndDetectDeadfiles(
     filesMetadata,
-    programConfiguration,
+    codeAnalyerConfigurationObject,
     excludedFilesRegex
   );
 }
 
-if (isIntraModuleDependenciesCheckRequired(programConfiguration)) {
+if (isIntraModuleDependenciesCheckRequired(codeAnalyerConfigurationObject)) {
   const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
   analyseCodeAndDetectIntraModuleDependencies(
     filesMetadata,
-    programConfiguration,
+    codeAnalyerConfigurationObject,
     excludedFilesRegex
   );
 }

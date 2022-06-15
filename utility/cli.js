@@ -1,4 +1,10 @@
 const spinnies = require("spinnies");
+const yargs = require("yargs");
+const {
+  getStringOrRegexFromArrayElement,
+  getArrayOfElementsFromString,
+} = require("./parse-string");
+const codeAnalyerConfigurationObject = require("./configuration-object");
 const dots = {
   interval: 50,
   frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
@@ -27,8 +33,60 @@ const addNewInstanceToSpinner = (spinner, id, text) =>
 const updateSpinnerInstance = (spinner, id, options) =>
   spinner.update(id, options);
 
+/**
+ * Will be called to set the codeAnalyser's configurations
+ */
+const setConfiguration = () => {
+  const configurationObject = yargs.argv;
+  for (const configuration in configurationObject) {
+    switch (configuration) {
+      case "entry":
+        codeAnalyerConfigurationObject[configuration] =
+          getArrayOfElementsFromString(configurationObject[configuration]);
+        break;
+      case "exclude":
+        codeAnalyerConfigurationObject[configuration] =
+          getArrayOfElementsFromString(configurationObject[configuration]);
+        break;
+      case "checkDeadFiles":
+        codeAnalyerConfigurationObject[configuration] =
+          getStringOrRegexFromArrayElement(configurationObject[configuration]);
+      case "checkIntraModuleDependencies":
+        codeAnalyerConfigurationObject[configuration] =
+          getStringOrRegexFromArrayElement(configurationObject[configuration]);
+        break;
+      case "isDepthFromFront":
+        codeAnalyerConfigurationObject[configuration] =
+          getStringOrRegexFromArrayElement(configurationObject[configuration]);
+        break;
+      case "moduleToCheck":
+        codeAnalyerConfigurationObject[configuration] =
+          getStringOrRegexFromArrayElement(
+            configurationObject[configuration],
+            true
+          );
+        break;
+      case "directoriesToCheck":
+        codeAnalyerConfigurationObject[configuration] =
+          getArrayOfElementsFromString(configurationObject[configuration]);
+        break;
+      case "rootDirectory":
+        codeAnalyerConfigurationObject[configuration] =
+          getStringOrRegexFromArrayElement(
+            configurationObject[configuration],
+            true
+          );
+        break;
+      case "depth":
+        codeAnalyerConfigurationObject[configuration] =
+          getStringOrRegexFromArrayElement(configurationObject[configuration]);
+        break;
+    }
+  }
+};
 module.exports = {
   createNewCliSpinner,
   addNewInstanceToSpinner,
   updateSpinnerInstance,
+  setConfiguration,
 };

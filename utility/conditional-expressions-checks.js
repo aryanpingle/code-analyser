@@ -1,14 +1,10 @@
 const { isFilePath } = require("./resolver");
 
 const isDeadfileCheckRequired = (programConfiguration) =>
-  programConfiguration &&
-  programConfiguration.deadFiles &&
-  programConfiguration.deadFiles.check;
+  programConfiguration && programConfiguration.checkDeadFiles;
 
 const isIntraModuleDependenciesCheckRequired = (programConfiguration) =>
-  programConfiguration &&
-  programConfiguration.intraModuleDependencies &&
-  programConfiguration.intraModuleDependencies.check;
+  programConfiguration && programConfiguration.checkIntraModuleDependencies;
 
 const isInstanceofRegexExpression = (givenString) =>
   givenString instanceof RegExp;

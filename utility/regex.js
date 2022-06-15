@@ -1,13 +1,12 @@
 const {
   resolveAddressWithProvidedDirectory,
   joinSubPartsTillGivenDepth,
-  getDirectoryFromPath,
   getAllSubPartsOfGivenAbsolutePath,
 } = require("./resolver");
 const {
   isInstanceofRegexExpression,
 } = require("./conditional-expressions-checks");
-
+const process = require("process");
 /**
  * Builds a regex which excludes files based on input given in the configuration file initially
  * @param {Array} excludedModulesArray Array consisting of paths/ regex expressions of files/ directories which have to be exlcuded
@@ -25,7 +24,7 @@ const buildExcludedFilesRegex = (excludedModulesArray) => {
       pathWithRegexReferenceCount++;
     } else {
       const moduleAbsoluteAddress = resolveAddressWithProvidedDirectory(
-        getDirectoryFromPath(__dirname),
+        process.cwd(),
         file
       );
       // Either match this module's address or another module's address
@@ -49,7 +48,7 @@ const buildExcludedFilesRegex = (excludedModulesArray) => {
   } else addressToRegexString = "!^()";
   // Either match the regex provided or provided modules paths
   const regexInStringFormat = `${regexElementsString}|${addressToRegexString}`;
-  const excludedPointsRegex = new RegExp(regexInStringFormat);
+  const excludedPointsRegex = new RegExp(regexInStringFormat, "i");
   return excludedPointsRegex;
 };
 
@@ -74,7 +73,7 @@ const buildIntraModuleDependencyRegex = (
   const directoryToCheckAtGivenDepth = joinSubPartsTillGivenDepth(
     pathSubPartsArray,
     resolvedDepth + 1
-  )
+  );
   // Address of the sibling modules of the module's directory at the given depth
   const siblingLocation = joinSubPartsTillGivenDepth(
     pathSubPartsArray,
@@ -88,7 +87,8 @@ const buildIntraModuleDependencyRegex = (
     convertAddressIntoRegexCompatibleFormat(directoryToCheckAtGivenDepth);
   // Regex denotes any module which starts with the siblingLocation's path but doesn't start with module's ancestor directory at the given depth
   return new RegExp(
-    `(?=^${regexCompatibleSiblingLocation})(?!^${regexCompatibleDirectoryLocation})`
+    `(?=^${regexCompatibleSiblingLocation})(?!^${regexCompatibleDirectoryLocation})`,
+    "i"
   );
 };
 

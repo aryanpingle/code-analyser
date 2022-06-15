@@ -10,7 +10,7 @@ const {
   isFileNotExcluded,
 } = require("./conditional-expressions-checks");
 const { getNewDefaultObject } = require("../ast/utility");
-
+const process = require("process");
 /**
  * Returns the default filesMetadata object
  * @param {RegExp} excludedFilesRegex Regex expression denoting excluded files
@@ -163,7 +163,7 @@ const getAllFilesInsideProvidedDirectories = async (
   for (const directory of allDirectories) {
     const directoyAbsoluteAddress = resolveAddressWithProvidedDirectory(
       // This directory is inside utility, so get it's parent directory according to which paths were provided in the configuration file
-      getPredecessorDirectory(__dirname, 1),
+      process.cwd(),
       directory
     );
     if (isFilePath(directoyAbsoluteAddress)) {

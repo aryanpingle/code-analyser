@@ -1,7 +1,7 @@
 const path = require("path");
 const enhancedResolve = require("enhanced-resolve");
 const { existsSync, statSync } = require("fs");
-const { rootDirectory } = require("../code-analyser.config");
+const codeAnalyerConfigurationObject = require("./configuration-object");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const JsConfigPathsPlugin = require("jsconfig-paths-webpack-plugin");
 
@@ -75,10 +75,10 @@ const settings = {
 };
 
 // Improving resolver if root directory provided
-if (rootDirectory)
+if (codeAnalyerConfigurationObject.rootDirectory)
   ["jsconfig.json", "tsconfig.json"].forEach((file, index) => {
     const resolvedPath = resolveAddressWithProvidedDirectory(
-      rootDirectory,
+      codeAnalyerConfigurationObject.rootDirectory,
       file
     );
     if (isFilePath(resolvedPath)) {
