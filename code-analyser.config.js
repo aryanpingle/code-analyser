@@ -8,14 +8,10 @@ module.exports = {
   },
   deadFiles: {
     check: true,
-    // entry: ["../takenote/src/client/index.tsx"]
-    // entry: [/pages\/.*\/\.[jt]sx?/i],
-    // entry: [/pages/]
-    // entry: [/remover\/index/]
-    entry: ["../react-typescript-netflix-clone/src/index.tsx"]
+    entry: ["../takenote/src/client/index.tsx"],
+    directoriesToCheck: ["../takenote/src/"],
+    // entry: ["../react-typescript-netflix-clone/src/index.tsx"]
   },
-  exclude: [/node_modules|(\.git)|(Icon)|jpg|png|hdr|svg|glb|woff2|mp4|mdx|test|webp/], // Excluded files
-  rootDirectory: "./",
-  directoriesToCheck: ["../react-typescript-netflix-clone/"],
-  // directoriesToCheck: ["./"]
+  exclude: [/node_modules|(\.git)|(Icon)|jpg|png|hdr|svg|glb|woff2|mp4|mdx|webp|cores/, "../takenote/src/server" ], // Excluded files
+  rootDirectory: "../takenote/",
 };

@@ -199,7 +199,6 @@ const isFileReferred = (filesMapping, fileLocation) => {
           .referenceCount -
         allExportedVariables.individualFileReferencesMapping[fileLocation]
           .exportReferenceCount;
-      console.log(referencesUsingThisFile);
     }
     if (referencesUsingThisFile || allExportedVariables.isEntryFileObject) {
       isReferred = true;
@@ -211,6 +210,7 @@ const isFileReferred = (filesMapping, fileLocation) => {
       let referencesUsingThisFile =
         allExportedVariables[variable].referenceCount;
       if (
+        allExportedVariables[variable].individualFileReferencesMapping &&
         allExportedVariables[variable].individualFileReferencesMapping[
           fileLocation
         ]

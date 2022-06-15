@@ -13,6 +13,10 @@
     "@babel/parser": "^7.18.3",
     "@babel/traverse": "^7.18.2",
     "enhanced-resolve": "^5.9.3",
+    "jsconfig-paths-webpack-plugin": "^0.1.3",
     "spinnies": "^0.5.1"
+  },
+  "devDependencies": {
+    "tsconfig-paths-webpack-plugin": "^3.5.2"
   }
 }

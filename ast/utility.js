@@ -496,6 +496,7 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
           [nodeToGetValues.declaration.left.name]:
             nodeToGetValues.declaration.left.name,
         });
+      return keyValuesPairArray;
     }
     // Will cover any other case
     else return [{ default: "default" }];

@@ -193,6 +193,7 @@ const doExportSpecifiersOperations = (
       nodeToGetValues,
       type
     );
+
     setExportedVariablesFromArray(
       exportedVariablesArray,
       currentFileMetadata,

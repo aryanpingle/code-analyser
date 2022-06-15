@@ -26,7 +26,8 @@ const isRequireOrImportStatement = (node) => {
   );
 };
 
-const isSpecifiersPresent = (node) => node.specifiers && node.specifiers.length > 0;
+const isSpecifiersPresent = (node) =>
+  node.specifiers && node.specifiers.length > 0;
 
 const isImportStatementArgumentsPresent = (callExpressionNode) =>
   callExpressionNode.arguments.length &&
@@ -67,6 +68,9 @@ const isNotExportTypeReference = (path) => {
   const assignmentNode = path.findParent((path) =>
     path.isAssignmentExpression()
   );
+  const exportDefaultDeclaration = path.findParent((path) =>
+    path.isExportDefaultDeclaration()
+  );
   return !(
     parentNode ||
     (assignmentNode &&
@@ -75,7 +79,15 @@ const isNotExportTypeReference = (path) => {
       assignmentNode.node.left.object &&
       assignmentNode.node.left.object.name === "module" &&
       assignmentNode.node.left.property &&
-      assignmentNode.node.left.property.name === "exports")
+      assignmentNode.node.left.property.name === "exports") ||
+    (exportDefaultDeclaration &&
+      exportDefaultDeclaration.node &&
+      exportDefaultDeclaration.node.declaration &&
+      (exportDefaultDeclaration.node.declaration.left === path.node ||
+        exportDefaultDeclaration.node.declaration.id === path.node ||
+        exportDefaultDeclaration.node.declaration === path.node ||
+        (exportDefaultDeclaration.node.declaration.params &&
+          exportDefaultDeclaration.node.declaration.params[0] === path.node)))
   );
 };
 

@@ -44,11 +44,10 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
  * @returns Object containing current file's default metadata
  */
 const getDefaultCurrentFileMetadata = (fileLocation, isEntryFile = false) => {
-  return {
+  const newFileObject = {
     importedVariables: {},
     importedVariablesMetadata: {},
     exportedVariables: {
-      default: getNewDefaultObject(fileLocation, "default", isEntryFile),
       importReferenceCount: 0,
       referenceCount: 0,
       isEntryFileObject: isEntryFile,
@@ -58,6 +57,11 @@ const getDefaultCurrentFileMetadata = (fileLocation, isEntryFile = false) => {
     fileLocation,
     isEntryFile: isEntryFile,
   };
+  if (!/[jt]sx?$/.test(fileLocation)) {
+    newFileObject.exportedVariables["default"] =
+      getNewDefaultObject(fileLocation);
+  }
+  return newFileObject;
 };
 /**
  * Returns an object which set's the default values corresponding to each file's object
@@ -66,13 +70,12 @@ const getDefaultCurrentFileMetadata = (fileLocation, isEntryFile = false) => {
  * @returns Object consisting of default information related to that file
  */
 const getDefaultFileObject = (fileLocation, type = "FILE") => {
-  return {
+  const newFileObject = {
     name: getPathBaseName(fileLocation),
     type,
     fileLocation: fileLocation,
     isEntryFile: false,
     exportedVariables: {
-      default: getNewDefaultObject(fileLocation),
       // If the whole exportVariables object is referred
       importReferenceCount: 0,
       referenceCount: 0,
@@ -81,6 +84,11 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
     webpackChunkConfiguration: {},
     importedFilesMapping: {},
   };
+  if (!/[jt]sx?$/.test(fileLocation)) {
+    newFileObject.exportedVariables["default"] =
+      getNewDefaultObject(fileLocation);
+  }
+  return newFileObject;
 };
 /**
  * Get all entry files from the directories to check (provided in the configuration file)
@@ -126,7 +134,10 @@ const getAllEntryFiles = async (
  * @param {RegExp} excludedFilesRegex Regex denoting excluded files
  * @returns Array of feasible files present in any one of the directories which have to be checked
  */
-const getAllFilesToCheck = async (directoriesToCheck = [], excludedFilesRegex) => {
+const getAllFilesToCheck = async (
+  directoriesToCheck = [],
+  excludedFilesRegex
+) => {
   // Mapping required to remove redundant traversal of directories
   const visitedDirectoriesToCheckMapping = {};
   return await getAllFilesInsideProvidedDirectories(

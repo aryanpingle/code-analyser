@@ -2,6 +2,8 @@ const path = require("path");
 const enhancedResolve = require("enhanced-resolve");
 const { existsSync, statSync } = require("fs");
 const { rootDirectory } = require("../code-analyser.config");
+const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
+const JsConfigPathsPlugin = require("jsconfig-paths-webpack-plugin");
 
 /**
  * Checks if the given path is absolute or not
@@ -49,24 +51,49 @@ const resolveAddressWithProvidedDirectory = (
   return path.join(parentDirectoryAddress, givenModuleAddress);
 };
 
-let settings;
+/**
+ * Checks if the provided path actually exists or not
+ * @param {String} givenPath Path which has to be checked
+ * @returns Boolean value which denotes whether the path is present or not
+ */
+const isGivenPathPresent = (givenPath) => givenPath && existsSync(givenPath);
 
-try {
-  // If the provided root directory (in the configuration file contains a webpack.config.js file then set resolver's settings equal to it's provided resolve
-  const webpackConfigFileAddress = resolveAddressWithProvidedDirectory(
-    resolveAddressWithProvidedDirectory(
-      getPredecessorDirectory(__dirname, 1),
-      rootDirectory
-    ),
-    "webpack.config.js"
-  );
-  settings = require(webpackConfigFileAddress).resolve;
-} catch (_) {
-  settings = {
-    extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
-    modules: ["src", "node_modules"],
-  };
-}
+/**
+ * Checks if the given path represents a file
+ * @param {String} givenPath Address to check
+ * @returns Boolean value denoting whether the path is a file's address or not
+ */
+const isFilePath = (givenPath) => {
+  if (isGivenPathPresent(givenPath)) return statSync(givenPath).isFile();
+  return false;
+};
+
+const settings = {
+  extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
+  modules: ["src", "node_modules"],
+  plugins: [],
+};
+
+// Improving resolver if root directory provided
+if (rootDirectory)
+  ["jsconfig.json", "tsconfig.json"].forEach((file, index) => {
+    const resolvedPath = resolveAddressWithProvidedDirectory(
+      rootDirectory,
+      file
+    );
+    if (isFilePath(resolvedPath)) {
+      if (index)
+        settings.plugins.push(
+          new TsconfigPathsPlugin({
+            configFile: resolvedPath,
+          })
+        );
+      else
+        settings.plugins.push(
+          new JsConfigPathsPlugin({ configFile: resolvedPath })
+        );
+    }
+  });
 
 const enhancedResolver = new enhancedResolve.create.sync(settings);
 
@@ -116,23 +143,6 @@ const pathResolver = (directoryAddress, fileAddress, pathType = "FILE") => {
     }
     return { type: "INBUILT_NODE_MODULE", fileAddress };
   }
-};
-
-/**
- * Checks if the provided path actually exists or not
- * @param {String} givenPath Path which has to be checked
- * @returns Boolean value which denotes whether the path is present or not
- */
-const isGivenPathPresent = (givenPath) => givenPath && existsSync(givenPath);
-
-/**
- * Checks if the given path represents a file
- * @param {String} givenPath Address to check
- * @returns Boolean value denoting whether the path is a file's address or not
- */
-const isFilePath = (givenPath) => {
-  if (isGivenPathPresent(givenPath)) return statSync(givenPath).isFile();
-  return false;
 };
 
 /**

@@ -35,7 +35,7 @@ const analyseCodeAndDetectDeadfiles = async (
   const spinner = createNewCliSpinner();
   const { allEntryFiles, allFilesToCheck } = await getAllRequiredFiles(
     {
-      directoriesToCheck: programConfiguration.directoriesToCheck,
+      directoriesToCheck: programConfiguration.deadFiles.directoriesToCheck,
       entry: programConfiguration.deadFiles.entry,
     },
     excludedFilesRegex,
