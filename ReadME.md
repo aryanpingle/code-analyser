@@ -22,7 +22,7 @@ It contains a `code-analyser.config.js` file where a person has to be provide de
         rootDirectory: String
     }
 
-> 
+>
 
 **_code-analyser.config.js description_**
 
@@ -30,11 +30,11 @@ It contains a `code-analyser.config.js` file where a person has to be provide de
 - One can provide entry files to check using `entry` key. The accepted value is an array consisiting of Regex, relative paths, or absolute paths.
 - To exclude some files in the directory from check, use `exclude` field. It also accepts an array consisting of Regex, relative paths or absolute paths.
 - `directoriesToCheck` will be used to provide from which directories an entry file to get
-- `rootDirectory` will be used to find the `webpack.config.js` file to improve resolving power of the program.
+- `rootDirectory` will be provided by the user if extra resolution is required (If the user is using tsconfig.json or jsconfig.json files to provide special paths).
 - Inside `intraModuleDependency`, one can provide the module for which we are checking the intra-module dependencies in `moduleToCheck` field. Accepts a string representing a module's relative or absolute path.
-- Use `depth` to change the level where intra-module dependencies have to be checked from. 
+- Use `depth` to change the level where intra-module dependencies have to be checked from.
 - Use `isDepthFromFront` to decide whether the depth should be calculated from front or back.
-- For Eg. entry: A/B/C/D and depth: 3 and isDepthFromFront: false, then program will return intra-module dependencies of form A/* and not of the form A/B/*
+- For Eg. entry: A/B/C/D and depth: 3 and isDepthFromFront: false, then program will return intra-module dependencies of form A/_ and not of the form A/B/_
 
   **_Steps to run the program:_**
 
