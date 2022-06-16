@@ -1,11 +1,11 @@
 const codeAnalyerConfigurationObject = {
   checkDeadFiles: false,
   checkIntraModuleDependencies: false,
-  entry: ["./"],
+  entry: [""],
   exclude: [/node_modules/],
-  directoriesToCheck: ["./"],
-  rootDirectory: "./",
-  moduleToCheck: "./",
+  directoriesToCheck: [],
+  rootDirectory: "",
+  moduleToCheck: "",
   isDepthFromFront: false,
   depth: 1,
 };

@@ -4,6 +4,7 @@ const { existsSync, statSync } = require("fs");
 const codeAnalyerConfigurationObject = require("./configuration-object");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const JsConfigPathsPlugin = require("jsconfig-paths-webpack-plugin");
+const process = require("process");
 
 /**
  * Checks if the given path is absolute or not
@@ -78,7 +79,10 @@ const settings = {
 if (codeAnalyerConfigurationObject.rootDirectory)
   ["jsconfig.json", "tsconfig.json"].forEach((file, index) => {
     const resolvedPath = resolveAddressWithProvidedDirectory(
-      codeAnalyerConfigurationObject.rootDirectory,
+      resolveAddressWithProvidedDirectory(
+        process.cwd(),
+        codeAnalyerConfigurationObject.rootDirectory
+      ),
       file
     );
     if (isFilePath(resolvedPath)) {

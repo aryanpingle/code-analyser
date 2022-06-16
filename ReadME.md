@@ -1,45 +1,59 @@
 Code-Analyser is a script which can be used to find out deadfiles present in the program. It can also be used to find out intra-module dependencies.
-It contains a `code-analyser.config.js` file where a person has to be provide details related to intra-module dependencies and deadfile checkers.
 <br>
 
->
+# Some Resilient features:-
 
-    code-analyser.config.js format
-    module.exports = {
-        intraModuleDependencies: {
-            check: Boolean
-            entry: [String or Regex]
-            isDepthFromFront: Boolean
-            depth: Integer
-            moduleToCheck: String
-        },
-        deadFiles: {
-            check: Boolean,
-            entry: [String or Regex]
-            directoriesToCheck: [String]
-        },
-        exclude: [String or Regex],
-        rootDirectory: String
-    }
+- Easy to use
+- Support for CommonJs, ES6, TypeScript, and JSX
+- Allows multiple entry/ excluded files
+- Handles cyclic dependencies
+- Can find intra-module dependencies at any depth
 
->
+# Installation
 
-**_code-analyser.config.js description_**
+Install code-analyser Cli with the following command \
 
-- If someone wants to use a particular checker, then set it's `check` as true.
-- One can provide entry files to check using `entry` key. The accepted value is an array consisiting of Regex, relative paths, or absolute paths.
-- To exclude some files in the directory from check, use `exclude` field. It also accepts an array consisting of Regex, relative paths or absolute paths.
-- `directoriesToCheck` will be used to provide from which directories an entry file to get
-- `rootDirectory` will be provided by the user if extra resolution is required (If the user is using tsconfig.json or jsconfig.json files to provide special paths).
-- Inside `intraModuleDependency`, one can provide the module for which we are checking the intra-module dependencies in `moduleToCheck` field. Accepts a string representing a module's relative or absolute path.
-- Use `depth` to change the level where intra-module dependencies have to be checked from.
-- Use `isDepthFromFront` to decide whether the depth should be calculated from front or back.
-- For Eg. entry: A/B/C/D and depth: 3 and isDepthFromFront: false, then program will return intra-module dependencies of form A/_ and not of the form A/B/_
+> npm install -g code-analyser
 
-  **_Steps to run the program:_**
+# Usage and Examples
 
-  >        1.  Set the required entries inside code-analyser.config.js file
-  >        2.  Go into the program's directory using terminal
-  >        3.  Run npm install
-  >        4.  Run npm run script
-  >        5.  Output will be shown on the console
+## Format
+
+`analyseCode <options>`
+
+### Options
+
+- `checkDeadFiles` **(default: false)** \
+   Set it as true if dead files check is required.
+  Accepted values: True/ false
+- `checkIntraModuleDependencies` **(default: false)** \
+   Set it as true if intra-module dependencies check required. \
+   Accepted values: True/ false
+- `entry` **(default: [ ])** \
+  One can provide entry files using it. \
+  Accepted values: Array consisiting of Regex, relative paths, or absolute paths.
+- `exclude` **(default: [ node_modules ])** \
+  Use it to exclude some files in the directory from being checked. By default will ignore node_modules. \
+  Accepted values: Array consisting of Regex, relative/ absolute paths.
+- `directoriesToCheck` **(default: [ ])** \
+  Used by deafiles checker and will be used to provide directories from which entry files (if regex provided as an entry element)/ files to check will be retrieved. \
+  Accepted values: Array consisting of relative/ absolute paths
+- `rootDirectory` \
+   Use it if extra path resolution required. Will check for `tsconfig.json` or `jsconfig.json` to provide access to use special paths. \
+   Accepted values: Absolute/ relative path of the module
+- `moduleToCheck` \
+   Use it to provide entry file/ directory using which intra-module dependencies have to be retrieved. \
+   Accepted values: Absolute/ relative path of the module
+- `depth` **(default: 1)** \
+  Provide the level at which intra-module dependencies should be checked. \
+  Eg. if entry file = A/B/C/D and depth = 1 from back, thn it will check for dependencies of the form A/B/C/* and not of the form A/B/C/D \
+  Eg. if entry file = A/B/C/D and depth = 2 from front, thn it will check for dependencies of the form A/* and not of the form A/B/* \
+  Accepted values: Integer
+- `isDepthFromFront` **(default: false)** \
+  Used to decide whether the depth has to be checked from front or back. \
+  Accepted values: True/ false
+
+
+### Sample Example
+
+> analyseCode --checkDeadFiles=true --entry='["./index.js"]' --directoriesToCheck='["./"]' --exclude='[/node_modules|(\.git)|(Icon)|jpg|png|hdr|svg|glb|woff2|mp4|mdx|webp]' --rootDirectory='./'
