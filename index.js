@@ -3,6 +3,8 @@ const process = require("process");
 const {
   createNewCliSpinner,
   setConfiguration,
+  produceAnalysdDeadFileResult,
+  produceAnalysedIntraModuleDependenciesResult,
 } = require("./utility/cli");
 const codeAnalyerConfigurationObject = require("./utility/configuration-object");
 setConfiguration();
@@ -52,6 +54,12 @@ const analyseCodeAndDetectDeadfiles = async (
   filesMetadata.visitedFilesMapping = {};
   analyseCode(allEntryFiles, filesMetadata, spinner);
   const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
+  const filesLengthObject = {
+    deadFiles: allDeadFiles.length,
+    filesToCheck: allFilesToCheck.length,
+    entryFiles: allEntryFiles.length,
+  };
+  produceAnalysdDeadFileResult(filesMetadata, filesLengthObject);
   console.log(allDeadFiles);
 };
 
@@ -88,6 +96,14 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     dependencyCheckerRelatedMetadata,
     filesMetadata,
     spinner
+  );
+  const filesLengthObject = {
+    intraModuleDependencies: intraModuleDependencies.length,
+    entryFiles: allEntryFiles.length,
+  };
+  produceAnalysedIntraModuleDependenciesResult(
+    filesMetadata,
+    filesLengthObject
   );
   console.log(intraModuleDependencies);
 };

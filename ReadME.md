@@ -11,7 +11,7 @@ Code-Analyser is a script which can be used to find out deadfiles present in the
 
 # Installation
 
-Install code-analyser Cli with the following command \
+Install code-analyser Cli with the following command
 
 > npm install -g code-analyser
 
@@ -29,13 +29,13 @@ Install code-analyser Cli with the following command \
 - `checkIntraModuleDependencies` **(default: false)** \
    Set it as true if intra-module dependencies check required. \
    Accepted values: True/ false
-- `entry` **(default: [ ])** \
+- `entry` \
   One can provide entry files using it. \
   Accepted values: Array consisiting of Regex, relative paths, or absolute paths.
-- `exclude` **(default: [ node_modules ])** \
+- `exclude` **(default: [ /node_modules/ ])** \
   Use it to exclude some files in the directory from being checked. By default will ignore node_modules. \
   Accepted values: Array consisting of Regex, relative/ absolute paths.
-- `directoriesToCheck` **(default: [ ])** \
+- `directoriesToCheck` \
   Used by deafiles checker and will be used to provide directories from which entry files (if regex provided as an entry element)/ files to check will be retrieved. \
   Accepted values: Array consisting of relative/ absolute paths
 - `rootDirectory` \
@@ -56,4 +56,4 @@ Install code-analyser Cli with the following command \
 
 ### Sample Example
 
-> analyseCode --checkDeadFiles=true --entry='["./index.js"]' --directoriesToCheck='["./"]' --exclude='[/node_modules|(\.git)|(Icon)|jpg|png|hdr|svg|glb|woff2|mp4|mdx|webp]' --rootDirectory='./'
+> analyseCode --checkDeadFiles --entry='["./index.js"]' --directoriesToCheck='["./"]' --exclude='[/node_modules|(\.git)|(Icon)|jpg|png|hdr|svg|glb|woff2|mp4|mdx|webp]' --rootDirectory='./'

@@ -3,7 +3,8 @@ const getStringOrRegexFromArrayElement = (
   arrayElement,
   cannotBeRegex = false
 ) => {
-  if (typeof arrayElement === "number") return arrayElement;
+  if (typeof arrayElement === "number" || typeof arrayElement === "boolean")
+    return arrayElement;
   arrayElement = arrayElement.trim();
   // if path is provided
   if (/".*"/.test(arrayElement) || cannotBeRegex)

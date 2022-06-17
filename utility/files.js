@@ -90,6 +90,7 @@ const getDefaultFileObject = (fileLocation, type = "FILE") => {
   }
   return newFileObject;
 };
+
 /**
  * Get all entry files from the directories to check (provided in the configuration file)
  * @param {Array} entryArray Array of regex/ paths denoting which entry files are requied
