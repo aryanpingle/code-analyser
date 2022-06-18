@@ -179,6 +179,16 @@ const displayDuplicateFileDetails = (file, fileChunksArray) => {
   console.log(statsTable.toString());
 };
 
+/**
+ * Will display the given array in a tabular form on the console
+ * @param {Array} filesArray Array which is needed to be displayed on the console
+ */
+const displayFilesOnScreen = (filesArray) => {
+  const statsTable = new cliTableBuilder({ head: ["Index", "File Address"] });
+  filesArray.forEach((file, index) => statsTable.push([index + 1, file]));
+  console.log(statsTable.toString());
+};
+
 module.exports = {
   createNewCliSpinner,
   addNewInstanceToSpinner,
@@ -187,4 +197,5 @@ module.exports = {
   produceAnalysdDeadFileResult,
   produceAnalysedIntraModuleDependenciesResult,
   displayDuplicateFileDetails,
+  displayFilesOnScreen,
 };

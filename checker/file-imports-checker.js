@@ -7,7 +7,7 @@ const {
   isFileMappingNotPresent,
   isFileNotExcluded,
   isCheckingForFileChunks,
-} = require("./utility");
+} = require("../utility/conditional-expressions-checks");
 
 /**
  * Will be used to check a given file's imports (used while detecting intra-module dependencies/ duplicate files)
@@ -57,12 +57,15 @@ const traverseFileForStaticImports = (
       currentFileMetadata,
       filesMetadata,
     };
-    traverseAST(traversalRelatedMetadata, "CHECK_IMPORTS_ADDRESSES");
+    const traverseType = checkStaticImports
+      ? "CHECK_STATIC_IMPORTS_ADDRESSES"
+      : "CHECK_ALL_IMPORTS_ADDRESSES";
+    traverseAST(traversalRelatedMetadata, traverseType);
+
     // Whether we need to check for static imports or should we include dynamic imports too
     let requiredImportedFilesMapping = checkStaticImports
       ? currentFileMetadata.staticImportFilesMapping
       : currentFileMetadata.importedFilesMapping;
-
     // If we are checking to find duplicate files, therefore would need to traverse all files
     if (isCheckingForFileChunks(checkStaticImports)) {
       filesMetadata.filesMapping[fileLocation].staticImportFilesMapping =
@@ -72,12 +75,11 @@ const traverseFileForStaticImports = (
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
-    
     for (const file in requiredImportedFilesMapping) {
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
-        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
         if (!filesMetadata.filesMapping[file]) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
@@ -85,7 +87,7 @@ const traverseFileForStaticImports = (
         traverseFileForStaticImports(file, filesMetadata, checkStaticImports);
       } else if (
         isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }

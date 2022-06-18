@@ -1,19 +1,3 @@
-const { isFilePath } = require("../utility/resolver");
-
-const isFileNotVisited = (fileLocation, filesMetadata) =>
-  !filesMetadata.visitedFilesMapping[fileLocation];
-
-const isFileExtensionValid = (fileLocation) =>
-  /\.[jt]sx?$/.test(fileLocation);
-
-const isFileNotExcluded = (file, excludedFilesRegex) =>
-  isFilePath(file) && !excludedFilesRegex.test(file);
-
-const isFileMappingNotPresent = (file, filesMetadata) =>
-  !filesMetadata.filesMapping[file];
-
-const isCheckingForFileChunks = (checkStaticImports) => !checkStaticImports;
-
 /**
  * Used to retrieve all the imported files which were actually referred in the current file
  * @param {Object} currentFileMetadata Contains information related to the current file
@@ -39,10 +23,5 @@ const getUsedFilesMapping = (currentFileMetadata) => {
 };
 
 module.exports = {
-  isFileExtensionValid,
-  isFileNotVisited,
-  isFileMappingNotPresent,
-  isFileNotExcluded,
-  isCheckingForFileChunks,
   getUsedFilesMapping,
 };

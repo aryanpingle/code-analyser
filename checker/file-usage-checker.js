@@ -6,8 +6,8 @@ const {
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
-  getUsedFilesMapping,
-} = require("./utility");
+} = require("../utility/conditional-expressions-checks");
+const { getUsedFilesMapping } = require("./utility");
 
 /**
  * Will be used to check file to update the imported, exported variables when they are regerred
@@ -36,7 +36,7 @@ const checkFileUsage = (entyFileLocation, filesMetadata) => {
 const checkDeadFileImportsUsage = (deadFileLocation, filesMetadata) => {
   if (
     isFileExtensionValid(deadFileLocation) &&
-    isFileNotExcluded(deadFileLocation, filesMetadata.excludedFilesRegex)
+    isFileNotExcluded(filesMetadata.excludedFilesRegex, deadFileLocation)
   ) {
     try {
       let ast = buildAST(deadFileLocation);
@@ -80,7 +80,7 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
-        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
         if (!filesMetadata.filesMapping[file]) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
@@ -88,7 +88,7 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
         traverseFileForCheckingUsage(file, filesMetadata);
       } else if (
         isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }

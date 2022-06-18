@@ -5,6 +5,7 @@ const {
   setConfiguration,
   produceAnalysdDeadFileResult,
   produceAnalysedIntraModuleDependenciesResult,
+  displayFilesOnScreen,
 } = require("./utility/cli");
 const codeAnalyerConfigurationObject = require("./utility/configuration-object");
 const { buildExcludedFilesRegex } = require("./utility/regex");
@@ -63,7 +64,7 @@ const analyseCodeAndDetectDeadfiles = async (
     entryFiles: allEntryFiles.length,
   };
   produceAnalysdDeadFileResult(filesMetadata, filesLengthObject);
-  console.log(allDeadFiles);
+  displayFilesOnScreen(allDeadFiles);
 };
 
 /**
@@ -107,7 +108,7 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     filesMetadata,
     filesLengthObject
   );
-  console.log(intraModuleDependencies);
+  displayFilesOnScreen(intraModuleDependencies);
 };
 
 /**

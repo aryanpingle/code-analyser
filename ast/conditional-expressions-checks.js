@@ -72,24 +72,45 @@ const isNotExportTypeReference = (path) => {
     path.isExportDefaultDeclaration()
   );
   return !(
-    parentNode ||
-    (assignmentNode &&
-      assignmentNode.node &&
-      assignmentNode.node.left &&
-      assignmentNode.node.left.object &&
-      assignmentNode.node.left.object.name === "module" &&
-      assignmentNode.node.left.property &&
-      assignmentNode.node.left.property.name === "exports") ||
-    (exportDefaultDeclaration &&
-      exportDefaultDeclaration.node &&
-      exportDefaultDeclaration.node.declaration &&
-      (exportDefaultDeclaration.node.declaration.left === path.node ||
-        exportDefaultDeclaration.node.declaration.id === path.node ||
-        exportDefaultDeclaration.node.declaration === path.node ||
-        (exportDefaultDeclaration.node.declaration.params &&
-          exportDefaultDeclaration.node.declaration.params[0] === path.node)))
+    // ES6 exports statements
+    (
+      parentNode ||
+      // module.exports type statements
+      (assignmentNode &&
+        assignmentNode.node &&
+        assignmentNode.node.left &&
+        assignmentNode.node.left.object &&
+        assignmentNode.node.left.object.name === "module" &&
+        assignmentNode.node.left.property &&
+        assignmentNode.node.left.property.name === "exports") ||
+      // export default type statements
+      (exportDefaultDeclaration &&
+        exportDefaultDeclaration.node &&
+        exportDefaultDeclaration.node.declaration &&
+        (exportDefaultDeclaration.node.declaration.left === path.node ||
+          exportDefaultDeclaration.node.declaration.id === path.node ||
+          exportDefaultDeclaration.node.declaration === path.node ||
+          (exportDefaultDeclaration.node.declaration.params &&
+            exportDefaultDeclaration.node.declaration.params[0] === path.node)))
+    )
   );
 };
+
+const isLazyImportDeclaration = (parentNode) =>
+  parentNode &&
+  parentNode.declarations &&
+  parentNode.declarations[0] &&
+  parentNode.declarations[0].id;
+
+const isTraversingToCheckForImportAddresses = (traverseType) =>
+  traverseType === "CHECK_ALL_IMPORTS_ADDRESSES" ||
+  traverseType === "CHECK_STATIC_IMPORTS_ADDRESSES";
+
+const isNotTraversingToCheckForImportAddresses = (traverseType) =>
+  !isTraversingToCheckForImportAddresses(traverseType);
+
+const isNotTraversingToCheckForStaticImportAddresses = (traverseType) =>
+  traverseType !== "CHECK_STATIC_IMPORTS_ADDRESSES";
 
 module.exports = {
   isExportFromTypeStatement,
@@ -102,4 +123,8 @@ module.exports = {
   isModuleExportStatement,
   isNotExportTypeReference,
   isAccessingPropertyOfObject,
+  isLazyImportDeclaration,
+  isTraversingToCheckForImportAddresses,
+  isNotTraversingToCheckForImportAddresses,
+  isNotTraversingToCheckForStaticImportAddresses,
 };

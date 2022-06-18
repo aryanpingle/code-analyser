@@ -12,6 +12,9 @@ const isDuplicatedFilesCheckRequired = (programConfiguration) =>
 const isInstanceofRegexExpression = (givenString) =>
   givenString instanceof RegExp;
 
+const isFileMappingNotPresent = (file, filesMetadata) =>
+  !filesMetadata.filesMapping[file];
+
 const isFileNotExcluded = (excludedFilesRegex, directoyAbsoluteAddress) =>
   isFilePath(directoyAbsoluteAddress) &&
   !excludedFilesRegex.test(directoyAbsoluteAddress);
@@ -20,6 +23,13 @@ const isFileNotExcluded = (excludedFilesRegex, directoyAbsoluteAddress) =>
 const isFileExtensionNotValid = (fileLocation) =>
   !/[jt]sx?$/.test(fileLocation);
 
+const isFileNotVisited = (fileLocation, filesMetadata) =>
+  !filesMetadata.visitedFilesMapping[fileLocation];
+
+const isFileExtensionValid = (fileLocation) => /\.[jt]sx?$/.test(fileLocation);
+
+const isCheckingForFileChunks = (checkStaticImports) => !checkStaticImports;
+
 module.exports = {
   isDeadfileCheckRequired,
   isIntraModuleDependenciesCheckRequired,
@@ -27,4 +37,8 @@ module.exports = {
   isInstanceofRegexExpression,
   isFileNotExcluded,
   isFileExtensionNotValid,
+  isFileMappingNotPresent,
+  isFileNotVisited,
+  isFileExtensionValid,
+  isCheckingForFileChunks,
 };

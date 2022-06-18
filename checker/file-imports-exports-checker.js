@@ -9,9 +9,8 @@ const {
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
-  getUsedFilesMapping,
-} = require("./utility");
-
+} = require("../utility/conditional-expressions-checks");
+const { getUsedFilesMapping } = require("./utility");
 /**
  * Will be used to check file to get it's import and export variables, which will be used in the next stage where there usage will be checked
  * @param {String} entyFileLocation Address of the entry file
@@ -73,7 +72,7 @@ const traverseFileForCheckingImportsExports = (
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
-        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
         if (!filesMetadata.filesMapping[file]) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
@@ -85,7 +84,7 @@ const traverseFileForCheckingImportsExports = (
         );
       } else if (
         isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(file, filesMetadata.excludedFilesRegex)
+        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
