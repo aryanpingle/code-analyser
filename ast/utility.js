@@ -1,6 +1,12 @@
 const { pathResolver, isPathAbsolute } = require("../utility/resolver");
-const { getDirectoryFromPath } = require("../utility/resolver");
-
+const {
+  getDirectoryFromPath,
+  getPathBaseName,
+} = require("../utility/resolver");
+const {
+  isFileMappingNotPresent,
+  isFileNotExcluded,
+} = require("../checker/utility");
 const astParserPlugins = [
   ["typescript", { dts: true }],
   ["pipelineOperator", { proposal: "minimal" }],
@@ -51,12 +57,11 @@ const astOtherSettings = {
  * This function parses the specifier and set this specifier as current file's imported variable
  * Will update necessary metadata and import variable mappings
  * @param {Object} specifierMetadata Contain information like specifier's AST node, from which file it has been imported, and in which stage it is been checked
- * @param {String} importedFileAddress Absolute address of the imported file
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  * @param {Object} filesMetadata Contains inforamtion related to all files
  */
 const setImportedVariableInCurrentFileMetadata = (
-  { specifier, importedFileAddress, traverseType, addReferences },
+  { specifier, importedFileAddress, traverseType },
   currentFileMetadata,
   filesMetadata
 ) => {
@@ -105,6 +110,8 @@ const setImportedVariableInCurrentFileMetadata = (
 /**
  * Will parse the export statement's specifier and set it as an import of the current file
  * @param {Object} specifier Node in AST that corresponds to export from statement's specifier
+ * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
+ * @param {Object} filesMetadata Contains inforamtion related to all files
  */
 const setImportedVariablesFromExportFromStatementSpecifier = (
   specifier,
@@ -157,18 +164,15 @@ const getNewImportVariableObject = (
 /**
  * Updates imported variables references count (including import reference count)
  * Will be used inside require or dynamic import type statements
- * @param {Object} node AST node from which values will be retrieved
- * @param {String} importedFileAddress Absolute address of the imported file
- * @param {Boolean} addReferences To decide whether the references have to be added or subtracted
+ * @param {Object} updateVariablesMetadata Contains information related to AST node from which values will be retrieved, whether references have to be added, absolute address of the imported file
+ * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
+ * @param {Object} filesMetadata Contains inforamtion related to all files
  */
 const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
   (
-    node,
-    addReferences,
+    { node, addReferences, importedFileAddress, type },
     currentFileMetadata,
-    importedFileAddress,
-    filesMetadata,
-    type = "UPDATE_REFERENCE_COUNT"
+    filesMetadata
   ) => {
     const valueToMultiplyWith = addReferences ? 1 : -1;
     if (!node) {
@@ -223,6 +227,7 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
  * Set require and dynamic import's imported variables which were parsed from the given node
  * @param {Object} node AST node which will be parsed
  * @param {String} importedFileAddress Absolute address of the imported file
+ * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  */
 const setImportedVariablesDuringImportStage = (
   node,
@@ -364,13 +369,6 @@ const getResolvedImportedFileDetails = (
   return pathResolver(directoryAddress, fileAddress, importType);
 };
 
-// Chunk's name set as the file's address, to simulate it is present in a different chunk
-const getNewWebpackConfigurationObject = (fileLocation) => {
-  return {
-    webpackChunkName: fileLocation,
-  };
-};
-
 /**
  * Will parse the provided comment to get it's two sub parts representing key value pair of a magic comment
  * @param {String} comment String which has to be parsed
@@ -396,22 +394,57 @@ const parseComment = (comment) => {
 };
 
 /**
+ * Returns an object which set's the default values corresponding to each file's object
+ * @param {String} fileLocation Address of the file for which default object has to be created
+ * @param {String} type Denotes whether it is a "FILE" or "UNRESOLVED_TYPE"
+ * @returns Object consisting of default information related to that file
+ */
+const getDefaultFileObject = (fileLocation, type = "FILE") => {
+  const newFileObject = {
+    name: getPathBaseName(fileLocation),
+    type,
+    fileLocation: fileLocation,
+    isEntryFile: false,
+    exportedVariables: {
+      // If the whole exportVariables object is referred
+      importReferenceCount: 0,
+      referenceCount: 0,
+    },
+    staticImportFilesMapping: {},
+    webpackChunkConfiguration: {},
+    importedFilesMapping: {},
+  };
+  if (!/[jt]sx?$/.test(fileLocation)) {
+    newFileObject.exportedVariables["default"] =
+      getNewDefaultObject(fileLocation);
+  }
+  return newFileObject;
+};
+
+/**
  * Will update the webpack chunks in which the provided file is present
  * @param {String} givenFileAddress Provided file address whose webpack configuration has to be updated
- * @param {Object} webpackChunkConfiguration Object containing information related to the webpack chunk in which this file is present
+ * @param {String} webpackChunkName Contains information related to the webpack chunk in which this file is present
  * @param {Object} filesMetadata Contains information related to all files
  */
 const updateWebpackConfigurationOfImportedFile = (
   givenFileAddress,
-  webpackChunkConfiguration,
+  webpackChunkName,
   filesMetadata
 ) => {
   try {
+    if (
+      isFileMappingNotPresent(givenFileAddress, filesMetadata) &&
+      isFileNotExcluded(givenFileAddress, filesMetadata.excludedFilesRegex)
+    ) {
+      filesMetadata.filesMapping[givenFileAddress] =
+        getDefaultFileObject(givenFileAddress);
+    }
+
     const currentwebpackConfiguration =
       filesMetadata.filesMapping[givenFileAddress].webpackChunkConfiguration;
     // This file is now present inside the provided webpack chunk too
-    currentwebpackConfiguration[webpackChunkConfiguration.webpackChunkName] =
-      webpackChunkConfiguration;
+    currentwebpackConfiguration[webpackChunkName] = true;
   } catch (_) {}
 };
 
@@ -525,15 +558,26 @@ const setExportedVariablesFromArray = (
           currentFileMetadata.importedVariablesMetadata[
             Object.keys(variable)[0]
           ];
-        setExportVariable(
-          currentFileMetadata,
-          filesMetadata,
+        const exportVariableMetadata = {
           variable,
-          importedVariable
+          importedVariable,
+        };
+        setExportVariable(
+          exportVariableMetadata,
+          currentFileMetadata,
+          filesMetadata
         );
       } else {
         // If it isn't an imported variable
-        setExportVariable(currentFileMetadata, filesMetadata, variable, null);
+        const exportVariableMetadata = {
+          variable,
+          importedVariable: null,
+        };
+        setExportVariable(
+          exportVariableMetadata,
+          currentFileMetadata,
+          filesMetadata
+        );
       }
     } catch (_) {}
   });
@@ -541,14 +585,14 @@ const setExportedVariablesFromArray = (
 
 /**
  * Will set the current file's exported variable and it's corresponding attributes
- * @param {Object} variable Contains the local and exported name of the exported variable
- * @param {Object} importedVariable If this variable was first imported, then will use this imported variable
+ * @param {Object} exportVariableMetadata Contains the local and exported name of the exported variable, information whether the exported variable was first imported
+ * @param {Object} currentFileMetadata To check whether a variable was imported or is a local one
+ * @param {Object} filesMetadata To get all exported variables of another file
  */
 const setExportVariable = (
+  { variable, importedVariable },
   currentFileMetadata,
-  filesMetadata,
-  variable,
-  importedVariable
+  filesMetadata
 ) => {
   if (importedVariable) {
     const importedVariableToSet =
@@ -650,11 +694,11 @@ module.exports = {
   parseComment,
   updateWebpackConfigurationOfImportedFile,
   getResolvedPathFromGivenPath,
-  getNewWebpackConfigurationObject,
   getCallExpressionFromNode,
   getValuesFromStatement,
   getAllPropertiesFromNode,
   setExportedVariablesFromArray,
   setImportedVariablesDuringImportStage,
   getNewImportVariableObject,
+  getDefaultFileObject,
 };

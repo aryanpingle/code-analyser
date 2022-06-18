@@ -1,5 +1,5 @@
 // Parses the given string and return the appropriate type element (number, regex, string)
-const getStringOrRegexFromArrayElement = (
+const getRequiredTypeElementFromString = (
   arrayElement,
   cannotBeRegex = false
 ) => {
@@ -22,10 +22,10 @@ const getArrayOfElementsFromString = (arrayString) => {
     .slice(1, -1)
     .split(",")
     .map((entryElement) => {
-      return getStringOrRegexFromArrayElement(entryElement);
+      return getRequiredTypeElementFromString(entryElement);
     });
 };
 module.exports = {
-  getStringOrRegexFromArrayElement,
+  getRequiredTypeElementFromString,
   getArrayOfElementsFromString,
 };

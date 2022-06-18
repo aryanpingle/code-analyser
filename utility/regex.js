@@ -7,6 +7,7 @@ const {
   isInstanceofRegexExpression,
 } = require("./conditional-expressions-checks");
 const process = require("process");
+
 /**
  * Builds a regex which excludes files based on input given in the configuration file initially
  * @param {Array} excludedModulesArray Array consisting of paths/ regex expressions of files/ directories which have to be exlcuded
@@ -94,7 +95,7 @@ const buildIntraModuleDependencyRegex = (
 
 /**
  * Converts the given address into a format whose meaning will not change when placed inside a regex expression
- * @param {String} addressString
+ * @param {String} addressString Absolute address of the file which has to be converted into regex compatible format
  * @returns Regex compatible address string
  */
 const convertAddressIntoRegexCompatibleFormat = (addressString) => {

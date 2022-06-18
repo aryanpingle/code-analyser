@@ -5,37 +5,51 @@ const {
 const {
   checkFileImportExports,
 } = require("../checker/file-imports-exports-checker");
-const {
-  checkFileStaticImport,
-} = require("../checker/file-static-imports-checker");
+const { checkFileImports } = require("../checker/file-imports-checker");
 const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
-const { addNewInstanceToSpinner, updateSpinnerInstance } = require("./cli");
+const {
+  addNewInstanceToSpinner,
+  updateSpinnerInstance,
+  displayDuplicateFileDetails,
+} = require("./cli");
 const { buildIntraModuleDependencyRegex } = require("./regex");
 const { isFilePath } = require("./resolver");
 const { isFileNotExcluded } = require("./conditional-expressions-checks");
 
 /**
- * Used to get all statically imported files addresses on which the entry files depend
+ * Used to get all the statically imported files addresses on which the entry files depend
  * @param {Array} allEntryFiles Array containing all entry files
  * @param {Object} filesMetadata Contains information related to all files
  */
 const setAllStaticallyImportedFilesMapping = (allEntryFiles, filesMetadata) => {
   allEntryFiles.forEach((file) => {
-    checkFileStaticImport(file, filesMetadata);
+    checkFileImports(file, filesMetadata, true);
   });
 };
 
 /**
- * Sets each file's exported variable which will used later on during the CHECK_USAGE stage
- * @param {Array} allEntryFiles
- * @param {Object} filesMetadata
- * @param {Object} entryFilesMapping
+ * Used to get all the imported files addresses on which the entry files depend
+ * @param {Array} allEntryFiles Array containing all entry files
+ * @param {Object} filesMetadata Contains information related to all files
+ */
+const setAllImportedFilesMapping = (allEntryFiles, filesMetadata) => {
+  allEntryFiles.forEach((file) => {
+    checkFileImports(file, filesMetadata, false);
+  });
+};
+
+/**
+ * Sets each file's exported variables which will be used later on during the CHECK_USAGE stage
+ * @param {Array} allEntryFiles Array containing all entry files
+ * @param {Object} filesMetadata Contains information related to all files
+ * @param {Object} entryFilesMapping Mapping to check whether a file is an entry file or not
  */
 const setAllFileExports = (allEntryFiles, filesMetadata, entryFilesMapping) => {
   allEntryFiles.forEach((entryFile) =>
     checkFileImportExports(entryFile, filesMetadata, entryFilesMapping)
   );
 };
+
 /**
  * Analyses the code and updates the references of parsed files
  * @param {Array} allEntryFiles Array containing all entry files
@@ -48,7 +62,7 @@ const analyseCode = (allEntryFiles, filesMetadata, spinner) => {
     checkFileUsage(entryFile, filesMetadata)
   );
   updateSpinnerInstance(spinner, "id3", {
-    text: "Analysed code base",
+    text: "Analysed the codebase",
     status: "succeed",
   });
 };
@@ -177,6 +191,7 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
   }
   return deadFilesArray;
 };
+
 /**
  * Checks if a file is not a dead file and was actually used by some other file
  * @param {Object} filesMapping Contains information related to all files
@@ -274,17 +289,133 @@ const getAllRequiredFiles = async (
   return { allEntryFiles, allFilesToCheck };
 };
 
+/**
+ * Will be used to create a new Data Structure which will contain information of each file and the chunks inside which it is present
+ * @param {Object} filesMetadata Contains information related to all files
+ * @param {Object} spinner Spinner container containing multiple spinner instances
+ * @returns Data Structure containing mapping of file and it's dependencies and the chunks inside which it is present
+ */
+const createWebpackChunkMetadata = (filesMetadata, spinner) => {
+  addNewInstanceToSpinner(
+    spinner,
+    "id3",
+    "Establishing relationship between different files..."
+  );
+  const allFilesChunksMetadata = {};
+  const filesMapping = filesMetadata.filesMapping;
+  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
+  for (const file in filesMapping) {
+    if (!isFileNotExcluded(excludedFilesRegex, file)) continue;
+    if (!allFilesChunksMetadata[file]) {
+      allFilesChunksMetadata[file] = generateDefaultFileChunksObject(
+        filesMetadata,
+        file
+      );
+    }
+    for (const chunkName in filesMapping[file].webpackChunkConfiguration) {
+      allFilesChunksMetadata[file].chunks.push(chunkName);
+    }
+    for (const importedFile in filesMapping[file].staticImportFilesMapping) {
+      if (!isFileNotExcluded(excludedFilesRegex, importedFile)) continue;
+      if (!allFilesChunksMetadata[importedFile])
+        allFilesChunksMetadata[importedFile] = generateDefaultFileChunksObject(
+          filesMetadata,
+          importedFile
+        );
+      allFilesChunksMetadata[importedFile][file] = allFilesChunksMetadata[file];
+    }
+  }
+  updateSpinnerInstance(spinner, "id3", {
+    text: "Established relationship between different files",
+    status: "succeed",
+  });
+  return allFilesChunksMetadata;
+};
+
+/**
+ * Used to create a new object which will contain the chunks inside which this file is present initially
+ * @param {Object} filesMetadata Contains information related to all files
+ * @param {String} fileLocation Absolute address of the file to check
+ * @returns Object containing an array of initial chunks inside which the given file is present
+ */
+const generateDefaultFileChunksObject = (filesMetadata, fileLocation) => {
+  const defaultObject = { chunks: [] };
+  if (filesMetadata.filesMapping[fileLocation].isEntryFile) {
+    defaultObject.chunks.push(fileLocation);
+  }
+  return defaultObject;
+};
+
+/**
+ * Displays the files (along with the chunks inside which it is present) which are present in more than one chunk on the console
+ * @param {Object} webpackChunkMetadata Data Structure containing information related to the chunks inside which a file is present
+ */
+const displayDuplicateFiles = (webpackChunkMetadata) => {
+  const fileWebpackChunkMapping = {};
+  for (const file in webpackChunkMetadata) {
+    const fileChunksSet = getAllRelatedChunks(
+      file,
+      webpackChunkMetadata,
+      fileWebpackChunkMapping
+    );
+    if (fileChunksSet.size > 1) {
+      displayDuplicateFileDetails(file, Array.from(fileChunksSet));
+    }
+  }
+};
+
+/**
+ * Used to get all the chunks inside which a given file is present, will use DFS along with memoization to retrieve the information
+ * @param {String} fileLocation Absolute address of the file to check
+ * @param {Object} webpackChunkMetadata Data Structure containing information related to the chunks inside which a file is present
+ * @param {Object} fileWebpackChunkMapping Mapping to check whether all the chunks inside which a file is present have been retrieved
+ * @returns Set of chunks inside which the given file is present
+ */
+const getAllRelatedChunks = (
+  fileLocation,
+  webpackChunkMetadata,
+  fileWebpackChunkMapping
+) => {
+  const fileChunksSet = new Set(webpackChunkMetadata[fileLocation].chunks);
+  fileWebpackChunkMapping[fileLocation] = fileChunksSet;
+  for (const dependentFile in webpackChunkMetadata[fileLocation]) {
+    if (dependentFile === "chunks") continue;
+    if (fileWebpackChunkMapping[dependentFile]) {
+      fileChunksSet.add(...fileWebpackChunkMapping[dependentFile]);
+      continue;
+    }
+    fileChunksSet.add(
+      ...getAllRelatedChunks(
+        dependentFile,
+        webpackChunkMetadata,
+        fileWebpackChunkMapping
+      )
+    );
+  }
+  fileWebpackChunkMapping[fileLocation] = fileChunksSet;
+  return fileChunksSet;
+};
+
+/**
+ * Used to check whether a file is an entry file or not
+ * @param {Array} entryFilesArray Array of entry files
+ * @returns Mapping of files
+ */
 const buildEntryFilesMappingFromArray = (entryFilesArray) => {
   const entryFilesMapping = {};
   entryFilesArray.forEach((file) => (entryFilesMapping[file] = true));
   return entryFilesMapping;
 };
+
 module.exports = {
   setAllStaticallyImportedFilesMapping,
+  setAllImportedFilesMapping,
   setAllFileExports,
+  createWebpackChunkMetadata,
   analyseCode,
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
+  displayDuplicateFiles,
   buildEntryFilesMappingFromArray,
 };

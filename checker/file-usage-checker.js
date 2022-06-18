@@ -1,8 +1,6 @@
 const { traverseAST, buildAST } = require("../ast/index");
-const {
-  getDefaultFileObject,
-  getDefaultCurrentFileMetadata,
-} = require("../utility/files");
+const { getDefaultFileObject } = require("../ast/utility");
+const { getDefaultCurrentFileMetadata } = require("../utility/files");
 const {
   isFileExtensionValid,
   isFileNotVisited,

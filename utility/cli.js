@@ -2,7 +2,7 @@ const spinnies = require("spinnies");
 const yargs = require("yargs");
 const cliTableBuilder = require("cli-table3");
 const {
-  getStringOrRegexFromArrayElement,
+  getRequiredTypeElementFromString,
   getArrayOfElementsFromString,
 } = require("./parse-string");
 const codeAnalyerConfigurationObject = require("./configuration-object");
@@ -10,6 +10,7 @@ const dots = {
   interval: 50,
   frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
 };
+
 /**
  * Returns a new spinner container which will improve the output display on the console
  * @returns New spinner container
@@ -35,7 +36,7 @@ const updateSpinnerInstance = (spinner, id, options) =>
   spinner.update(id, options);
 
 /**
- * Will be called to set the codeAnalyser's configurations
+ * Will be called to set the configuration of the program using the arguments provided on the CLI
  */
 const setConfiguration = () => {
   const configurationObject = yargs.argv;
@@ -51,18 +52,21 @@ const setConfiguration = () => {
         break;
       case "checkDeadFiles":
         codeAnalyerConfigurationObject[configuration] =
-          getStringOrRegexFromArrayElement(configurationObject[configuration]);
+          getRequiredTypeElementFromString(configurationObject[configuration]);
       case "checkIntraModuleDependencies":
         codeAnalyerConfigurationObject[configuration] =
-          getStringOrRegexFromArrayElement(configurationObject[configuration]);
+          getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
+      case "checkDuplicateFiles":
+        codeAnalyerConfigurationObject[configuration] =
+          getRequiredTypeElementFromString(configurationObject[configuration]);
       case "isDepthFromFront":
         codeAnalyerConfigurationObject[configuration] =
-          getStringOrRegexFromArrayElement(configurationObject[configuration]);
+          getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
       case "moduleToCheck":
         codeAnalyerConfigurationObject[configuration] =
-          getStringOrRegexFromArrayElement(
+          getRequiredTypeElementFromString(
             configurationObject[configuration],
             true
           );
@@ -73,18 +77,19 @@ const setConfiguration = () => {
         break;
       case "rootDirectory":
         codeAnalyerConfigurationObject[configuration] =
-          getStringOrRegexFromArrayElement(
+          getRequiredTypeElementFromString(
             configurationObject[configuration],
             true
           );
         break;
       case "depth":
         codeAnalyerConfigurationObject[configuration] =
-          getStringOrRegexFromArrayElement(configurationObject[configuration]);
+          getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
     }
   }
 };
+
 /**
  * Will be used to print the analysed data
  * Will provide information related to how many files are feasible, entry, encountered, parsed or are dead
@@ -158,6 +163,22 @@ const produceAnalysedIntraModuleDependenciesResult = (
   }
   console.log(statsTable.toString());
 };
+
+/**
+ * Will create a new table on the CLI which shows a file, along with the chunks (inside which it is present), which is present in more than one chunk
+ * @param {String} file Absolute address of the duplicate file
+ * @param {Array} fileChunksArray Array containing the chunks inside which this file is present
+ */
+const displayDuplicateFileDetails = (file, fileChunksArray) => {
+  const statsTable = new cliTableBuilder({
+    head: ["File", file],
+  });
+  fileChunksArray.forEach((chunk, index) => {
+    statsTable.push([`Chunk ${index + 1}`, chunk]);
+  });
+  console.log(statsTable.toString());
+};
+
 module.exports = {
   createNewCliSpinner,
   addNewInstanceToSpinner,
@@ -165,4 +186,5 @@ module.exports = {
   setConfiguration,
   produceAnalysdDeadFileResult,
   produceAnalysedIntraModuleDependenciesResult,
+  displayDuplicateFileDetails,
 };

@@ -1,16 +1,16 @@
 const fs = require("fs");
 const {
   resolveAddressWithProvidedDirectory,
-  getPredecessorDirectory,
   isFilePath,
-  getPathBaseName,
 } = require("./resolver");
 const {
   isInstanceofRegexExpression,
   isFileNotExcluded,
+  isFileExtensionNotValid,
 } = require("./conditional-expressions-checks");
 const { getNewDefaultObject } = require("../ast/utility");
 const process = require("process");
+
 /**
  * Returns the default filesMetadata object
  * @param {RegExp} excludedFilesRegex Regex expression denoting excluded files
@@ -24,6 +24,7 @@ const getDefaultFilesMetadata = (excludedFilesRegex) => {
     unparsableVistedFiles: 0,
   };
 };
+
 /**
  * Update existing filesMetdata with the help of currently parsed file's metdata
  * @param {Object} filesMetadata Metadata of all files parsed by the program
@@ -57,34 +58,8 @@ const getDefaultCurrentFileMetadata = (fileLocation, isEntryFile = false) => {
     fileLocation,
     isEntryFile: isEntryFile,
   };
-  if (!/[jt]sx?$/.test(fileLocation)) {
-    newFileObject.exportedVariables["default"] =
-      getNewDefaultObject(fileLocation);
-  }
-  return newFileObject;
-};
-/**
- * Returns an object which set's the default values corresponding to each file's object
- * @param {String} fileLocation Address of the file for which default object has to be created
- * @param {String} type Denotes whether it is a "FILE" or "UNRESOLVED_TYPE"
- * @returns Object consisting of default information related to that file
- */
-const getDefaultFileObject = (fileLocation, type = "FILE") => {
-  const newFileObject = {
-    name: getPathBaseName(fileLocation),
-    type,
-    fileLocation: fileLocation,
-    isEntryFile: false,
-    exportedVariables: {
-      // If the whole exportVariables object is referred
-      importReferenceCount: 0,
-      referenceCount: 0,
-    },
-    staticImportFilesMapping: {},
-    webpackChunkConfiguration: {},
-    importedFilesMapping: {},
-  };
-  if (!/[jt]sx?$/.test(fileLocation)) {
+  if (isFileExtensionNotValid(fileLocation)) {
+    // If not a valid extension, then as we won't parse it therefore create a default export object for it
     newFileObject.exportedVariables["default"] =
       getNewDefaultObject(fileLocation);
   }
@@ -236,7 +211,6 @@ const getAllFilesInsideOneDirectory = async (
 module.exports = {
   getDefaultFilesMetadata,
   updateFilesMetadata,
-  getDefaultFileObject,
   getDefaultCurrentFileMetadata,
   getAllEntryFiles,
   getAllFilesToCheck,

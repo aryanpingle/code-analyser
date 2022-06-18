@@ -4,7 +4,7 @@ const isFileNotVisited = (fileLocation, filesMetadata) =>
   !filesMetadata.visitedFilesMapping[fileLocation];
 
 const isFileExtensionValid = (fileLocation) =>
-  /\.(js|jsx|ts|tsx)$/.test(fileLocation);
+  /\.[jt]sx?$/.test(fileLocation);
 
 const isFileNotExcluded = (file, excludedFilesRegex) =>
   isFilePath(file) && !excludedFilesRegex.test(file);
@@ -12,6 +12,13 @@ const isFileNotExcluded = (file, excludedFilesRegex) =>
 const isFileMappingNotPresent = (file, filesMetadata) =>
   !filesMetadata.filesMapping[file];
 
+const isCheckingForFileChunks = (checkStaticImports) => !checkStaticImports;
+
+/**
+ * Used to retrieve all the imported files which were actually referred in the current file
+ * @param {Object} currentFileMetadata Contains information related to the current file
+ * @returns Object containing information of all imported files which are at least referred once
+ */
 const getUsedFilesMapping = (currentFileMetadata) => {
   const usedFilesMapping = {};
   const visitedFilesMapping = {};
@@ -19,7 +26,9 @@ const getUsedFilesMapping = (currentFileMetadata) => {
     currentFileMetadata.importedVariablesMetadata;
   for (const variable in importedVariablesMapping) {
     visitedFilesMapping[importedVariablesMapping[variable].importedFrom] = true;
-    if (importedVariablesMapping[variable].referenceCountObject.referenceCount) {
+    if (
+      importedVariablesMapping[variable].referenceCountObject.referenceCount
+    ) {
       usedFilesMapping[importedVariablesMapping[variable].importedFrom] = true;
     }
   }
@@ -34,5 +43,6 @@ module.exports = {
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
+  isCheckingForFileChunks,
   getUsedFilesMapping,
 };

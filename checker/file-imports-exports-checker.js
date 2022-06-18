@@ -1,9 +1,9 @@
 const { traverseAST, buildAST } = require("../ast/index");
 const {
   updateFilesMetadata,
-  getDefaultFileObject,
   getDefaultCurrentFileMetadata,
 } = require("../utility/files");
+const { getDefaultFileObject } = require("../ast/utility");
 const {
   isFileExtensionValid,
   isFileNotVisited,
@@ -16,6 +16,7 @@ const {
  * Will be used to check file to get it's import and export variables, which will be used in the next stage where there usage will be checked
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
+ * @param {Object} entryFilesMapping Mapping to check whether a given file is entry file or not
  */
 const checkFileImportExports = (
   entyFileLocation,
@@ -60,13 +61,14 @@ const traverseFileForCheckingImportsExports = (
       currentFileMetadata,
       filesMetadata,
     };
-    traverseAST(traversalRelatedMetadata, "CHECK_IMPORTED_FILES_ADDRESSES");
+    traverseAST(traversalRelatedMetadata, "CHECK_IMPORTS");
     updateFilesMetadata(filesMetadata, currentFileMetadata);
     let requiredImportedFilesMapping = getUsedFilesMapping(currentFileMetadata);
     // Setting ast as null, to save memory, will build it again after traversing all imported files of the current file
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
+
     for (const file in requiredImportedFilesMapping) {
       if (
         isFileNotVisited(file, filesMetadata) &&
@@ -100,6 +102,7 @@ const traverseFileForCheckingImportsExports = (
       currentFileMetadata,
       filesMetadata,
     };
+
     traverseAST(traversalRelatedMetadata, "CHECK_EXPORTS");
     updateFilesMetadata(filesMetadata, currentFileMetadata);
   } catch (err) {
