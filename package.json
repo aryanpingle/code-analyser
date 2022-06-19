@@ -1,14 +1,14 @@
 {
   "name": "code-analyser",
-  "version": "1.0.3",
-  "description": "Script which finds dead files and intra-module dependencies if present",
+  "version": "1.2.0",
+  "description": "Script which finds dead files, intra-module dependencies, and files present in multiple chunks.",
   "main": "index.js",
   "bin": {
-    "analyseCode": "./index.js"
+    "analyseCode": "./src/index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "script": "node index.js "
+    "script": "node src/index.js "
   },
   "author": "Daksh Sharma",
   "license": "ISC",
