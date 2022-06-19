@@ -2,9 +2,7 @@ const {
   checkFileUsage,
   checkDeadFileImportsUsage,
 } = require("../checker/file-usage");
-const {
-  checkFileImportExports,
-} = require("../checker/file-imports-exports");
+const { checkFileImportExports } = require("../checker/file-imports-exports");
 const { checkFileImports } = require("../checker/file-imports");
 const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
 const {
@@ -377,21 +375,24 @@ const getAllRelatedChunks = (
   webpackChunkMetadata,
   fileWebpackChunkMapping
 ) => {
+  if (fileWebpackChunkMapping[fileLocation])
+    return fileWebpackChunkMapping[fileLocation];
   const fileChunksSet = new Set(webpackChunkMetadata[fileLocation].chunks);
   fileWebpackChunkMapping[fileLocation] = fileChunksSet;
   for (const dependentFile in webpackChunkMetadata[fileLocation]) {
     if (dependentFile === CHUNKS) continue;
     if (fileWebpackChunkMapping[dependentFile]) {
-      fileChunksSet.add(...fileWebpackChunkMapping[dependentFile]);
+      if (fileWebpackChunkMapping[dependentFile].size)
+        fileChunksSet.add(...fileWebpackChunkMapping[dependentFile]);
       continue;
     }
-    fileChunksSet.add(
-      ...getAllRelatedChunks(
-        dependentFile,
-        webpackChunkMetadata,
-        fileWebpackChunkMapping
-      )
+    const dependentFileChunksSet = getAllRelatedChunks(
+      dependentFile,
+      webpackChunkMetadata,
+      fileWebpackChunkMapping
     );
+    if (dependentFileChunksSet.size)
+      fileChunksSet.add(...dependentFileChunksSet);
   }
   fileWebpackChunkMapping[fileLocation] = fileChunksSet;
   return fileChunksSet;

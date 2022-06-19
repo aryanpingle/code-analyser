@@ -7,6 +7,7 @@ const {
   produceAnalysedIntraModuleDependenciesResult,
   displayFilesOnScreen,
 } = require("./utility/cli");
+setConfiguration();
 const codeAnalyerConfigurationObject = require("./utility/configuration-object");
 const { buildExcludedFilesRegex } = require("./utility/regex");
 const { getDefaultFilesMetadata } = require("./utility/files");
@@ -27,7 +28,6 @@ const {
   isIntraModuleDependenciesCheckRequired,
   isDuplicatedFilesCheckRequired,
 } = require("./utility/helper");
-setConfiguration();
 const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
 
 const excludedFilesRegex = buildExcludedFilesRegex(

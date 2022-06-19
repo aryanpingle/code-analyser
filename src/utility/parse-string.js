@@ -1,16 +1,18 @@
+const { NUMBER, BOOLEAN, TRUE } = require("./constants");
+
 // Parses the given string and return the appropriate type element (number, regex, string)
 const getRequiredTypeElementFromString = (
   arrayElement,
   cannotBeRegex = false
 ) => {
-  if (typeof arrayElement === "number" || typeof arrayElement === "boolean")
+  if (typeof arrayElement === NUMBER || typeof arrayElement === BOOLEAN)
     return arrayElement;
   arrayElement = arrayElement.trim();
   // if path is provided
   if (/".*"/.test(arrayElement) || cannotBeRegex)
     return arrayElement.replace(/['"](.*)['"]/, "$1");
   // if true/false given
-  else if (/true|false/.test(arrayElement)) return arrayElement === "true";
+  else if (/true|false/.test(arrayElement)) return arrayElement === TRUE;
   // if regex given
   arrayElement = arrayElement.replace(/\/(.*)\//, "$1");
   return new RegExp(arrayElement);
