@@ -49,9 +49,8 @@ const checkDeadFileImportsUsage = (deadFileLocation, filesMetadata) => {
         addReferences: false,
       };
       traverseAST(traversalRelatedMetadata, CHECK_USAGE);
-    } catch (_) {
-      console.error("Unable to parse file:", deadFileLocation);
-      console.error(err);
+    } catch (err) {
+      displayFileParseErrorMessage(deadFileLocation, err);
     }
   }
 };

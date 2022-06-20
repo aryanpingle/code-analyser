@@ -125,12 +125,14 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
   ) => {
     const valueToMultiplyWith = addReferences ? 1 : -1;
     if (!node) {
-      // no imported values used (eg. css, html imports)
-      const exportedVariable =
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-          DEFAULT
-        ];
-      exportedVariable.referenceCount += 1 * valueToMultiplyWith;
+      try {
+        // no imported values used (eg. css, html imports)
+        const exportedVariable =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            DEFAULT
+          ];
+        exportedVariable.referenceCount += 1 * valueToMultiplyWith;
+      } catch (_) {}
       // Importing all exports of a file. Eg. const X = require(...);
     } else if (node.type === IDENTIFIER) {
       try {

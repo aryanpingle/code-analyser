@@ -14,6 +14,7 @@ const {
   EMPTY_STRING,
   NONE,
 } = require("../utility/constants");
+const { isFileExtensionNotValid } = require("../utility/helper");
 const {
   pathResolver,
   isPathAbsolute,
@@ -75,7 +76,7 @@ const getDefaultFileObject = (fileLocation, type = FILE) => {
     webpackChunkConfiguration: {},
     importedFilesMapping: {},
   };
-  if (!/[jt]sx?$/.test(fileLocation)) {
+  if (isFileExtensionNotValid(fileLocation)) {
     newFileObject.exportedVariables[DEFAULT] =
       getNewDefaultObject(fileLocation);
   }
@@ -285,43 +286,45 @@ const setExportVariable = (
   currentFileMetadata,
   filesMetadata
 ) => {
-  if (importedVariable) {
-    const importedVariableToSet =
-      importedVariable.type === ALL_EXPORTS_IMPORTED
-        ? filesMetadata.filesMapping[importedVariable.importedFrom]
-            .exportedVariables
-        : filesMetadata.filesMapping[importedVariable.importedFrom]
-            .exportedVariables[importedVariable.name];
+  try {
+    if (importedVariable) {
+      const importedVariableToSet =
+        importedVariable.type === ALL_EXPORTS_IMPORTED
+          ? filesMetadata.filesMapping[importedVariable.importedFrom]
+              .exportedVariables
+          : filesMetadata.filesMapping[importedVariable.importedFrom]
+              .exportedVariables[importedVariable.name];
 
-    if (Object.values(variable)[0] !== EMPTY_STRING)
-      currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-        importedVariableToSet;
-    else currentFileMetadata.exportedVariables = importedVariableToSet;
+      if (Object.values(variable)[0] !== EMPTY_STRING)
+        currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+          importedVariableToSet;
+      else currentFileMetadata.exportedVariables = importedVariableToSet;
 
-    const exportedVariableToUpdate =
-      Object.values(variable)[0] !== EMPTY_STRING
-        ? currentFileMetadata.exportedVariables[Object.values(variable)[0]]
-        : currentFileMetadata.exportedVariables;
+      const exportedVariableToUpdate =
+        Object.values(variable)[0] !== EMPTY_STRING
+          ? currentFileMetadata.exportedVariables[Object.values(variable)[0]]
+          : currentFileMetadata.exportedVariables;
 
-    exportedVariableToUpdate.individualFileReferencesMapping[
-      currentFileMetadata.fileLocation
-    ] = importedVariable.referenceCountObject;
+      exportedVariableToUpdate.individualFileReferencesMapping[
+        currentFileMetadata.fileLocation
+      ] = importedVariable.referenceCountObject;
 
-    exportedVariableToUpdate.isEntryFileObject ||=
-      currentFileMetadata.isEntryFile;
-  } else {
-    if (Object.values(variable)[0] !== EMPTY_STRING)
-      currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-        getNewDefaultObject(
+      exportedVariableToUpdate.isEntryFileObject ||=
+        currentFileMetadata.isEntryFile;
+    } else {
+      if (Object.values(variable)[0] !== EMPTY_STRING)
+        currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+          getNewDefaultObject(
+            currentFileMetadata.fileLocation,
+            Object.keys(variable)[0]
+          );
+      else
+        currentFileMetadata.exportedVariables = getNewDefaultObject(
           currentFileMetadata.fileLocation,
           Object.keys(variable)[0]
         );
-    else
-      currentFileMetadata.exportedVariables = getNewDefaultObject(
-        currentFileMetadata.fileLocation,
-        Object.keys(variable)[0]
-      );
-  }
+    }
+  } catch (_) {}
 };
 
 /**

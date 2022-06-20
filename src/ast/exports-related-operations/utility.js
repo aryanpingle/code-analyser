@@ -6,6 +6,7 @@ const {
   EXPORT_NAMESPACE_SPECIFIER,
   ALL_EXPORTS_AS_OBJECT,
 } = require("../../utility/constants");
+
 /**
  * Will parse the export statement's specifier and set it as an import of the current file
  * @param {Object} specifier Node in AST that corresponds to export from statement's specifier
@@ -32,6 +33,12 @@ const setImportedVariablesFromExportFromStatementSpecifier = (
       importedFileAddress
     );
 };
+
+/**
+ * Will be used to extract information from a provided AST node
+ * @param {Object} specifier Provided AST node
+ * @returns export type, import and export name of the exported variable
+ */
 const extractVariableInformationFromSpecifier = (specifier) => {
   let specifierType = INDIVIDUAL_IMPORT;
   let exportName = specifier.exported.name;
@@ -47,6 +54,7 @@ const extractVariableInformationFromSpecifier = (specifier) => {
   }
   return { specifierType, exportName, importName };
 };
+
 module.exports = {
   setImportedVariablesFromExportFromStatementSpecifier,
   extractVariableInformationFromSpecifier,

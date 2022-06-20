@@ -13,6 +13,7 @@ const {
   isNotTraversingToCheckForImportAddresses,
 } = require("../helper");
 const { ALL_EXPORTS_AS_OBJECT } = require("../../utility/constants");
+
 /**
  * Will set all variables present in the statement as the exported variables of the current file
  * @param {Object} exportNode Node in AST containing information related to the statement
@@ -87,17 +88,20 @@ const doExportSpecifiersOperations = (
       });
     } else {
       // "export * from ..." type statements
-      for (const variable in filesMetadata.filesMapping[importedFileAddress]
-        .exportedVariables) {
-        currentFileMetadata.exportedVariables[variable] =
-          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-            variable
-          ];
-        try {
-          currentFileMetadata.exportedVariables[variable].isEntryFileObject ||=
-            currentFileMetadata.isEntryFile;
-        } catch (_) {}
-      }
+      try {
+        for (const variable in filesMetadata.filesMapping[importedFileAddress]
+          .exportedVariables) {
+          try {
+            currentFileMetadata.exportedVariables[variable] =
+              filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+                variable
+              ];
+            currentFileMetadata.exportedVariables[
+              variable
+            ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
+          } catch (_) {}
+        }
+      } catch (_) {}
     }
   } else {
     const exportedVariablesArray = getValuesFromStatement(

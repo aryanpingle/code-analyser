@@ -78,11 +78,13 @@ const doImportDeclartionOperationsAfterSetup = (
         );
       });
     } else {
-      // import "..." type statements
-      const valueToAdd = addReferences ? 1 : -1;
-      filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-        DEFAULT
-      ].referenceCount += valueToAdd;
+      try {
+        // import "..." type statements
+        const valueToAdd = addReferences ? 1 : -1;
+        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+          DEFAULT
+        ].referenceCount += valueToAdd;
+      } catch (_) {}
     }
   } catch (_) {}
 };

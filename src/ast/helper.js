@@ -14,13 +14,18 @@ const {
   CHECK_STATIC_IMPORTS_ADDRESSES,
 } = require("../utility/constants");
 
-const isExportFromTypeStatement = (node) => node.source && node.source.value;
+const isExportFromTypeStatement = (node) =>
+  node && node.source && node.source.value;
 
 const isSubPartOfDynamicImport = (callExpressionNode) =>
-  callExpressionNode.callee.type === IMPORT && callExpressionNode.arguments;
+  callExpressionNode &&
+  callExpressionNode.callee &&
+  callExpressionNode.callee.type === IMPORT &&
+  callExpressionNode.arguments;
 
 const isDynamicImportWithPromise = (memberNode) => {
   return (
+    memberNode &&
     memberNode.type === MEMBER_EXPRESSION &&
     memberNode.object &&
     memberNode.object.callee &&
@@ -41,16 +46,20 @@ const isRequireOrImportStatement = (node) => {
 };
 
 const isSpecifiersPresent = (node) =>
-  node.specifiers && node.specifiers.length > 0;
+  node && node.specifiers && node.specifiers.length > 0;
 
 const isImportStatementArgumentsPresent = (callExpressionNode) =>
+  callExpressionNode &&
+  callExpressionNode.arguments &&
   callExpressionNode.arguments.length &&
+  callExpressionNode.arguments[0].params &&
   callExpressionNode.arguments[0].params.length;
 
 const isRequireStatement = (node) =>
-  node.callee && node.callee.name === REQUIRE;
+  node && node.callee && node.callee.name === REQUIRE;
 
 const isModuleExportStatement = (node) =>
+  node &&
   node.type === MEMBER_EXPRESSION &&
   node.object &&
   node.object.name === MODULE &&
