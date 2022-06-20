@@ -1,6 +1,7 @@
 const spinnies = require("spinnies");
 const yargs = require("yargs");
 const cliTableBuilder = require("cli-table3");
+const { DEFAULT_IGNORED_FILES_REGEX } = require("./constants");
 const {
   getRequiredTypeElementFromString,
   getArrayOfElementsFromString,
@@ -82,12 +83,21 @@ const setConfiguration = () => {
             true
           );
         break;
+      case "include":
+        codeAnalyerConfigurationObject[configuration] =
+          getArrayOfElementsFromString(configurationObject[configuration]);
+        break;
       case "depth":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
     }
   }
+  codeAnalyerConfigurationObject.exclude.push(DEFAULT_IGNORED_FILES_REGEX);
+  if (codeAnalyerConfigurationObject.directoriesToCheck)
+    codeAnalyerConfigurationObject.include.push(
+      ...codeAnalyerConfigurationObject.directoriesToCheck
+    );
 };
 
 /**

@@ -8,15 +8,20 @@ const process = require("process");
 const { EMPTY_STRING } = require("./constants");
 
 /**
- * Builds a regex which excludes files based on input given in the configuration file initially
+ * Builds a regex which excludes files based on the input given in the configuration file initially
  * @param {Array} excludedModulesArray Array consisting of paths/ regex expressions of files/ directories which have to be exlcuded
  * @returns Regex denoting the excluded files
  */
-const buildExcludedFilesRegex = (excludedModulesArray) => {
+const buildExcludedFilesRegex = (
+  excludedModulesArray,
+  includedModulesArray
+) => {
   let regexElementsString = EMPTY_STRING,
-    addressToRegexString = EMPTY_STRING;
+    addressToRegexString = EMPTY_STRING,
+    includedFilesAddressToRegexString = EMPTY_STRING;
   let pathWithRegexReferenceCount = 0,
-    pathWithoutRegexReferenceCount = 0;
+    pathWithoutRegexReferenceCount = 0,
+    pathIncludedReferenceCount = 0;
   excludedModulesArray.forEach((file) => {
     if (isInstanceofRegexExpression(file)) {
       // Add "|" to set the regex as either match this regex or some other regex
@@ -34,6 +39,17 @@ const buildExcludedFilesRegex = (excludedModulesArray) => {
       pathWithoutRegexReferenceCount++;
     }
   });
+  // To include only those files which are required to be checked
+  includedModulesArray.forEach((file) => {
+    const moduleAbsoluteAddress = resolveAddressWithProvidedDirectory(
+      process.cwd(),
+      file
+    );
+    pathIncludedReferenceCount++;
+    includedFilesAddressToRegexString += `${convertAddressIntoRegexCompatibleFormat(
+      moduleAbsoluteAddress
+    )}|`;
+  });
   if (pathWithRegexReferenceCount) {
     // Remove the last "|" from the string
     regexElementsString = regexElementsString.slice(0, -1);
@@ -46,8 +62,19 @@ const buildExcludedFilesRegex = (excludedModulesArray) => {
     // If there exists a file which starts with the addressToRegexString's regex, then exclude it
     addressToRegexString = `^(${addressToRegexString})`;
   } else addressToRegexString = "!^()";
-  // Either match the regex provided or provided modules paths
-  const regexInStringFormat = `${regexElementsString}|${addressToRegexString}`;
+
+  if (pathIncludedReferenceCount) {
+    includedFilesAddressToRegexString = includedFilesAddressToRegexString.slice(
+      0,
+      -1
+    );
+    // Will exclude all files which are not present inside the included files
+    includedFilesAddressToRegexString = `!^(${includedFilesAddressToRegexString})`;
+  } else {
+    includedFilesAddressToRegexString = "!^()";
+  }
+  // Either match the regex provided or provided modules paths or based on the included addresses provided
+  const regexInStringFormat = `${regexElementsString}|${addressToRegexString}|${includedFilesAddressToRegexString}`;
   const excludedPointsRegex = new RegExp(regexInStringFormat, "i");
   return excludedPointsRegex;
 };

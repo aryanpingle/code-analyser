@@ -83,7 +83,7 @@ const doExportSpecifiersOperations = (
           }
           currentFileMetadata.exportedVariables[
             exportName
-          ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
+          ].isEntryFileObject |= currentFileMetadata.isEntryFile;
         } catch (_) {}
       });
     } else {
@@ -98,7 +98,7 @@ const doExportSpecifiersOperations = (
               ];
             currentFileMetadata.exportedVariables[
               variable
-            ].isEntryFileObject ||= currentFileMetadata.isEntryFile;
+            ].isEntryFileObject |= currentFileMetadata.isEntryFile;
           } catch (_) {}
         }
       } catch (_) {}

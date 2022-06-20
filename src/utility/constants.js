@@ -57,4 +57,7 @@ module.exports = {
   REQUIRE: "require",
   MODULE: "module",
   EXPORTS: "exports",
+
+  DEFAULT_IGNORED_FILES_REGEX:
+    /node_modules|(\.spec\.[jt]sx?$)|(\.mock\.[jt]sx?$)|(\.json$)|(\.fixtures\.[jt]sx?$)|(\.test\.[jt]sx?$)|(README\.md$)|__spec__|__mock__|__test__/,
 };

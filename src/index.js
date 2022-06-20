@@ -31,7 +31,8 @@ const {
 const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
 
 const excludedFilesRegex = buildExcludedFilesRegex(
-  codeAnalyerConfigurationObject.exclude
+  codeAnalyerConfigurationObject.exclude,
+  codeAnalyerConfigurationObject.include
 );
 
 /**

@@ -309,7 +309,7 @@ const setExportVariable = (
         currentFileMetadata.fileLocation
       ] = importedVariable.referenceCountObject;
 
-      exportedVariableToUpdate.isEntryFileObject ||=
+      exportedVariableToUpdate.isEntryFileObject |=
         currentFileMetadata.isEntryFile;
     } else {
       if (Object.values(variable)[0] !== EMPTY_STRING)
