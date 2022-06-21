@@ -70,6 +70,9 @@ const analyseCodeAndDetectDeadfiles = async (
   };
   produceAnalysdDeadFileResult(filesMetadata, filesLengthObject);
   displayFilesOnScreen(allDeadFiles);
+  for(const file in filesMetadata.filesMapping){
+    if(/checker\/utility/.test(file))console.log(filesMetadata.filesMapping[file])
+  }
 };
 
 /**

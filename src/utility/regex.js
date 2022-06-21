@@ -96,7 +96,7 @@ const buildIntraModuleDependencyRegex = (
 
   const regexCompatibleDirectoryLocation = `${convertAddressIntoRegexCompatibleFormat(
     directoryToCheckAtGivenDepth
-  )}((\/.+)*)`;
+  )}(([\\/\].+)*)`;
   // Regex denotes any module which starts with the siblingLocation's path but doesn't start with module's ancestor directory at the given depth
   return {
     intraModuleChecker: new RegExp(

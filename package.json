@@ -4,7 +4,7 @@
   "description": "Script which finds dead files, intra-module dependencies, and files present in multiple chunks.",
   "main": "index.js",
   "bin": {
-    "analyseCode1": "./src/index.js"
+    "analyseCode": "./src/index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

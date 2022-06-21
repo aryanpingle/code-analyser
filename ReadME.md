@@ -40,8 +40,9 @@ Install code-analyser Cli with the following command
    For eg. Will ignore a file's dependency if it isn't present inside a directory provided in the `include` field \
   This will include all the files provided using the `directoriesToCheck` field (if present). \
   Accepted values: Array consisting of relative paths, or absolute paths.
-- `exclude` **(default: [ /node_modules/ ])** \
-   Use it to exclude some files in the directory from being checked. By default will ignore node_modules. \
+- `exclude`
+  Use it to exclude some files in the directory from being checked. By default will ignore node_modules. \
+   It will exclude all test files, images, videos, node modules by default. \
    Accepted values: Array consisting of Regex, relative/ absolute paths.
 - `directoriesToCheck` \
    Used by deadfiles checker, and duplicate files checker which will be used to provide directories from which entry files (if regex provided as an entry element)/ files to check will be retrieved (in case of dead files check only). \
@@ -59,6 +60,10 @@ Install code-analyser Cli with the following command
    Accepted values: Integer
 - `isDepthFromFront` **(default: false)** \
    Used to decide whether the depth has to be checked from front or back. \
+   Accepted values: True/ false
+- `checkAll` **(default: false)** \
+   Used with intra-module checker to get all intra-module dependencies or only the entry files of the intra-module depdencies \
+   By default will provide entry files of the intra-module dependencies \
    Accepted values: True/ false
 
 ### Sample Examples
