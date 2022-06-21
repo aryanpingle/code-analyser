@@ -146,6 +146,7 @@ const getAllFilesInsideProvidedDirectories = async (
     if (isFilePath(directoyAbsoluteAddress)) {
       if (isFileNotExcluded(excludedFilesRegex, directoyAbsoluteAddress))
         allFiles.push(directoyAbsoluteAddress);
+
       continue;
     }
 
@@ -202,8 +203,9 @@ const getAllFilesInsideOneDirectory = async (
         directoryLocation,
         file.name
       );
-      if (isFileNotExcluded(excludedFilesRegex, fileLocation))
+      if (isFileNotExcluded(excludedFilesRegex, fileLocation)) {
         allFiles.push(fileLocation);
+      }
     }
   }
   return allFiles;

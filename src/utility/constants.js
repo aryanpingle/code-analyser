@@ -58,6 +58,10 @@ module.exports = {
   MODULE: "module",
   EXPORTS: "exports",
 
-  DEFAULT_IGNORED_FILES_REGEX:
-    /node_modules|(\.spec\.[jt]sx?$)|(\.mock\.[jt]sx?$)|(\.json$)|(\.fixtures\.[jt]sx?$)|(\.test\.[jt]sx?$)|(README\.md$)|__spec__|__mock__|__test__/,
+  DEFAULT_REGEX_STRING: "!^()",
+  DEFAULT_TRUE_REGEX_STRING: "^()",
+  IGNORED_FILES_REGEX:
+    /(\.git)|(\.spec\.(.*))|(\.mock\.(.*))|(\.fixture\.(.*))|(\.test\.(.*))|\.json$|\.md$|\.jpe?g$|\.png$|\.woff2$|\.hdr$|\.mp[0-9]$|\.svg$|\.glb$|\.mdx$|\.webp$/,
+  IGNORED_FOLDERS_REGEX:
+    /node_modules|__spec__|__mock__|__test__|__fixtures?__/,
 };

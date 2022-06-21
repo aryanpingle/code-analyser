@@ -80,23 +80,27 @@ const traverseFileForStaticImports = (
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
-    for (const file in requiredImportedFilesMapping) {
-      if (
-        isFileNotVisited(file, filesMetadata) &&
-        isFileExtensionValid(file) &&
-        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      ) {
-        if (!filesMetadata.filesMapping[file]) {
+    if (
+      !checkStaticImports ||
+      filesMetadata.insideModuleRegex.test(fileLocation)
+    )
+      for (const file in requiredImportedFilesMapping) {
+        if (
+          isFileNotVisited(file, filesMetadata) &&
+          isFileExtensionValid(file) &&
+          isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
+        ) {
+          if (!filesMetadata.filesMapping[file]) {
+            filesMetadata.filesMapping[file] = getDefaultFileObject(file);
+          }
+          traverseFileForStaticImports(file, filesMetadata, checkStaticImports);
+        } else if (
+          isFileMappingNotPresent(file, filesMetadata) &&
+          isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
+        ) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
-        traverseFileForStaticImports(file, filesMetadata, checkStaticImports);
-      } else if (
-        isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      ) {
-        filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
-    }
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;

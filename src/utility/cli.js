@@ -1,7 +1,7 @@
 const spinnies = require("spinnies");
 const yargs = require("yargs");
 const cliTableBuilder = require("cli-table3");
-const { DEFAULT_IGNORED_FILES_REGEX } = require("./constants");
+const { IGNORED_FILES_REGEX } = require("./constants");
 const {
   getRequiredTypeElementFromString,
   getArrayOfElementsFromString,
@@ -47,9 +47,15 @@ const setConfiguration = () => {
         codeAnalyerConfigurationObject[configuration] =
           getArrayOfElementsFromString(configurationObject[configuration]);
         break;
+      case "include":
+        codeAnalyerConfigurationObject[configuration].push(
+          ...getArrayOfElementsFromString(configurationObject[configuration])
+        );
+        break;
       case "exclude":
-        codeAnalyerConfigurationObject[configuration] =
-          getArrayOfElementsFromString(configurationObject[configuration]);
+        codeAnalyerConfigurationObject[configuration].push(
+          ...getArrayOfElementsFromString(configurationObject[configuration])
+        );
         break;
       case "checkDeadFiles":
         codeAnalyerConfigurationObject[configuration] =
@@ -83,17 +89,16 @@ const setConfiguration = () => {
             true
           );
         break;
-      case "include":
-        codeAnalyerConfigurationObject[configuration] =
-          getArrayOfElementsFromString(configurationObject[configuration]);
-        break;
       case "depth":
+        codeAnalyerConfigurationObject[configuration] =
+          getRequiredTypeElementFromString(configurationObject[configuration]);
+        break;
+      case "checkAll":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
     }
   }
-  codeAnalyerConfigurationObject.exclude.push(DEFAULT_IGNORED_FILES_REGEX);
   if (codeAnalyerConfigurationObject.directoriesToCheck)
     codeAnalyerConfigurationObject.include.push(
       ...codeAnalyerConfigurationObject.directoriesToCheck
@@ -195,8 +200,13 @@ const displayDuplicateFileDetails = (file, fileChunksArray) => {
  */
 const displayFilesOnScreen = (filesArray) => {
   if (filesArray.length) {
+    filesArray.sort(
+      (fileOne, fileTwo) => fileTwo.filePoints - fileOne.filePoints
+    );
     const statsTable = new cliTableBuilder({ head: ["Index", "File Address"] });
-    filesArray.forEach((file, index) => statsTable.push([index + 1, file]));
+    filesArray.forEach((fileObject, index) =>
+      statsTable.push([index + 1, fileObject.file])
+    );
     console.log(statsTable.toString());
   } else {
     // Print that no file found to display if the given array is empty

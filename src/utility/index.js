@@ -10,9 +10,11 @@ const {
   updateSpinnerInstance,
   displayDuplicateFileDetails,
 } = require("./cli");
-const { buildIntraModuleDependencyRegex } = require("./regex");
-const { isFilePath } = require("./resolver");
-const { isFileNotExcluded } = require("./helper");
+const {
+  isFilePath,
+  getNumberOfSubPartsOfGivenAbsolutePath,
+} = require("./resolver");
+const { isFileNotExcluded, isFileExtensionValid } = require("./helper");
 const { CHUNKS } = require("./constants");
 
 /**
@@ -104,7 +106,7 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
  * @returns Array of files which are intra-module dependencies of the provided module location and depth
  */
 const getIntraModuleDependencies = (
-  { moduleLocation, isDepthFromFront, depth },
+  { moduleLocation, isDepthFromFront, depth, intraModuleDependencyRegex },
   filesMetadata,
   spinner
 ) => {
@@ -112,11 +114,6 @@ const getIntraModuleDependencies = (
     spinner,
     "id5",
     "Identifying intra-module dependencies..."
-  );
-  const intraModuleDependencyRegex = buildIntraModuleDependencyRegex(
-    moduleLocation,
-    isDepthFromFront,
-    depth
   );
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
   const intraModuleDependenciesArray = [];
@@ -128,7 +125,10 @@ const getIntraModuleDependencies = (
       isFilePath(file) &&
       isFileNotExcluded(excludedFilesRegex, file)
     ) {
-      intraModuleDependenciesArray.push(file);
+      intraModuleDependenciesArray.push({
+        file,
+        filePoints: getFilePoints(file, filesMapping),
+      });
     }
   }
   // If no errors found during traversal
@@ -156,17 +156,23 @@ const getIntraModuleDependencies = (
  */
 const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
   const filesMapping = filesMetadata.filesMapping;
-  const deadFilesArray = allFilesToCheck.filter((file) => {
-    return (
-      // Either file was never imported/ referred or if imported but never used
-      !filesMapping[file] ||
-      (filesMapping[file].isEntryFile === false &&
-        !isFileReferred(filesMapping, file))
-    );
-  });
+  const deadFilesArray = allFilesToCheck
+    .filter((file) => {
+      return (
+        // Either file was never imported/ referred or if imported but never used
+        !filesMapping[file] ||
+        (filesMapping[file].isEntryFile === false &&
+          !isFileReferred(filesMapping, file))
+      );
+    })
+    .map((file) => {
+      return { file, filePoints: getFilePoints(file, filesMapping) };
+    });
+
   const deadFileVisitedMapping = {};
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
-  for (const file of deadFilesArray) {
+  for (const fileObject of deadFilesArray) {
+    const file = fileObject.file;
     deadFileVisitedMapping[file] = true;
     if (filesMapping[file]) {
       // Will be used to check whether imports of a dead file where referred inside this file only, if so then they will also become dead file now
@@ -183,12 +189,29 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
               !isFileReferred(filesMapping, importedFile)))
         ) {
           deadFileVisitedMapping[importedFile] = true;
-          deadFilesArray.push(importedFile);
+          deadFilesArray.push({
+            file: importedFile,
+            filePoints: getFilePoints(importedFile, filesMapping),
+          });
         }
       }
     }
   }
   return deadFilesArray;
+};
+
+/**
+ * Can be used to determine the significance of a particular file
+ * @param {String} file Absolute address of a file
+ * @param {Object} filesMapping Contains information related to all files
+ * @returns Points associated with the provided file
+ */
+const getFilePoints = (file, filesMapping) => {
+  let filePoints = 0;
+  if (isFileExtensionValid(file)) filePoints += 100;
+  if (!filesMapping[file]) filePoints += 10;
+  filePoints -= getNumberOfSubPartsOfGivenAbsolutePath(file);
+  return filePoints;
 };
 
 /**

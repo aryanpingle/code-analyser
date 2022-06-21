@@ -5,7 +5,7 @@ const {
 } = require("./resolver");
 const { isInstanceofRegexExpression } = require("./helper");
 const process = require("process");
-const { EMPTY_STRING } = require("./constants");
+const { EMPTY_STRING, DEFAULT_REGEX_STRING } = require("./constants");
 
 /**
  * Builds a regex which excludes files based on the input given in the configuration file initially
@@ -16,27 +16,29 @@ const buildExcludedFilesRegex = (
   excludedModulesArray,
   includedModulesArray
 ) => {
-  let regexElementsString = EMPTY_STRING,
-    addressToRegexString = EMPTY_STRING,
+  let excludedFilesAddressToRegexString = EMPTY_STRING,
+    excludedFilesRegexString = EMPTY_STRING,
     includedFilesAddressToRegexString = EMPTY_STRING;
-  let pathWithRegexReferenceCount = 0,
-    pathWithoutRegexReferenceCount = 0,
-    pathIncludedReferenceCount = 0;
+
+  let excludedPathsWithRegexCount = 0,
+    excludedPathsWithoutRegexCount = 0,
+    includedPathsWithoutRegexCount = 0;
+
   excludedModulesArray.forEach((file) => {
     if (isInstanceofRegexExpression(file)) {
       // Add "|" to set the regex as either match this regex or some other regex
-      regexElementsString += `${file.source}|`;
-      pathWithRegexReferenceCount++;
+      excludedFilesRegexString += `${file.source}|`;
+      excludedPathsWithRegexCount++;
     } else {
       const moduleAbsoluteAddress = resolveAddressWithProvidedDirectory(
         process.cwd(),
         file
       );
       // Either match this module's address or another module's address
-      addressToRegexString += `${convertAddressIntoRegexCompatibleFormat(
+      excludedFilesAddressToRegexString += `${convertAddressIntoRegexCompatibleFormat(
         moduleAbsoluteAddress
       )}|`;
-      pathWithoutRegexReferenceCount++;
+      excludedPathsWithoutRegexCount++;
     }
   });
   // To include only those files which are required to be checked
@@ -45,36 +47,26 @@ const buildExcludedFilesRegex = (
       process.cwd(),
       file
     );
-    pathIncludedReferenceCount++;
+    includedPathsWithoutRegexCount++;
     includedFilesAddressToRegexString += `${convertAddressIntoRegexCompatibleFormat(
       moduleAbsoluteAddress
     )}|`;
   });
-  if (pathWithRegexReferenceCount) {
-    // Remove the last "|" from the string
-    regexElementsString = regexElementsString.slice(0, -1);
-  } else {
-    // If no references then disallo any file to match with this regex
-    regexElementsString = "!^()";
-  }
-  if (pathWithoutRegexReferenceCount) {
-    addressToRegexString = addressToRegexString.slice(0, -1);
-    // If there exists a file which starts with the addressToRegexString's regex, then exclude it
-    addressToRegexString = `^(${addressToRegexString})`;
-  } else addressToRegexString = "!^()";
 
-  if (pathIncludedReferenceCount) {
-    includedFilesAddressToRegexString = includedFilesAddressToRegexString.slice(
-      0,
-      -1
-    );
-    // Will exclude all files which are not present inside the included files
-    includedFilesAddressToRegexString = `!^(${includedFilesAddressToRegexString})`;
-  } else {
-    includedFilesAddressToRegexString = "!^()";
-  }
+  excludedFilesRegexString = excludedPathsWithRegexCount
+    ? excludedFilesRegexString.slice(0, -1)
+    : DEFAULT_REGEX_STRING;
+
+  excludedFilesAddressToRegexString = excludedPathsWithoutRegexCount
+    ? excludedFilesAddressToRegexString.slice(0, -1)
+    : DEFAULT_REGEX_STRING;
+
+  includedFilesAddressToRegexString = includedPathsWithoutRegexCount
+    ? `^(?!(${includedFilesAddressToRegexString.slice(0, -1)}))`
+    : DEFAULT_REGEX_STRING;
+
   // Either match the regex provided or provided modules paths or based on the included addresses provided
-  const regexInStringFormat = `${regexElementsString}|${addressToRegexString}|${includedFilesAddressToRegexString}`;
+  const regexInStringFormat = `${excludedFilesRegexString}|${excludedFilesAddressToRegexString}|${includedFilesAddressToRegexString}`;
   const excludedPointsRegex = new RegExp(regexInStringFormat, "i");
   return excludedPointsRegex;
 };
@@ -101,22 +93,21 @@ const buildIntraModuleDependencyRegex = (
     pathSubPartsArray,
     resolvedDepth + 1
   );
-  // Address of the sibling modules of the module's directory at the given depth
-  const siblingLocation = joinSubPartsTillGivenDepth(
-    pathSubPartsArray,
-    resolvedDepth
-  );
-  const regexCompatibleSiblingLocation = resolveAddressWithProvidedDirectory(
-    convertAddressIntoRegexCompatibleFormat(siblingLocation),
-    ".+"
-  );
-  const regexCompatibleDirectoryLocation =
-    convertAddressIntoRegexCompatibleFormat(directoryToCheckAtGivenDepth);
+
+  const regexCompatibleDirectoryLocation = `${convertAddressIntoRegexCompatibleFormat(
+    directoryToCheckAtGivenDepth
+  )}((\/.+)*)`;
   // Regex denotes any module which starts with the siblingLocation's path but doesn't start with module's ancestor directory at the given depth
-  return new RegExp(
-    `(?=^${regexCompatibleSiblingLocation})(?!^${regexCompatibleDirectoryLocation})`,
-    "i"
-  );
+  return {
+    intraModuleChecker: new RegExp(
+      `^(?!${regexCompatibleDirectoryLocation})`,
+      "i"
+    ),
+    insideModuleChecker: new RegExp(
+      `^${regexCompatibleDirectoryLocation}`,
+      "i"
+    ),
+  };
 };
 
 /**

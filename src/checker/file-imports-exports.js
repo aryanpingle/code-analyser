@@ -10,7 +10,7 @@ const {
   isFileMappingNotPresent,
   isFileNotExcluded,
 } = require("../utility/helper");
-const { getUsedFilesMapping } = require("./utility");
+const getUsedFilesMapping = require("./utility");
 const { CHECK_IMPORTS, CHECK_EXPORTS } = require("../utility/constants");
 const { displayFileParseErrorMessage } = require("../utility/cli");
 

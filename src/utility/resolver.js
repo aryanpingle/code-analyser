@@ -175,6 +175,15 @@ const getAllSubPartsOfGivenAbsolutePath = (givenPath) => {
   return subPartsArray;
 };
 
+const getNumberOfSubPartsOfGivenAbsolutePath = (givenPath) => {
+  let subPartsCount = 0;
+  let pathToRetrieveFrom = givenPath;
+  while (pathToRetrieveFrom.length > 1) {
+    subPartsCount += 1;
+    pathToRetrieveFrom = getDirectoryFromPath(pathToRetrieveFrom);
+  }
+  return subPartsCount;
+};
 /**
  * Will join together the sub-parts to form an absolute address which contains at most given depth's sub parts
  * @param {Array} subPartsArray Array consisting of sub-parts
@@ -202,4 +211,5 @@ module.exports = {
   getPathBaseName,
   getAllSubPartsOfGivenAbsolutePath,
   joinSubPartsTillGivenDepth,
+  getNumberOfSubPartsOfGivenAbsolutePath,
 };

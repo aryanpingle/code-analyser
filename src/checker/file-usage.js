@@ -8,7 +8,7 @@ const {
   isFileMappingNotPresent,
   isFileNotExcluded,
 } = require("../utility/helper");
-const { getUsedFilesMapping } = require("./utility");
+const getUsedFilesMapping = require("./utility");
 const { displayFileParseErrorMessage } = require("../utility/cli");
 /**
  * Will be used to check file to update the imported, exported variables when they are regerred

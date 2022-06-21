@@ -22,6 +22,4 @@ const getUsedFilesMapping = (currentFileMetadata) => {
   return usedFilesMapping;
 };
 
-module.exports = {
-  getUsedFilesMapping,
-};
+module.exports = getUsedFilesMapping;

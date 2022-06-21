@@ -9,7 +9,10 @@ const {
 } = require("./utility/cli");
 setConfiguration();
 const codeAnalyerConfigurationObject = require("./utility/configuration-object");
-const { buildExcludedFilesRegex } = require("./utility/regex");
+const {
+  buildExcludedFilesRegex,
+  buildIntraModuleDependencyRegex,
+} = require("./utility/regex");
 const { getDefaultFilesMetadata } = require("./utility/files");
 const {
   getDeadFiles,
@@ -29,6 +32,7 @@ const {
   isDuplicatedFilesCheckRequired,
 } = require("./utility/helper");
 const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
+const { DEFAULT_TRUE_REGEX_STRING } = require("./utility/constants");
 
 const excludedFilesRegex = buildExcludedFilesRegex(
   codeAnalyerConfigurationObject.exclude,
@@ -87,7 +91,6 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     excludedFilesRegex,
     spinner
   );
-  setAllStaticallyImportedFilesMapping(allEntryFiles, filesMetadata);
   const dependencyCheckerRelatedMetadata = {
     moduleLocation: resolveAddressWithProvidedDirectory(
       process.cwd(),
@@ -96,6 +99,21 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     isDepthFromFront: programConfiguration.isDepthFromFront,
     depth: programConfiguration.depth,
   };
+  const { intraModuleChecker, insideModuleChecker } =
+    buildIntraModuleDependencyRegex(
+      dependencyCheckerRelatedMetadata.moduleLocation,
+      dependencyCheckerRelatedMetadata.isDepthFromFront,
+      dependencyCheckerRelatedMetadata.depth
+    );
+  dependencyCheckerRelatedMetadata.intraModuleDependencyRegex =
+  intraModuleChecker;
+  filesMetadata.insideModuleRegex =
+    codeAnalyerConfigurationObject.checkAll
+      ? new RegExp(DEFAULT_TRUE_REGEX_STRING)
+      : insideModuleChecker;
+
+  setAllStaticallyImportedFilesMapping(allEntryFiles, filesMetadata);
+
   const intraModuleDependencies = getIntraModuleDependencies(
     dependencyCheckerRelatedMetadata,
     filesMetadata,
