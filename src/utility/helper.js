@@ -28,8 +28,6 @@ const isFileNotVisited = (fileLocation, filesMetadata) =>
 
 const isFileExtensionValid = (fileLocation) => /\.[jt]sx?$/.test(fileLocation);
 
-const isCheckingForFileChunks = (checkStaticImports) => !checkStaticImports;
-
 module.exports = {
   isDeadfileCheckRequired,
   isIntraModuleDependenciesCheckRequired,
@@ -40,5 +38,4 @@ module.exports = {
   isFileMappingNotPresent,
   isFileNotVisited,
   isFileExtensionValid,
-  isCheckingForFileChunks,
 };

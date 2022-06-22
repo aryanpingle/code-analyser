@@ -6,7 +6,6 @@ const {
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
-  isCheckingForFileChunks,
 } = require("../utility/helper");
 const {
   CHECK_STATIC_IMPORTS_ADDRESSES,
@@ -55,6 +54,12 @@ const traverseFileForStaticImports = (
 ) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
+    if (
+      checkStaticImports &&
+      !filesMetadata.insideModuleRegex.test(fileLocation)
+    )
+      return;
+
     let ast = buildAST(fileLocation);
     let currentFileMetadata = getDefaultCurrentFileMetadata(fileLocation);
     let traversalRelatedMetadata = {
@@ -71,35 +76,32 @@ const traverseFileForStaticImports = (
       ? currentFileMetadata.staticImportFilesMapping
       : currentFileMetadata.importedFilesMapping;
     // If we are checking to find duplicate files, therefore would need to traverse all files
-    if (isCheckingForFileChunks(checkStaticImports)) {
-      filesMetadata.filesMapping[fileLocation].staticImportFilesMapping =
-        currentFileMetadata.staticImportFilesMapping;
-    }
+
+    filesMetadata.filesMapping[fileLocation].staticImportFilesMapping =
+      currentFileMetadata.staticImportFilesMapping;
+
+
     // Setting ast as null, to save memory
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
-    if (
-      !checkStaticImports ||
-      filesMetadata.insideModuleRegex.test(fileLocation)
-    )
-      for (const file in requiredImportedFilesMapping) {
-        if (
-          isFileNotVisited(file, filesMetadata) &&
-          isFileExtensionValid(file) &&
-          isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-        ) {
-          if (!filesMetadata.filesMapping[file]) {
-            filesMetadata.filesMapping[file] = getDefaultFileObject(file);
-          }
-          traverseFileForStaticImports(file, filesMetadata, checkStaticImports);
-        } else if (
-          isFileMappingNotPresent(file, filesMetadata) &&
-          isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-        ) {
+    for (const file in requiredImportedFilesMapping) {
+      if (
+        isFileNotVisited(file, filesMetadata) &&
+        isFileExtensionValid(file) &&
+        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
+      ) {
+        if (!filesMetadata.filesMapping[file]) {
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
         }
+        traverseFileForStaticImports(file, filesMetadata, checkStaticImports);
+      } else if (
+        isFileMappingNotPresent(file, filesMetadata) &&
+        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
+      ) {
+        filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
+    }
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;

@@ -6,6 +6,8 @@ const {
   produceAnalysdDeadFileResult,
   produceAnalysedIntraModuleDependenciesResult,
   displayFilesOnScreen,
+  displayAllFilesInteractively,
+  displayDuplicateFileDetails,
 } = require("./utility/cli");
 setConfiguration();
 const codeAnalyerConfigurationObject = require("./utility/configuration-object");
@@ -24,7 +26,9 @@ const {
   setAllFileExports,
   createWebpackChunkMetadata,
   buildEntryFilesMappingFromArray,
-  displayDuplicateFiles,
+  getDuplicateFiles,
+  getIntraModuleDependenciesUsageMapping,
+  getDuplicateFilesChunksMapping
 } = require("./utility/index");
 const {
   isDeadfileCheckRequired,
@@ -69,7 +73,9 @@ const analyseCodeAndDetectDeadfiles = async (
     entryFiles: allEntryFiles.length,
   };
   produceAnalysdDeadFileResult(filesMetadata, filesLengthObject);
-  displayFilesOnScreen(allDeadFiles);
+  if (codeAnalyerConfigurationObject.interact)
+    displayAllFilesInteractively(allDeadFiles);
+  else displayFilesOnScreen(allDeadFiles);
 };
 
 /**
@@ -118,6 +124,7 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     filesMetadata,
     spinner
   );
+
   const filesLengthObject = {
     intraModuleDependencies: intraModuleDependencies.length,
     entryFiles: allEntryFiles.length,
@@ -126,7 +133,17 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     filesMetadata,
     filesLengthObject
   );
-  displayFilesOnScreen(intraModuleDependencies);
+  if (codeAnalyerConfigurationObject.interact) {
+    const intraModuleDependenciesUsageMapping =
+      getIntraModuleDependenciesUsageMapping(
+        intraModuleDependencies,
+        filesMetadata
+      );
+    displayAllFilesInteractively(
+      intraModuleDependencies,
+      intraModuleDependenciesUsageMapping
+    );
+  } else displayFilesOnScreen(intraModuleDependencies);
 };
 
 /**
@@ -153,7 +170,16 @@ const analyseCodeAndDetectAllDuplicateFiles = async (
     filesMetadata,
     spinner
   );
-  displayDuplicateFiles(webpackChunkMetadata);
+  const allDuplicateFiles = getDuplicateFiles(webpackChunkMetadata);
+  if (codeAnalyerConfigurationObject.interact) {
+    const duplicateFilesChunksMapping =
+      getDuplicateFilesChunksMapping(allDuplicateFiles);
+
+    displayAllFilesInteractively(
+      allDuplicateFiles,
+      duplicateFilesChunksMapping
+    );
+  } else displayDuplicateFileDetails(allDuplicateFiles);
 };
 
 if (isDeadfileCheckRequired(codeAnalyerConfigurationObject)) {

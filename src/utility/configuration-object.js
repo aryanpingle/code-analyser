@@ -13,8 +13,9 @@ const codeAnalyerConfigurationObject = {
   exclude: [IGNORED_FILES_REGEX, IGNORED_FOLDERS_REGEX],
   rootDirectory: EMPTY_STRING,
   isDepthFromFront: false,
-  checkAll: false, 
+  checkAll: false,
   depth: 1,
+  interact: false,
 };
 
 module.exports = codeAnalyerConfigurationObject;

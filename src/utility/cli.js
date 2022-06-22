@@ -1,12 +1,14 @@
+const { Select } = require("enquirer");
 const spinnies = require("spinnies");
 const yargs = require("yargs");
 const cliTableBuilder = require("cli-table3");
-const { IGNORED_FILES_REGEX } = require("./constants");
 const {
   getRequiredTypeElementFromString,
   getArrayOfElementsFromString,
 } = require("./parse-string");
 const codeAnalyerConfigurationObject = require("./configuration-object");
+const { buildTrie, getFirstNodeNotContainingOneChild } = require("./trie");
+const { GO_BACK } = require("./constants");
 const dots = {
   interval: 50,
   frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
@@ -90,6 +92,10 @@ const setConfiguration = () => {
           );
         break;
       case "depth":
+        codeAnalyerConfigurationObject[configuration] =
+          getRequiredTypeElementFromString(configurationObject[configuration]);
+        break;
+      case "interact":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
@@ -181,17 +187,18 @@ const produceAnalysedIntraModuleDependenciesResult = (
 
 /**
  * Will create a new table on the CLI which shows a file, along with the chunks (inside which it is present), which is present in more than one chunk
- * @param {String} file Absolute address of the duplicate file
- * @param {Array} fileChunksArray Array containing the chunks inside which this file is present
+ * @param {Array} filesObjectArray Array containing the each file's object which contains the chunks inside which it is present and it's address
  */
-const displayDuplicateFileDetails = (file, fileChunksArray) => {
-  const statsTable = new cliTableBuilder({
-    head: ["File", file],
+const displayDuplicateFileDetails = (filesObjectArray) => {
+  filesObjectArray.forEach((fileObject) => {
+    const statsTable = new cliTableBuilder({
+      head: ["File", fileObject.file],
+    });
+    fileObject.chunksArray.forEach((chunk, index) => {
+      statsTable.push([`Chunk ${index + 1}`, chunk]);
+    });
+    console.log(statsTable.toString());
   });
-  fileChunksArray.forEach((chunk, index) => {
-    statsTable.push([`Chunk ${index + 1}`, chunk]);
-  });
-  console.log(statsTable.toString());
 };
 
 /**
@@ -208,10 +215,10 @@ const displayFilesOnScreen = (filesArray) => {
       statsTable.push([index + 1, fileObject.file])
     );
     console.log(statsTable.toString());
-  } else {
-    // Print that no file found to display if the given array is empty
-    console.log("\x1b[32m", "\nNo file meeting the required criteria present.");
   }
+  // Print that no file found to display if the given array is empty
+  else
+    console.log("\x1b[32m", "\nNo file meeting the required criteria present.");
 };
 /**
  * Will print the error found while parsing a file on the console
@@ -221,6 +228,93 @@ const displayFilesOnScreen = (filesArray) => {
 const displayFileParseErrorMessage = (fileLocation, error) => {
   console.error("\x1b[33m", "Unable to parse file:", fileLocation);
   console.error(error);
+};
+
+/**
+ * Can be used to display all files along with additional information to display with them on the screen interactively
+ * @param {Array} filesArray Contains file name and other information
+ * @param {Object} filesAdditionalInformationMapping Can be used to display which files use intra-module dependencies/ display webpack chunks
+ */
+const displayAllFilesInteractively = async (
+  filesArray,
+  filesAdditionalInformationMapping = {}
+) => {
+  if (filesArray.length === 0) {
+    console.log("\x1b[32m", "\nNo file meeting the required criteria present.");
+  }
+  const headNode = buildTrie(filesArray);
+  const nodesInLastVisitedPaths = [headNode];
+
+  while (nodesInLastVisitedPaths.length) {
+    const firstNodeNotContainingOneChild = getFirstNodeNotContainingOneChild(
+      nodesInLastVisitedPaths[nodesInLastVisitedPaths.length - 1]
+    );
+    if (
+      filesAdditionalInformationMapping[
+        firstNodeNotContainingOneChild.pathTillNode
+      ]
+    ) {
+      displayFileAdditionalInformation(
+        firstNodeNotContainingOneChild.pathTillNode,
+        filesAdditionalInformationMapping[
+          firstNodeNotContainingOneChild.pathTillNode
+        ]
+      );
+    }
+    const nextNodeToCheck = await interactivelyDisplayAndGetNextNode(
+      firstNodeNotContainingOneChild
+    );
+    if (nextNodeToCheck === GO_BACK) nodesInLastVisitedPaths.pop();
+    else nodesInLastVisitedPaths.push(nextNodeToCheck);
+    console.clear();
+  }
+};
+
+/**
+ * Provides users with choices to select the next file/ folder to visit
+ * @param {Object} nodeToCheck Current trie node which is being visited
+ * @returns Next trie node to visit
+ */
+const interactivelyDisplayAndGetNextNode = async (nodeToCheck) => {
+  const choices = [GO_BACK];
+  const addressToNodeMapping = {};
+  addressToNodeMapping[GO_BACK] = GO_BACK;
+  let prompt;
+  if (Object.keys(nodeToCheck.childrens).length === 0) {
+    prompt = new Select({
+      name: "value",
+      message: `Currently at location: ${nodeToCheck.pathTillNode}\n`,
+      choices: choices,
+    });
+  } else {
+    for (const index in nodeToCheck.childrens) {
+      const nodeToCheckAddress = nodeToCheck.childrens[index].pathTillNode;
+      choices.push(nodeToCheckAddress);
+      addressToNodeMapping[nodeToCheckAddress] = nodeToCheck.childrens[index];
+    }
+    prompt = new Select({
+      name: "value",
+      message: `Currently at location: ${nodeToCheck.pathTillNode}\nPick file/folder to check:`,
+      choices,
+    });
+  }
+  const choicePicked = await prompt.run();
+  return addressToNodeMapping[choicePicked];
+};
+
+/**
+ * Used to display additional information along with the file's name
+ * @param {String} file File whose details have to be displayed
+ * @param {Array} additionalInformationArray Array consisting of information to display related to the given file
+ */
+const displayFileAdditionalInformation = (file, additionalInformationArray) => {
+  const statsTable = new cliTableBuilder({
+    head: ["Index", file],
+  });
+  additionalInformationArray.forEach((information, index) => {
+    statsTable.push([index + 1, information]);
+  });
+  console.log(statsTable.toString());
 };
 
 module.exports = {
@@ -233,4 +327,5 @@ module.exports = {
   displayDuplicateFileDetails,
   displayFilesOnScreen,
   displayFileParseErrorMessage,
+  displayAllFilesInteractively,
 };

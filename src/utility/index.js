@@ -5,11 +5,7 @@ const {
 const { checkFileImportExports } = require("../checker/file-imports-exports");
 const { checkFileImports } = require("../checker/file-imports");
 const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
-const {
-  addNewInstanceToSpinner,
-  updateSpinnerInstance,
-  displayDuplicateFileDetails,
-} = require("./cli");
+const { addNewInstanceToSpinner, updateSpinnerInstance } = require("./cli");
 const {
   isFilePath,
   getNumberOfSubPartsOfGivenAbsolutePath,
@@ -385,8 +381,9 @@ const generateDefaultFileChunksObject = (filesMetadata, fileLocation) => {
  * Displays the files (along with the chunks inside which it is present) which are present in more than one chunk on the console
  * @param {Object} webpackChunkMetadata Data Structure containing information related to the chunks inside which a file is present
  */
-const displayDuplicateFiles = (webpackChunkMetadata) => {
+const getDuplicateFiles = (webpackChunkMetadata) => {
   const fileWebpackChunkMapping = {};
+  const duplicateFilesDetails = [];
   for (const file in webpackChunkMetadata) {
     const fileChunksSet = getAllRelatedChunks(
       file,
@@ -394,9 +391,13 @@ const displayDuplicateFiles = (webpackChunkMetadata) => {
       fileWebpackChunkMapping
     );
     if (fileChunksSet.size > 1) {
-      displayDuplicateFileDetails(file, Array.from(fileChunksSet));
+      duplicateFilesDetails.push({
+        file,
+        chunksArray: Array.from(fileChunksSet),
+      });
     }
   }
+  return duplicateFilesDetails;
 };
 
 /**
@@ -445,6 +446,43 @@ const buildEntryFilesMappingFromArray = (entryFilesArray) => {
   return entryFilesMapping;
 };
 
+/**
+ * Will generate a mapping containing information related to intra-module dependency and the files which import them
+ * @param {Array} intraModuleDependenciesArray Array containing the intra-module dependencies
+ * @param {Object} filesMetadata
+ */
+const getIntraModuleDependenciesUsageMapping = (
+  intraModuleDependenciesArray,
+  filesMetadata
+) => {
+  const intraModuleDependenciesUsageMapping = {};
+  intraModuleDependenciesArray.forEach(
+    (fileObject) => (intraModuleDependenciesUsageMapping[fileObject.file] = [])
+  );
+  for (const file in filesMetadata.filesMapping) {
+    for (const dependentFile in filesMetadata.filesMapping[file]
+      .staticImportFilesMapping) {
+      if (intraModuleDependenciesUsageMapping[dependentFile]) {
+        intraModuleDependenciesUsageMapping[dependentFile].push(file);
+      }
+    }
+  }
+  return intraModuleDependenciesUsageMapping;
+};
+
+/**
+ * Generates a mapping from given duplicate files array,
+ * contains information related to the duplicate files and the chunks inside which they are present
+ * @param {Array} duplicateFilesArray
+ */
+const getDuplicateFilesChunksMapping = (duplicateFilesArray) => {
+  const duplicateFilesChunksMapping = {};
+  duplicateFilesArray.forEach((fileObject) => {
+    duplicateFilesChunksMapping[fileObject.file] = fileObject.chunksArray;
+  });
+  return duplicateFilesChunksMapping;
+};
+
 module.exports = {
   setAllStaticallyImportedFilesMapping,
   setAllImportedFilesMapping,
@@ -454,6 +492,8 @@ module.exports = {
   getDeadFiles,
   getIntraModuleDependencies,
   getAllRequiredFiles,
-  displayDuplicateFiles,
+  getDuplicateFiles,
   buildEntryFilesMappingFromArray,
+  getIntraModuleDependenciesUsageMapping,
+  getDuplicateFilesChunksMapping,
 };

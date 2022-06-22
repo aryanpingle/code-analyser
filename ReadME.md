@@ -65,11 +65,14 @@ Install code-analyser Cli with the following command
    Used with intra-module checker to get all intra-module dependencies or only the entry files of the intra-module depdencies \
    By default will provide entry files of the intra-module dependencies \
    Accepted values: True/ false
+- `interact` **(default: false)** \
+   Use it to display the output in an interactive way for better analysis \
+   Accepted values: True/ false
 
 ### Sample Examples
 
 > analyseCode --checkDeadFiles --entry='["./index.js"]' --directoriesToCheck='["./"]' --rootDirectory='./'
 
-> analyseCode --checkDuplicateFiles --entry='["./src/index.tsx"]'
+> analyseCode --checkDuplicateFiles --entry='["./src/index.tsx"]' --interact
 
 > analyseCode --checkIntraModuleDependencies --exclude='[/node_modules|(\.git)|(Icon)|jpg|png|hdr|svg|glb|woff2|mp4|mdx|webp/]' --moduleToCheck="./index.jsx"
