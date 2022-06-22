@@ -8,6 +8,7 @@ const {
   isFileMappingNotPresent,
   isFileNotExcluded,
 } = require("../../utility/helper");
+const { isAllExportsImported } = require("../helper");
 const {
   ALL_EXPORTS_IMPORTED,
   IMPORT_SPECIFIER,
@@ -81,20 +82,29 @@ const setImportedVariableInCurrentFileMetadata = (
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  */
 const setImportedVariablesDuringImportStage = (
-  nodeToParse,
+  { nodeToGetValues: nodeToParse, importedFileAddress },
   currentFileMetadata,
-  importedFileAddress
+  filesMetadata
 ) => {
   if (!nodeToParse) return;
   if (nodeToParse.type === IDENTIFIER) {
     const localName = nodeToParse.name;
-    currentFileMetadata.importedVariablesMetadata[localName] =
-      getNewImportVariableObject(
-        null,
-        localName,
-        ALL_EXPORTS_IMPORTED,
-        importedFileAddress
-      );
+    if (isAllExportsImported(filesMetadata, importedFileAddress))
+      currentFileMetadata.importedVariablesMetadata[localName] =
+        getNewImportVariableObject(
+          null,
+          localName,
+          ALL_EXPORTS_IMPORTED,
+          importedFileAddress
+        );
+    else
+      currentFileMetadata.importedVariablesMetadata[localName] =
+        getNewImportVariableObject(
+          DEFAULT,
+          localName,
+          INDIVIDUAL_IMPORT,
+          importedFileAddress
+        );
   } else if (nodeToParse.type === OBJECT_PATTERN) {
     nodeToParse.properties.forEach((property) => {
       const localName = property.value.name;
@@ -137,8 +147,15 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
     } else if (node.type === IDENTIFIER) {
       try {
         const localEntityName = node.name;
-        currentFileMetadata.importedVariables[localEntityName] =
-          filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+        if (isAllExportsImported(filesMetadata, importedFileAddress)) {
+          currentFileMetadata.importedVariables[localEntityName] =
+            filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+        } else {
+          currentFileMetadata.importedVariables[localEntityName] =
+            filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+              DEFAULT
+            ];
+        }
         if (type === DONT_UPDATE_REFERENCE_COUNT)
           currentFileMetadata.importedVariables[
             localEntityName

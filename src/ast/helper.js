@@ -12,6 +12,7 @@ const {
   IDENTIFIER,
   CHECK_ALL_IMPORTS_ADDRESSES,
   CHECK_STATIC_IMPORTS_ADDRESSES,
+  DEFAULT,
 } = require("../utility/constants");
 
 const isExportFromTypeStatement = (node) =>
@@ -105,7 +106,14 @@ const isNotExportTypeReference = (path) => {
         assignmentNode.node.left.object &&
         assignmentNode.node.left.object.name === MODULE &&
         assignmentNode.node.left.property &&
-        assignmentNode.node.left.property.name === EXPORTS) ||
+        assignmentNode.node.left.property.name === EXPORTS &&
+        assignmentNode.node.right &&
+        (assignmentNode.node.right === path.node ||
+          (assignmentNode.node.right.properties &&
+            assignmentNode.node.right.properties.some(
+              (property) =>
+                property.key === path.node || property.value === path.node
+            )))) ||
       // export default type statements
       (exportDefaultDeclaration &&
         exportDefaultDeclaration.node &&
@@ -135,6 +143,16 @@ const isNotTraversingToCheckForImportAddresses = (traverseType) =>
 const isNotTraversingToCheckForStaticImportAddresses = (traverseType) =>
   traverseType !== CHECK_STATIC_IMPORTS_ADDRESSES;
 
+const isAllExportsImported = (filesMetadata, importedFileAddress) => {
+  return !(
+    filesMetadata.filesMapping[importedFileAddress] &&
+    Object.keys(
+      filesMetadata.filesMapping[importedFileAddress].exportedVariables
+    ).length === 4 &&
+    filesMetadata.filesMapping[importedFileAddress].exportedVariables[DEFAULT]
+  );
+};
+
 module.exports = {
   isExportFromTypeStatement,
   isSubPartOfDynamicImport,
@@ -150,4 +168,5 @@ module.exports = {
   isTraversingToCheckForImportAddresses,
   isNotTraversingToCheckForImportAddresses,
   isNotTraversingToCheckForStaticImportAddresses,
+  isAllExportsImported,
 };

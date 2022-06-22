@@ -70,7 +70,6 @@ const traverseFileForCheckingImportsExports = (
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
-
     for (const file in requiredImportedFilesMapping) {
       if (
         isFileNotVisited(file, filesMetadata) &&

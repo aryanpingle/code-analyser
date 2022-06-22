@@ -70,9 +70,6 @@ const analyseCodeAndDetectDeadfiles = async (
   };
   produceAnalysdDeadFileResult(filesMetadata, filesLengthObject);
   displayFilesOnScreen(allDeadFiles);
-  for(const file in filesMetadata.filesMapping){
-    if(/checker\/utility/.test(file))console.log(filesMetadata.filesMapping[file])
-  }
 };
 
 /**
@@ -109,11 +106,10 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
       dependencyCheckerRelatedMetadata.depth
     );
   dependencyCheckerRelatedMetadata.intraModuleDependencyRegex =
-  intraModuleChecker;
-  filesMetadata.insideModuleRegex =
-    codeAnalyerConfigurationObject.checkAll
-      ? new RegExp(DEFAULT_TRUE_REGEX_STRING)
-      : insideModuleChecker;
+    intraModuleChecker;
+  filesMetadata.insideModuleRegex = codeAnalyerConfigurationObject.checkAll
+    ? new RegExp(DEFAULT_TRUE_REGEX_STRING)
+    : insideModuleChecker;
 
   setAllStaticallyImportedFilesMapping(allEntryFiles, filesMetadata);
 

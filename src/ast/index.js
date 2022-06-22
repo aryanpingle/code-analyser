@@ -261,9 +261,9 @@ const traverseAST = (
             }
           }
         }
+        // Checks for "require(...)" type statements
       }
-      // Checks for "require(...)" type statements
-      else if (isRequireStatement(path.node)) {
+      if (isRequireStatement(path.node)) {
         const requireOrImportStatementMetadata = {
           nodeToGetAddress: path.node,
           nodeToGetValues: null,

@@ -156,6 +156,7 @@ const getIntraModuleDependencies = (
  */
 const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
   const filesMapping = filesMetadata.filesMapping;
+  const deadFileVisitedMapping = {};
   const deadFilesArray = allFilesToCheck
     .filter((file) => {
       return (
@@ -166,10 +167,9 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
       );
     })
     .map((file) => {
+      deadFileVisitedMapping[file] = true;
       return { file, filePoints: getFilePoints(file, filesMapping) };
     });
-
-  const deadFileVisitedMapping = {};
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
   for (const fileObject of deadFilesArray) {
     const file = fileObject.file;

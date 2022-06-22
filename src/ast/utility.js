@@ -11,7 +11,6 @@ const {
   STRING_LITERAL,
   TEMPLATE_LITERAL,
   UNRESOLVED_TYPE,
-  EMPTY_STRING,
   NONE,
 } = require("../utility/constants");
 const { isFileExtensionNotValid } = require("../utility/helper");
@@ -150,17 +149,20 @@ const getResolvedImportedFileDetails = (
 const getValuesFromStatement = (nodeToGetValues, type) => {
   // module.exports = X type statements
   if (nodeToGetValues.type === IDENTIFIER)
-    return [{ [nodeToGetValues.name]: "" }];
+    return [{ [nodeToGetValues.name]: DEFAULT }];
   // module.exports = {X} type statements
   else if (nodeToGetValues.type === OBJECT_EXPRESSION) {
     const keyValuesPairArray = [];
     nodeToGetValues.properties.forEach((property) => {
       // Each individual element inside the {...} is a property
       if (property.value && property.key) {
+        const keyName = property.key.name
+          ? property.key.name
+          : property.key.value;
+
         if (property.value.name)
-          keyValuesPairArray.push({ [property.key.name]: property.value.name });
-        else
-          keyValuesPairArray.push({ [property.key.name]: property.key.name });
+          keyValuesPairArray.push({ [property.value.name]: keyName });
+        else keyValuesPairArray.push({ [keyName]: keyName });
       }
     });
     return keyValuesPairArray;
@@ -224,8 +226,8 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
       return keyValuesPairArray;
     }
     // Will cover any other case
-    else return [{ default: DEFAULT }];
-  } else return [];
+    else return [{ [DEFAULT]: DEFAULT }];
+  } else return [{ [DEFAULT]: DEFAULT }];
 };
 
 /**
@@ -295,31 +297,20 @@ const setExportVariable = (
           : filesMetadata.filesMapping[importedVariable.importedFrom]
               .exportedVariables[importedVariable.name];
 
-      if (Object.values(variable)[0] !== EMPTY_STRING)
-        currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-          importedVariableToSet;
-      else currentFileMetadata.exportedVariables = importedVariableToSet;
+      currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+        importedVariableToSet;
 
-      const exportedVariableToUpdate =
-        Object.values(variable)[0] !== EMPTY_STRING
-          ? currentFileMetadata.exportedVariables[Object.values(variable)[0]]
-          : currentFileMetadata.exportedVariables;
+      currentFileMetadata.exportedVariables[
+        Object.values(variable)[0]
+      ].individualFileReferencesMapping[currentFileMetadata.fileLocation] =
+        importedVariable.referenceCountObject;
 
-      exportedVariableToUpdate.individualFileReferencesMapping[
-        currentFileMetadata.fileLocation
-      ] = importedVariable.referenceCountObject;
-
-      exportedVariableToUpdate.isEntryFileObject |=
-        currentFileMetadata.isEntryFile;
+      currentFileMetadata.exportedVariables[
+        Object.values(variable)[0]
+      ].isEntryFileObject |= currentFileMetadata.isEntryFile;
     } else {
-      if (Object.values(variable)[0] !== EMPTY_STRING)
-        currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-          getNewDefaultObject(
-            currentFileMetadata.fileLocation,
-            Object.keys(variable)[0]
-          );
-      else
-        currentFileMetadata.exportedVariables = getNewDefaultObject(
+      currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
+        getNewDefaultObject(
           currentFileMetadata.fileLocation,
           Object.keys(variable)[0]
         );

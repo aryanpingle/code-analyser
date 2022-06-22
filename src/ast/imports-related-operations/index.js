@@ -114,10 +114,14 @@ const doRequireOrImportStatementOperations = (
     currentFileMetadata.staticImportFilesMapping[importedFileAddress] = true;
 
   if (isNotTraversingToCheckForImportAddresses(operationType)) {
-    setImportedVariablesDuringImportStage(
+    const importStageMetadata = {
       nodeToGetValues,
+      importedFileAddress,
+    };
+    setImportedVariablesDuringImportStage(
+      importStageMetadata,
       currentFileMetadata,
-      importedFileAddress
+      filesMetadata
     );
     if (operationType === CHECK_USAGE) {
       const updateVariablesMetadata = {

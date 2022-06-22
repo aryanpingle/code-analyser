@@ -66,7 +66,6 @@ const traverseFileForStaticImports = (
       ? CHECK_STATIC_IMPORTS_ADDRESSES
       : CHECK_ALL_IMPORTS_ADDRESSES;
     traverseAST(traversalRelatedMetadata, traverseType);
-
     // Whether we need to check for static imports or should we include dynamic imports too
     let requiredImportedFilesMapping = checkStaticImports
       ? currentFileMetadata.staticImportFilesMapping
