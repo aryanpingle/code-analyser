@@ -12,6 +12,8 @@ const {
   TEMPLATE_LITERAL,
   UNRESOLVED_TYPE,
   NONE,
+  NORMAL_EXPORT,
+  DEFAULT_OBJECT_EXPORT,
 } = require("../utility/constants");
 const { isFileExtensionNotValid } = require("../utility/helper");
 const {
@@ -149,23 +151,17 @@ const getResolvedImportedFileDetails = (
 const getValuesFromStatement = (nodeToGetValues, type) => {
   // module.exports = X type statements
   if (nodeToGetValues.type === IDENTIFIER)
-    return [{ [nodeToGetValues.name]: DEFAULT }];
+    return {
+      exportedVariablesArray: [{ [nodeToGetValues.name]: DEFAULT }],
+      type: NORMAL_EXPORT,
+    };
   // module.exports = {X} type statements
   else if (nodeToGetValues.type === OBJECT_EXPRESSION) {
-    const keyValuesPairArray = [];
-    nodeToGetValues.properties.forEach((property) => {
-      // Each individual element inside the {...} is a property
-      if (property.value && property.key) {
-        const keyName = property.key.name
-          ? property.key.name
-          : property.key.value;
-
-        if (property.value.name)
-          keyValuesPairArray.push({ [property.value.name]: keyName });
-        else keyValuesPairArray.push({ [keyName]: keyName });
-      }
-    });
-    return keyValuesPairArray;
+    const keyValuesPairArray = getValuesFromObject(nodeToGetValues.properties);
+    return {
+      exportedVariablesArray: keyValuesPairArray,
+      type: DEFAULT_OBJECT_EXPORT,
+    };
   }
   // export {x as y} type statements
   else if (nodeToGetValues.specifiers && nodeToGetValues.specifiers.length) {
@@ -180,11 +176,16 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
           [specifier.exported.name]: specifier.exported.name,
         });
     });
-    return keyValuesPairArray;
+    return { exportedVariablesArray: keyValuesPairArray, type: NORMAL_EXPORT };
   } else if (nodeToGetValues.declaration) {
     // export default x type statements
     if (nodeToGetValues.declaration.name)
-      return [{ [nodeToGetValues.declaration.name]: DEFAULT }];
+      return {
+        exportedVariablesArray: [
+          { [nodeToGetValues.declaration.name]: DEFAULT },
+        ],
+        type: NORMAL_EXPORT,
+      };
     else if (nodeToGetValues.declaration.declarations) {
       // export const x = () => {} type statements
       const keyValuesPairArray = [];
@@ -195,7 +196,10 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
           });
         }
       });
-      return keyValuesPairArray;
+      return {
+        exportedVariablesArray: keyValuesPairArray,
+        type: NORMAL_EXPORT,
+      };
     } else if (nodeToGetValues.declaration.id) {
       // export function x(){} type statements
       const keyValuesPairArray = [];
@@ -209,7 +213,10 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
           [nodeToGetValues.declaration.id.name]:
             nodeToGetValues.declaration.id.name,
         });
-      return keyValuesPairArray;
+      return {
+        exportedVariablesArray: keyValuesPairArray,
+        type: NORMAL_EXPORT,
+      };
     }
     // export default x  = () => {} type cases
     else if (nodeToGetValues.declaration.left) {
@@ -223,13 +230,56 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
           [nodeToGetValues.declaration.left.name]:
             nodeToGetValues.declaration.left.name,
         });
-      return keyValuesPairArray;
+      return {
+        exportedVariablesArray: keyValuesPairArray,
+        type: NORMAL_EXPORT,
+      };
+    }
+    // export default {...} type cases
+    else if (nodeToGetValues.declaration.properties) {
+      const keyValuesPairArray = getValuesFromObject(
+        nodeToGetValues.declaration.properties
+      );
+      return {
+        exportedVariablesArray: keyValuesPairArray,
+        type: DEFAULT_OBJECT_EXPORT,
+      };
     }
     // Will cover any other case
-    else return [{ [DEFAULT]: DEFAULT }];
-  } else return [{ [DEFAULT]: DEFAULT }];
+    else
+      return {
+        exportedVariablesArray: [{ [DEFAULT]: DEFAULT }],
+        type: NORMAL_EXPORT,
+      };
+  } else
+    return {
+      exportedVariablesArray: [{ [DEFAULT]: DEFAULT }],
+      type: NORMAL_EXPORT,
+    };
 };
 
+/**
+ * Parses the given array to generate a new key-value pairs array
+ * @param {Array} arrayToGetValuesFrom
+ * @returns Array containing key-value pairs
+ */
+const getValuesFromObject = (arrayToGetValuesFrom) => {
+  const keyValuesPairArray = [];
+  arrayToGetValuesFrom.forEach((property) => {
+    // Each individual element inside the {...} is a property
+    if (property.key) {
+      const keyName = property.key.name
+        ? property.key.name
+        : property.key.value;
+      if (property.value && property.value.name)
+        keyValuesPairArray.push({ [property.value.name]: keyName });
+      else if (property.value && property.value.id)
+        keyValuesPairArray.push({ [property.value.id.name]: keyName });
+      else keyValuesPairArray.push({ [keyName]: keyName });
+    }
+  });
+  return keyValuesPairArray;
+};
 /**
  * Will set the export variables of the current file
  * If an export is also an imported variable, then it will simply refer it
@@ -238,11 +288,12 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
  * @param {Object} filesMetadata To get all exported variables of another file
  */
 const setExportedVariablesFromArray = (
-  exportedVariablesArray,
+  { exportedVariablesArray, type },
   currentFileMetadata,
   filesMetadata
 ) => {
   exportedVariablesArray.forEach((variable) => {
+    let exportVariableMetadata;
     try {
       // If it is an imported variable
       if (
@@ -252,27 +303,36 @@ const setExportedVariablesFromArray = (
           currentFileMetadata.importedVariablesMetadata[
             Object.keys(variable)[0]
           ];
-        const exportVariableMetadata = {
+        exportVariableMetadata = {
           variable,
           importedVariable,
         };
-        setExportVariable(
-          exportVariableMetadata,
-          currentFileMetadata,
-          filesMetadata
-        );
       } else {
         // If it isn't an imported variable
-        const exportVariableMetadata = {
+        exportVariableMetadata = {
           variable,
           importedVariable: null,
         };
-        setExportVariable(
-          exportVariableMetadata,
-          currentFileMetadata,
-          filesMetadata
-        );
       }
+      if (type === NORMAL_EXPORT) {
+        exportVariableMetadata.variableToUpdate =
+          currentFileMetadata.exportedVariables;
+      } else {
+        if (!currentFileMetadata.exportedVariables[DEFAULT]) {
+          currentFileMetadata.exportedVariables[DEFAULT] = getNewDefaultObject(
+            currentFileMetadata.fileLocation,
+            DEFAULT,
+            currentFileMetadata.isEntryFile
+          );
+        }
+        exportVariableMetadata.variableToUpdate =
+          currentFileMetadata.exportedVariables[DEFAULT];
+      }
+      setExportVariable(
+        exportVariableMetadata,
+        currentFileMetadata,
+        filesMetadata
+      );
     } catch (_) {}
   });
 };
@@ -284,7 +344,7 @@ const setExportedVariablesFromArray = (
  * @param {Object} filesMetadata To get all exported variables of another file
  */
 const setExportVariable = (
-  { variable, importedVariable },
+  { variable, importedVariable, variableToUpdate },
   currentFileMetadata,
   filesMetadata
 ) => {
@@ -297,23 +357,20 @@ const setExportVariable = (
           : filesMetadata.filesMapping[importedVariable.importedFrom]
               .exportedVariables[importedVariable.name];
 
-      currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-        importedVariableToSet;
+      variableToUpdate[Object.values(variable)[0]] = importedVariableToSet;
 
-      currentFileMetadata.exportedVariables[
+      variableToUpdate[
         Object.values(variable)[0]
       ].individualFileReferencesMapping[currentFileMetadata.fileLocation] =
         importedVariable.referenceCountObject;
 
-      currentFileMetadata.exportedVariables[
-        Object.values(variable)[0]
-      ].isEntryFileObject |= currentFileMetadata.isEntryFile;
+      variableToUpdate[Object.values(variable)[0]].isEntryFileObject |=
+        currentFileMetadata.isEntryFile;
     } else {
-      currentFileMetadata.exportedVariables[Object.values(variable)[0]] =
-        getNewDefaultObject(
-          currentFileMetadata.fileLocation,
-          Object.keys(variable)[0]
-        );
+      variableToUpdate[Object.values(variable)[0]] = getNewDefaultObject(
+        currentFileMetadata.fileLocation,
+        Object.keys(variable)[0]
+      );
     }
   } catch (_) {}
 };

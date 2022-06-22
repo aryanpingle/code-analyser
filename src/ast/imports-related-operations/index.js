@@ -4,6 +4,7 @@ const {
   getImportedFileAddress,
   getResolvedImportedFileDetails,
   getNewImportVariableObject,
+  getNewDefaultObject,
 } = require("../utility");
 const {
   isSpecifiersPresent,
@@ -81,9 +82,19 @@ const doImportDeclartionOperationsAfterSetup = (
       try {
         // import "..." type statements
         const valueToAdd = addReferences ? 1 : -1;
-        filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-          DEFAULT
-        ].referenceCount += valueToAdd;
+        if (
+          !filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            DEFAULT
+          ]
+        ) {
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            DEFAULT
+          ] = getNewDefaultObject(importedFileAddress);
+        }
+        if (traverseType === "CHECK_USAGE")
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            DEFAULT
+          ].referenceCount += valueToAdd;
       } catch (_) {}
     }
   } catch (_) {}

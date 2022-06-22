@@ -3,6 +3,7 @@ const {
   getImportedNameFromProperty,
   getDefaultFileObject,
   getNewImportVariableObject,
+  getNewDefaultObject,
 } = require("../utility");
 const {
   isFileMappingNotPresent,
@@ -89,22 +90,13 @@ const setImportedVariablesDuringImportStage = (
   if (!nodeToParse) return;
   if (nodeToParse.type === IDENTIFIER) {
     const localName = nodeToParse.name;
-    if (isAllExportsImported(filesMetadata, importedFileAddress))
-      currentFileMetadata.importedVariablesMetadata[localName] =
-        getNewImportVariableObject(
-          null,
-          localName,
-          ALL_EXPORTS_IMPORTED,
-          importedFileAddress
-        );
-    else
-      currentFileMetadata.importedVariablesMetadata[localName] =
-        getNewImportVariableObject(
-          DEFAULT,
-          localName,
-          INDIVIDUAL_IMPORT,
-          importedFileAddress
-        );
+    currentFileMetadata.importedVariablesMetadata[localName] =
+      getNewImportVariableObject(
+        DEFAULT,
+        localName,
+        INDIVIDUAL_IMPORT,
+        importedFileAddress
+      );
   } else if (nodeToParse.type === OBJECT_PATTERN) {
     nodeToParse.properties.forEach((property) => {
       const localName = property.value.name;
@@ -137,6 +129,15 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
     if (!node) {
       try {
         // no imported values used (eg. css, html imports)
+        if (
+          !filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            DEFAULT
+          ]
+        ) {
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            DEFAULT
+          ] = getNewDefaultObject(importedFileAddress);
+        }
         const exportedVariable =
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
             DEFAULT
@@ -147,15 +148,12 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
     } else if (node.type === IDENTIFIER) {
       try {
         const localEntityName = node.name;
-        if (isAllExportsImported(filesMetadata, importedFileAddress)) {
-          currentFileMetadata.importedVariables[localEntityName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-        } else {
-          currentFileMetadata.importedVariables[localEntityName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-              DEFAULT
-            ];
-        }
+
+        currentFileMetadata.importedVariables[localEntityName] =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            DEFAULT
+          ];
+
         if (type === DONT_UPDATE_REFERENCE_COUNT)
           currentFileMetadata.importedVariables[
             localEntityName
@@ -174,7 +172,7 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
         try {
           // Individual import
           currentFileMetadata.importedVariables[localEntityName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+            filesMetadata.filesMapping[importedFileAddress].exportedVariables[DEFAULT][
               importedEntityName
             ];
           // Update references as it is an import type reference

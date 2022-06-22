@@ -112,7 +112,9 @@ const isNotExportTypeReference = (path) => {
           (assignmentNode.node.right.properties &&
             assignmentNode.node.right.properties.some(
               (property) =>
-                property.key === path.node || property.value === path.node
+                property.key === path.node ||
+                property.value === path.node ||
+                (property.value && property.value.id === path.node)
             )))) ||
       // export default type statements
       (exportDefaultDeclaration &&
@@ -122,7 +124,15 @@ const isNotExportTypeReference = (path) => {
           exportDefaultDeclaration.node.declaration.id === path.node ||
           exportDefaultDeclaration.node.declaration === path.node ||
           (exportDefaultDeclaration.node.declaration.params &&
-            exportDefaultDeclaration.node.declaration.params[0] === path.node)))
+            exportDefaultDeclaration.node.declaration.params[0] ===
+              path.node) ||
+          (exportDefaultDeclaration.node.declaration.properties &&
+            exportDefaultDeclaration.node.declaration.properties.some(
+              (property) =>
+                property.key === path.node ||
+                property.value === path.node ||
+                (property.value && property.value.id === path.node)
+            ))))
     )
   );
 };

@@ -79,7 +79,7 @@ const isFilePath = (givenPath) => {
 };
 
 const settings = {
-  extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts", ".spec.ts"],
+  extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts"],
   modules: ["src", "node_modules"],
   plugins: [],
 };

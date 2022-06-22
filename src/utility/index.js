@@ -15,7 +15,7 @@ const {
   getNumberOfSubPartsOfGivenAbsolutePath,
 } = require("./resolver");
 const { isFileNotExcluded, isFileExtensionValid } = require("./helper");
-const { CHUNKS } = require("./constants");
+const { CHUNKS, DEFAULT } = require("./constants");
 
 /**
  * Used to get all the statically imported files addresses on which the entry files depend
@@ -226,17 +226,10 @@ const isFileReferred = (filesMapping, fileLocation) => {
   const allExportedVariables = filesMapping[fileLocation].exportedVariables;
   try {
     // If the entire object of the file was referred
-    let referencesUsingThisFile = allExportedVariables.referenceCount;
-    if (
-      allExportedVariables.individualFileReferencesMapping &&
-      allExportedVariables.individualFileReferencesMapping[fileLocation]
-    ) {
-      referencesUsingThisFile -=
-        allExportedVariables.individualFileReferencesMapping[fileLocation]
-          .referenceCount -
-        allExportedVariables.individualFileReferencesMapping[fileLocation]
-          .exportReferenceCount;
-    }
+    const referencesUsingThisFile = getReferencesOfVariableUsingGivenFile(
+      variable,
+      fileLocation
+    );
     if (referencesUsingThisFile || allExportedVariables.isEntryFileObject) {
       isReferred = true;
     }
@@ -244,22 +237,10 @@ const isFileReferred = (filesMapping, fileLocation) => {
   if (isReferred) return true;
   for (const variable in allExportedVariables) {
     try {
-      let referencesUsingThisFile =
-        allExportedVariables[variable].referenceCount;
-      if (
-        allExportedVariables[variable].individualFileReferencesMapping &&
-        allExportedVariables[variable].individualFileReferencesMapping[
-          fileLocation
-        ]
-      ) {
-        const exportedVariablesReferencesInsideThisFile =
-          allExportedVariables[variable].individualFileReferencesMapping[
-            fileLocation
-          ];
-        referencesUsingThisFile -=
-          exportedVariablesReferencesInsideThisFile.referenceCount -
-          exportedVariablesReferencesInsideThisFile.exportReferenceCount;
-      }
+      const referencesUsingThisFile = getReferencesOfVariableUsingGivenFile(
+        allExportedVariables[variable],
+        fileLocation
+      );
       if (
         referencesUsingThisFile ||
         allExportedVariables[variable].isEntryFileObject
@@ -267,11 +248,43 @@ const isFileReferred = (filesMapping, fileLocation) => {
         isReferred = true;
         break;
       }
+      if (variable === DEFAULT) {
+        for (const variablesInsideDefault in allExportedVariables[variable]) {
+          try {
+            const referencesUsingThisFile =
+              getReferencesOfVariableUsingGivenFile(
+                allExportedVariables[variable][variablesInsideDefault],
+                fileLocation
+              );
+            if (
+              referencesUsingThisFile ||
+              allExportedVariables[variable][variablesInsideDefault]
+                .isEntryFileObject
+            ) {
+              isReferred = true;
+              break;
+            }
+          } catch (_) {}
+        }
+      }
     } catch (_) {}
   }
   return isReferred;
 };
 
+const getReferencesOfVariableUsingGivenFile = (variable, fileLocation) => {
+  let referencesUsingThisFile = variable.referenceCount;
+  if (
+    variable.individualFileReferencesMapping &&
+    variable.individualFileReferencesMapping[fileLocation]
+  ) {
+    referencesUsingThisFile -=
+      variable.individualFileReferencesMapping[fileLocation].referenceCount -
+      variable.individualFileReferencesMapping[fileLocation]
+        .exportReferenceCount;
+  }
+  return referencesUsingThisFile;
+};
 /**
  * Used to get all files (entry files, files which have to be checked for intra-module dependency/ deadfile)
  * @param {Object} programConfiguration Contains information related to which directories, entry files have to be retrieved

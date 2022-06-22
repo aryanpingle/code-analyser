@@ -104,13 +104,13 @@ const doExportSpecifiersOperations = (
       } catch (_) {}
     }
   } else {
-    const exportedVariablesArray = getValuesFromStatement(
+    const exportedVariablesObject = getValuesFromStatement(
       nodeToGetValues,
       type
     );
 
     setExportedVariablesFromArray(
-      exportedVariablesArray,
+      exportedVariablesObject,
       currentFileMetadata,
       filesMetadata
     );
@@ -129,9 +129,9 @@ const doModuleExportStatementOperations = (
   filesMetadata
 ) => {
   // "module.exports = {...}" type statement
-  const exportedVariablesArray = getValuesFromStatement(nodeToGetValues);
+  const exportedVariablesObject = getValuesFromStatement(nodeToGetValues);
   setExportedVariablesFromArray(
-    exportedVariablesArray,
+    exportedVariablesObject,
     currentFileMetadata,
     filesMetadata
   );
