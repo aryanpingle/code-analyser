@@ -1,11 +1,9 @@
-const {
-  getResolvedPathFromGivenPath,
-  getValuesFromStatement,
-  setExportedVariablesFromArray,
-} = require("../utility");
+const { getResolvedPathFromGivenPath } = require("../utility");
 const {
   setImportedVariablesFromExportFromStatementSpecifier,
   extractVariableInformationFromSpecifier,
+  getValuesFromStatement,
+  setExportedVariablesFromArray,
 } = require("./utility");
 const {
   isSpecifiersPresent,
@@ -81,9 +79,8 @@ const doExportSpecifiersOperations = (
                 importName
               ];
           }
-          currentFileMetadata.exportedVariables[
-            exportName
-          ].isEntryFileObject |= currentFileMetadata.isEntryFile;
+          currentFileMetadata.exportedVariables[exportName].isEntryFileObject |=
+            currentFileMetadata.isEntryFile;
         } catch (_) {}
       });
     } else {
@@ -96,9 +93,8 @@ const doExportSpecifiersOperations = (
               filesMetadata.filesMapping[importedFileAddress].exportedVariables[
                 variable
               ];
-            currentFileMetadata.exportedVariables[
-              variable
-            ].isEntryFileObject |= currentFileMetadata.isEntryFile;
+            currentFileMetadata.exportedVariables[variable].isEntryFileObject |=
+              currentFileMetadata.isEntryFile;
           } catch (_) {}
         }
       } catch (_) {}

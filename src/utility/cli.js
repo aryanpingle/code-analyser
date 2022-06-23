@@ -243,29 +243,38 @@ const displayAllFilesInteractively = async (
     console.log("\x1b[32m", "\nNo file meeting the required criteria present.");
   }
   const headNode = buildTrie(filesArray);
-  const nodesInLastVisitedPaths = [headNode];
+  const nodesInLastVisitedPaths = [
+    { node: headNode, selectedChoiceIndex: null },
+  ];
 
   while (nodesInLastVisitedPaths.length) {
     const firstNodeNotContainingOneChild = getFirstNodeNotContainingOneChild(
-      nodesInLastVisitedPaths[nodesInLastVisitedPaths.length - 1]
+      nodesInLastVisitedPaths[nodesInLastVisitedPaths.length - 1].node
     );
-    if (
-      filesAdditionalInformationMapping[
-        firstNodeNotContainingOneChild.pathTillNode
-      ]
-    ) {
+    const pathToCheck = firstNodeNotContainingOneChild.pathTillNode;
+    if (filesAdditionalInformationMapping[pathToCheck])
       displayFileAdditionalInformation(
-        firstNodeNotContainingOneChild.pathTillNode,
-        filesAdditionalInformationMapping[
-          firstNodeNotContainingOneChild.pathTillNode
-        ]
+        pathToCheck,
+        filesAdditionalInformationMapping[pathToCheck]
       );
-    }
-    const nextNodeToCheck = await interactivelyDisplayAndGetNextNode(
-      firstNodeNotContainingOneChild
-    );
+    const { selectedNode: nextNodeToCheck, choiceIndex } =
+      await interactivelyDisplayAndGetNextNode(
+        firstNodeNotContainingOneChild,
+        nodesInLastVisitedPaths[nodesInLastVisitedPaths.length - 1]
+          .selectedChoiceIndex
+      );
+
     if (nextNodeToCheck === GO_BACK) nodesInLastVisitedPaths.pop();
-    else nodesInLastVisitedPaths.push(nextNodeToCheck);
+    else {
+      nodesInLastVisitedPaths[
+        nodesInLastVisitedPaths.length - 1
+      ].selectedChoiceIndex = choiceIndex;
+
+      nodesInLastVisitedPaths.push({
+        node: nextNodeToCheck,
+        selectedChoiceIndex: null,
+      });
+    }
     console.clear();
   }
 };
@@ -273,9 +282,13 @@ const displayAllFilesInteractively = async (
 /**
  * Provides users with choices to select the next file/ folder to visit
  * @param {Object} nodeToCheck Current trie node which is being visited
+ * @param {String} selectedChoiceIndex Previously selected choice's index
  * @returns Next trie node to visit
  */
-const interactivelyDisplayAndGetNextNode = async (nodeToCheck) => {
+const interactivelyDisplayAndGetNextNode = async (
+  nodeToCheck,
+  selectedChoiceIndex = GO_BACK
+) => {
   const choices = [GO_BACK];
   const addressToNodeMapping = {};
   addressToNodeMapping[GO_BACK] = GO_BACK;
@@ -285,6 +298,7 @@ const interactivelyDisplayAndGetNextNode = async (nodeToCheck) => {
       name: "value",
       message: `Currently at location: ${nodeToCheck.pathTillNode}\n`,
       choices: choices,
+      autofocus: selectedChoiceIndex,
     });
   } else {
     for (const index in nodeToCheck.childrens) {
@@ -296,10 +310,14 @@ const interactivelyDisplayAndGetNextNode = async (nodeToCheck) => {
       name: "value",
       message: `Currently at location: ${nodeToCheck.pathTillNode}\nPick file/folder to check:`,
       choices,
+      autofocus: selectedChoiceIndex,
     });
   }
   const choicePicked = await prompt.run();
-  return addressToNodeMapping[choicePicked];
+  return {
+    selectedNode: addressToNodeMapping[choicePicked],
+    choiceIndex: choicePicked,
+  };
 };
 
 /**
