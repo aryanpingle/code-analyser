@@ -419,8 +419,10 @@ const getAllRelatedChunks = (
   for (const dependentFile in webpackChunkMetadata[fileLocation]) {
     if (dependentFile === CHUNKS) continue;
     if (fileWebpackChunkMapping[dependentFile]) {
-      if (fileWebpackChunkMapping[dependentFile].size)
-        fileChunksSet.add(...fileWebpackChunkMapping[dependentFile]);
+      if (fileWebpackChunkMapping[dependentFile].size) {
+        for (const dependentChunk of fileWebpackChunkMapping[dependentFile])
+          fileChunksSet.add(dependentChunk);
+      }
       continue;
     }
     const dependentFileChunksSet = getAllRelatedChunks(
@@ -428,10 +430,13 @@ const getAllRelatedChunks = (
       webpackChunkMetadata,
       fileWebpackChunkMapping
     );
-    if (dependentFileChunksSet.size)
-      fileChunksSet.add(...dependentFileChunksSet);
+    if (dependentFileChunksSet.size) {
+      for (const dependentChunk of dependentFileChunksSet)
+        fileChunksSet.add(dependentChunk);
+    }
   }
   fileWebpackChunkMapping[fileLocation] = fileChunksSet;
+  // console.log(fileWebpackChunkMapping[fileLocation])
   return fileChunksSet;
 };
 

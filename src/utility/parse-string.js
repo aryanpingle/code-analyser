@@ -9,7 +9,7 @@ const getRequiredTypeElementFromString = (
     return arrayElement;
   arrayElement = arrayElement.trim();
   // if path is provided
-  if (/".*"/.test(arrayElement) || cannotBeRegex)
+  if (/['"].*['"]/.test(arrayElement) || cannotBeRegex)
     return arrayElement.replace(/['"](.*)['"]/, "$1");
   // if true/false given
   else if (/true|false/.test(arrayElement)) return arrayElement === TRUE;
