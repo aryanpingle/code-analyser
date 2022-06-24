@@ -5,13 +5,13 @@ const {
 const { checkFileImportExports } = require("../checker/file-imports-exports");
 const { checkFileImports } = require("../checker/file-imports");
 const { getAllEntryFiles, getAllFilesToCheck } = require("./files");
-const { addNewInstanceToSpinner, updateSpinnerInstance } = require("./cli");
 const {
   isFilePath,
   getNumberOfSubPartsOfGivenAbsolutePath,
 } = require("./resolver");
 const { isFileNotExcluded, isFileExtensionValid } = require("./helper");
-const { CHUNKS, DEFAULT } = require("./constants");
+const { CHUNKS, DEFAULT, DISPLAY_TEXT } = require("./constants");
+const process = require("process");
 
 /**
  * Used to get all the statically imported files addresses on which the entry files depend
@@ -51,16 +51,14 @@ const setAllFileExports = (allEntryFiles, filesMetadata, entryFilesMapping) => {
  * Analyses the code and updates the references of parsed files
  * @param {Array} allEntryFiles Array containing all entry files
  * @param {Object} filesMetadata Contains information related to all files
- * @param {Object} spinner Spinner container contaning multiple spinner instances
  */
-const analyseCode = (allEntryFiles, filesMetadata, spinner) => {
-  addNewInstanceToSpinner(spinner, "id3", "Analysing codebase...");
+const analyseCode = (allEntryFiles, filesMetadata) => {
   allEntryFiles.forEach((entryFile) =>
     checkFileUsage(entryFile, filesMetadata)
   );
-  updateSpinnerInstance(spinner, "id3", {
+  process.send({
     text: "Analysed the codebase",
-    status: "succeed",
+    messageType: DISPLAY_TEXT,
   });
 };
 
@@ -68,29 +66,22 @@ const analyseCode = (allEntryFiles, filesMetadata, spinner) => {
  * Used to find dead files present in the feasible array of files provided
  * @param {Array} allFilesToCheck Array of feasible files which have to be checked for dead files
  * @param {Object} filesMetadata Contains information related to all files
- * @param {Object} spinner Spinner container containing multiple spinner instances
  * @returns Array of dead files found inside the allFilesToCheck array
  */
-const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
-  addNewInstanceToSpinner(
-    spinner,
-    "id4",
-    "Identifying all deadfiles inside the directories to check..."
-  );
+const getDeadFiles = (allFilesToCheck, filesMetadata) => {
   const allDeadFiles = getAllDeadFiles(filesMetadata, allFilesToCheck);
   // If no errors were found while parsing these files
   if (filesMetadata.unparsableVistedFiles === 0)
-    updateSpinnerInstance(spinner, "id4", {
+    process.send({
       text: "Successfully identified all dead files",
-      status: "succeed",
+      messageType: DISPLAY_TEXT,
     });
-  else {
-    updateSpinnerInstance(spinner, "id4", {
+  else
+    process.send({
       text: "Unable to identify few dead files",
-      color: "yellow",
-      status: "stopped",
+      messageType: DISPLAY_TEXT,
     });
-  }
+
   return allDeadFiles;
 };
 
@@ -98,19 +89,12 @@ const getDeadFiles = (allFilesToCheck, filesMetadata, spinner) => {
  * Checks for all intra-module dependencies which were actually referred by any file
  * @param {Object} dependencyCheckerRelatedMetadata Contains information required by this function like location of the entry file and depth variable
  * @param {Object} filesMetadata Contains information related to all files
- * @param {Object} spinner Spinner container containing multiple spinner instances
  * @returns Array of files which are intra-module dependencies of the provided module location and depth
  */
 const getIntraModuleDependencies = (
   { moduleLocation, isDepthFromFront, depth, intraModuleDependencyRegex },
-  filesMetadata,
-  spinner
+  filesMetadata
 ) => {
-  addNewInstanceToSpinner(
-    spinner,
-    "id5",
-    "Identifying intra-module dependencies..."
-  );
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
   const intraModuleDependenciesArray = [];
   const filesMapping = filesMetadata.filesMapping;
@@ -129,17 +113,16 @@ const getIntraModuleDependencies = (
   }
   // If no errors found during traversal
   if (filesMetadata.unparsableVistedFiles === 0)
-    updateSpinnerInstance(spinner, "id5", {
+    process.send({
       text: "Successfully identified all intra module dependencies",
-      status: "succeed",
+      messageType: DISPLAY_TEXT,
     });
-  else {
-    updateSpinnerInstance(spinner, "id5", {
+  else
+    process.send({
       text: "Unable to identify few intra module dependencies",
-      color: "yellow",
-      status: "stopped",
+      messageType: DISPLAY_TEXT,
     });
-  }
+
   return intraModuleDependenciesArray;
 };
 
@@ -285,36 +268,29 @@ const getReferencesOfVariableUsingGivenFile = (variable, fileLocation) => {
  * Used to get all files (entry files, files which have to be checked for intra-module dependency/ deadfile)
  * @param {Object} programConfiguration Contains information related to which directories, entry files have to be retrieved
  * @param {RegExp} excludedFilesRegex Regex denoting the excluded files
- * @param {Object} spinner Spinner container containing multiple spinner instances
  * @returns Object consisting of arrays of entry files and the files to check
  */
 const getAllRequiredFiles = async (
   programConfiguration,
-  excludedFilesRegex,
-  spinner
+  excludedFilesRegex
 ) => {
-  addNewInstanceToSpinner(
-    spinner,
-    "id1",
-    "Retrieving all files inside directories to check..."
-  );
   const allFilesToCheck = await getAllFilesToCheck(
     programConfiguration.directoriesToCheck,
     excludedFilesRegex
   );
-  updateSpinnerInstance(spinner, "id1", {
+  process.send({
     text: "Successfully retrieved all files inside the directories to check",
-    status: "succeed",
+    messageType: DISPLAY_TEXT,
   });
-  addNewInstanceToSpinner(spinner, "id2", "Retrieving entry files...");
+
   const allEntryFiles = await getAllEntryFiles(
     programConfiguration.entry,
     allFilesToCheck,
     excludedFilesRegex
   );
-  updateSpinnerInstance(spinner, "id2", {
+  process.send({
     text: "Successfully retrieved all entry files",
-    status: "succeed",
+    messageType: DISPLAY_TEXT,
   });
 
   return { allEntryFiles, allFilesToCheck };
@@ -323,15 +299,9 @@ const getAllRequiredFiles = async (
 /**
  * Will be used to create a new Data Structure which will contain information of each file and the chunks inside which it is present
  * @param {Object} filesMetadata Contains information related to all files
- * @param {Object} spinner Spinner container containing multiple spinner instances
  * @returns Data Structure containing mapping of file and it's dependencies and the chunks inside which it is present
  */
-const createWebpackChunkMetadata = (filesMetadata, spinner) => {
-  addNewInstanceToSpinner(
-    spinner,
-    "id3",
-    "Establishing relationship between different files..."
-  );
+const createWebpackChunkMetadata = (filesMetadata) => {
   const allFilesChunksMetadata = {};
   const filesMapping = filesMetadata.filesMapping;
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
@@ -356,10 +326,11 @@ const createWebpackChunkMetadata = (filesMetadata, spinner) => {
       allFilesChunksMetadata[importedFile][file] = allFilesChunksMetadata[file];
     }
   }
-  updateSpinnerInstance(spinner, "id3", {
+  process.send({
     text: "Established relationship between different files",
-    status: "succeed",
+    messageType: DISPLAY_TEXT,
   });
+
   return allFilesChunksMetadata;
 };
 
@@ -436,7 +407,6 @@ const getAllRelatedChunks = (
     }
   }
   fileWebpackChunkMapping[fileLocation] = fileChunksSet;
-  // console.log(fileWebpackChunkMapping[fileLocation])
   return fileChunksSet;
 };
 

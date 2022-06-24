@@ -10,8 +10,9 @@ const {
 const {
   CHECK_STATIC_IMPORTS_ADDRESSES,
   CHECK_ALL_IMPORTS_ADDRESSES,
+  DISPLAY_TEXT,
 } = require("../utility/constants");
-const { displayFileParseErrorMessage } = require("../utility/cli");
+const process = require("process");
 
 /**
  * Will be used to check a given file's imports (used while detecting intra-module dependencies/ duplicate files)
@@ -80,7 +81,6 @@ const traverseFileForStaticImports = (
     filesMetadata.filesMapping[fileLocation].staticImportFilesMapping =
       currentFileMetadata.staticImportFilesMapping;
 
-
     // Setting ast as null, to save memory
     ast = null;
     currentFileMetadata = null;
@@ -105,7 +105,11 @@ const traverseFileForStaticImports = (
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;
-    displayFileParseErrorMessage(fileLocation, err);
+    process.send({
+      text: err,
+      fileLocation,
+      messageType: DISPLAY_TEXT,
+    });
   }
 };
 

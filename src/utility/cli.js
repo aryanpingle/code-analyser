@@ -1,5 +1,4 @@
 const { Select } = require("enquirer");
-const spinnies = require("spinnies");
 const yargs = require("yargs");
 const cliTableBuilder = require("cli-table3");
 const {
@@ -8,35 +7,7 @@ const {
 } = require("./parse-string");
 const codeAnalyerConfigurationObject = require("./configuration-object");
 const { buildTrie, getFirstNodeNotContainingOneChild } = require("./trie");
-const { GO_BACK } = require("./constants");
-const dots = {
-  interval: 50,
-  frames: ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"],
-};
-
-/**
- * Returns a new spinner container which will improve the output display on the console
- * @returns New spinner container
- */
-const createNewCliSpinner = () => new spinnies({ spinner: dots });
-
-/**
- * Adds a new instance inside the spinner container
- * @param {Object} spinner Spinner container inside which this a new spinner instance will be added
- * @param {String} id ID of the spinner instance
- * @param {String} text Text which has to be displayed inside this new instance
- */
-const addNewInstanceToSpinner = (spinner, id, text) =>
-  spinner.add(id, { text });
-
-/**
- * Updates an existing spinner instance
- * @param {Object} spinner Spinner container inside which this instance is present
- * @param {String} id ID of the spinner instance which has to be update
- * @param {Object} options Object which contains data which will be used to update the instance
- */
-const updateSpinnerInstance = (spinner, id, options) =>
-  spinner.update(id, options);
+const { GO_BACK, YELLOW_COLOR, GREEN_COLOR } = require("./constants");
 
 /**
  * Will be called to set the configuration of the program using the arguments provided on the CLI
@@ -218,16 +189,10 @@ const displayFilesOnScreen = (filesArray) => {
   }
   // Print that no file found to display if the given array is empty
   else
-    console.log("\x1b[32m", "\nNo file meeting the required criteria present.");
-};
-/**
- * Will print the error found while parsing a file on the console
- * @param {String} fileLocation Absolute address of the file which is being parsed
- * @param {String} error Error found while parsing the given file
- */
-const displayFileParseErrorMessage = (fileLocation, error) => {
-  console.error("\x1b[33m", "Unable to parse file:", fileLocation);
-  console.error(error);
+    console.log(
+      GREEN_COLOR,
+      "\nNo file meeting the required criteria present."
+    );
 };
 
 /**
@@ -240,7 +205,10 @@ const displayAllFilesInteractively = async (
   filesAdditionalInformationMapping = {}
 ) => {
   if (filesArray.length === 0) {
-    console.log("\x1b[32m", "\nNo file meeting the required criteria present.");
+    console.log(
+      GREEN_COLOR,
+      "\nNo file meeting the required criteria present."
+    );
   }
   const headNode = buildTrie(filesArray);
   const nodesInLastVisitedPaths = [
@@ -295,7 +263,6 @@ const interactivelyDisplayAndGetNextNode = async (
   let prompt;
   if (Object.keys(nodeToCheck.childrens).length === 0) {
     prompt = new Select({
-      name: "value",
       message: `Currently at location: ${nodeToCheck.pathTillNode}\n`,
       choices: choices,
       autofocus: selectedChoiceIndex,
@@ -307,7 +274,6 @@ const interactivelyDisplayAndGetNextNode = async (
       addressToNodeMapping[nodeToCheckAddress] = nodeToCheck.childrens[index];
     }
     prompt = new Select({
-      name: "value",
       message: `Currently at location: ${nodeToCheck.pathTillNode}\nPick file/folder to check:`,
       choices,
       autofocus: selectedChoiceIndex,
@@ -335,15 +301,17 @@ const displayFileAdditionalInformation = (file, additionalInformationArray) => {
   console.log(statsTable.toString());
 };
 
+const displayTextOnConsole = ({ text, fileLocation }) => {
+  if (fileLocation) console.log(YELLOW_COLOR, "Unable to parse:", fileLocation);
+  console.log(GREEN_COLOR, text);
+};
+
 module.exports = {
-  createNewCliSpinner,
-  addNewInstanceToSpinner,
-  updateSpinnerInstance,
   setConfiguration,
   produceAnalysdDeadFileResult,
   produceAnalysedIntraModuleDependenciesResult,
   displayDuplicateFileDetails,
   displayFilesOnScreen,
-  displayFileParseErrorMessage,
   displayAllFilesInteractively,
+  displayTextOnConsole,
 };

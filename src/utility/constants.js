@@ -1,4 +1,17 @@
 module.exports = {
+  CHECK_INTRA_MODULE_DEPENDENCIES: "CHECK_INTRA_MODULE_DEPENDENCIES",
+  CHECK_DEAD_FILES: "CHECK_DEAD_FILES",
+  CHECK_DUPLICATE_FILES: "CHECK_DUPLICATE_FILES",
+  DISPLAY_TEXT: "DISPLAY_TEXT",
+
+  MESSAGE: "message",
+  ERROR: "error",
+  RUNNER_FILE: "runner.js",
+  SIGINT: "SIGINT",
+  
+  GREEN_COLOR: "\x1b[32m",
+  YELLOW_COLOR: "\x1b[33m",
+
   CHECK_ALL_IMPORTS_ADDRESSES: "CHECK_ALL_IMPORTS_ADDRESSES",
   CHECK_STATIC_IMPORTS_ADDRESSES: "CHECK_STATIC_IMPORTS_ADDRESSES",
   CHECK_IMPORTS: "CHECK_IMPORTS",
@@ -69,4 +82,3 @@ module.exports = {
   IGNORED_FOLDERS_REGEX:
     /node_modules|__spec__|__mocks?__|__tests?__|__fixtures?__|\/spec\/|\/tests?\/|\/mocks?\/|\/fixtures?\/|__generated__|storybook|stories/,
 };
-  

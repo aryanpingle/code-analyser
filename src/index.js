@@ -1,204 +1,133 @@
 #!/usr/bin/env node
+const { fork } = require("child_process");
 const process = require("process");
 const {
-  createNewCliSpinner,
-  setConfiguration,
   produceAnalysdDeadFileResult,
-  produceAnalysedIntraModuleDependenciesResult,
-  displayFilesOnScreen,
   displayAllFilesInteractively,
+  displayFilesOnScreen,
+  produceAnalysedIntraModuleDependenciesResult,
   displayDuplicateFileDetails,
+  displayTextOnConsole,
 } = require("./utility/cli");
-setConfiguration();
-const codeAnalyerConfigurationObject = require("./utility/configuration-object");
 const {
-  buildExcludedFilesRegex,
-  buildIntraModuleDependencyRegex,
-} = require("./utility/regex");
-const { getDefaultFilesMetadata } = require("./utility/files");
-const {
-  getDeadFiles,
-  getIntraModuleDependencies,
-  getAllRequiredFiles,
-  analyseCode,
-  setAllStaticallyImportedFilesMapping,
-  setAllImportedFilesMapping,
-  setAllFileExports,
-  createWebpackChunkMetadata,
-  buildEntryFilesMappingFromArray,
-  getDuplicateFiles,
-  getIntraModuleDependenciesUsageMapping,
-  getDuplicateFilesChunksMapping
-} = require("./utility/index");
-const {
-  isDeadfileCheckRequired,
-  isIntraModuleDependenciesCheckRequired,
-  isDuplicatedFilesCheckRequired,
-} = require("./utility/helper");
-const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
-const { DEFAULT_TRUE_REGEX_STRING } = require("./utility/constants");
+  CHECK_DEAD_FILES,
+  CHECK_INTRA_MODULE_DEPENDENCIES,
+  CHECK_DUPLICATE_FILES,
+  DISPLAY_TEXT,
+  MESSAGE,
+  ERROR,
+  RUNNER_FILE,
+  SIGINT,
+} = require("./utility/constants");
+const path = require("path");
 
-const excludedFilesRegex = buildExcludedFilesRegex(
-  codeAnalyerConfigurationObject.exclude,
-  codeAnalyerConfigurationObject.include
-);
+// Child process where computation part of the program will be done
+const childProcess = fork(path.join(__dirname, RUNNER_FILE), process.argv, {
+  // silent: true,
+});
+
+// When child process sends computed data back
+childProcess.on(MESSAGE, (data) => {
+  const {
+    filesMetadata,
+    filesLengthObject,
+    fileLocation,
+    interact,
+    filesArray,
+    filesUsageMapping,
+    messageType,
+    text,
+  } = data;
+  switch (messageType) {
+    case CHECK_DEAD_FILES:
+      const deadFilesMetadata = {
+        filesMetadata,
+        filesLengthObject,
+        filesArray,
+        interact,
+      };
+      displayDeadFilesAnalysis(deadFilesMetadata);
+      break;
+    case CHECK_INTRA_MODULE_DEPENDENCIES:
+      const intraModuleDependenciesMetadata = {
+        filesMetadata,
+        filesLengthObject,
+        filesArray,
+        filesUsageMapping,
+        interact,
+      };
+      displayIntraModuleDependenciesAnalysis(intraModuleDependenciesMetadata);
+      break;
+    case CHECK_DUPLICATE_FILES:
+      const duplicateFilesMetadata = {
+        filesArray,
+        filesUsageMapping,
+        interact,
+      };
+      displayDuplicateFilesAnalysis(duplicateFilesMetadata);
+      break;
+    case DISPLAY_TEXT:
+      const textMetadata = {
+        text,
+        fileLocation,
+      };
+      displayTextOnConsole(textMetadata);
+  }
+});
+
+childProcess.on(ERROR, (err) => {
+  console.log(err);
+});
+
+// Kill the child process too when the parent process terminates
+process.on(SIGINT, function () {
+  process.kill(childProcess.pid);
+  process.exit(1);
+});
 
 /**
- * Function which first analyses the code and prints the dead files present on the console
- * @param {Object} filesMetadata Object which contains information related to all files parsed
- * @param {Object} programConfiguration Object which contains information related to which files have to be checked
+ * Function to display dead files related data on the console
+ * @param {Object} deadFilesMetadata Contains information required to print dead files and it's analysis on the console
  */
-const analyseCodeAndDetectDeadfiles = async (
+const displayDeadFilesAnalysis = ({
   filesMetadata,
-  programConfiguration
-) => {
-  const spinner = createNewCliSpinner();
-  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
-  const { allEntryFiles, allFilesToCheck } = await getAllRequiredFiles(
-    {
-      directoriesToCheck: programConfiguration.directoriesToCheck,
-      entry: programConfiguration.entry,
-    },
-    excludedFilesRegex,
-    spinner
-  );
-  const entryFilesMapping = buildEntryFilesMappingFromArray(allEntryFiles);
-  setAllFileExports(allEntryFiles, filesMetadata, entryFilesMapping);
-  filesMetadata.visitedFilesMapping = {};
-  analyseCode(allEntryFiles, filesMetadata, spinner);
-  const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata, spinner);
-  const filesLengthObject = {
-    deadFiles: allDeadFiles.length,
-    filesToCheck: allFilesToCheck.length,
-    entryFiles: allEntryFiles.length,
-  };
+  filesLengthObject,
+  filesArray,
+  interact,
+}) => {
   produceAnalysdDeadFileResult(filesMetadata, filesLengthObject);
-  if (codeAnalyerConfigurationObject.interact)
-    displayAllFilesInteractively(allDeadFiles);
-  else displayFilesOnScreen(allDeadFiles);
+  if (interact) displayAllFilesInteractively(filesArray);
+  else displayFilesOnScreen(filesArray);
 };
 
 /**
- * Function which first analyses the code and prints the intra-module dependencies present on the console
- * @param {Object} filesMetadata Object which contains information related to all files parsed
- * @param {Object} programConfiguration Object which contains information related to which files have to be checked
+ * Function to display intra-module dependencies related data on the console
+ * @param {Object} intraModuleDependenciesMetadata Contains information required to print intra-module dependencies and it's analysis on the console
  */
-const analyseCodeAndDetectIntraModuleDependencies = async (
+const displayIntraModuleDependenciesAnalysis = ({
   filesMetadata,
-  programConfiguration
-) => {
-  const spinner = createNewCliSpinner();
-  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
-  const { allEntryFiles } = await getAllRequiredFiles(
-    {
-      directoriesToCheck: [programConfiguration.moduleToCheck],
-      entry: programConfiguration.entry,
-    },
-    excludedFilesRegex,
-    spinner
-  );
-  const dependencyCheckerRelatedMetadata = {
-    moduleLocation: resolveAddressWithProvidedDirectory(
-      process.cwd(),
-      programConfiguration.moduleToCheck
-    ),
-    isDepthFromFront: programConfiguration.isDepthFromFront,
-    depth: programConfiguration.depth,
-  };
-  const { intraModuleChecker, insideModuleChecker } =
-    buildIntraModuleDependencyRegex(
-      dependencyCheckerRelatedMetadata.moduleLocation,
-      dependencyCheckerRelatedMetadata.isDepthFromFront,
-      dependencyCheckerRelatedMetadata.depth
-    );
-  dependencyCheckerRelatedMetadata.intraModuleDependencyRegex =
-    intraModuleChecker;
-  filesMetadata.insideModuleRegex = codeAnalyerConfigurationObject.checkAll
-    ? new RegExp(DEFAULT_TRUE_REGEX_STRING)
-    : insideModuleChecker;
-
-  setAllStaticallyImportedFilesMapping(allEntryFiles, filesMetadata);
-
-  const intraModuleDependencies = getIntraModuleDependencies(
-    dependencyCheckerRelatedMetadata,
-    filesMetadata,
-    spinner
-  );
-
-  const filesLengthObject = {
-    intraModuleDependencies: intraModuleDependencies.length,
-    entryFiles: allEntryFiles.length,
-  };
+  filesLengthObject,
+  interact,
+  filesArray,
+  filesUsageMapping,
+}) => {
   produceAnalysedIntraModuleDependenciesResult(
     filesMetadata,
     filesLengthObject
   );
-  if (codeAnalyerConfigurationObject.interact) {
-    const intraModuleDependenciesUsageMapping =
-      getIntraModuleDependenciesUsageMapping(
-        intraModuleDependencies,
-        filesMetadata
-      );
-    displayAllFilesInteractively(
-      intraModuleDependencies,
-      intraModuleDependenciesUsageMapping
-    );
-  } else displayFilesOnScreen(intraModuleDependencies);
+  if (interact) displayAllFilesInteractively(filesArray, filesUsageMapping);
+  else displayFilesOnScreen(filesArray);
 };
 
 /**
- * Function which first analyses the code and then prints the files which are present in more than one chunk on the console
- * @param {Object} filesMetadata Object which contains information related to all files parsed
- * @param {Object} programConfiguration Object which contains information related to which files have to be checked
+ * Function to display duplicate files related data on the console
+ * @param {Object} duplicateFilesMetadata Contains information required to print duplicate files and it's analysis on the console
  */
-const analyseCodeAndDetectAllDuplicateFiles = async (
-  filesMetadata,
-  programConfiguration
-) => {
-  const spinner = createNewCliSpinner();
-  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
-  const { allEntryFiles } = await getAllRequiredFiles(
-    {
-      directoriesToCheck: programConfiguration.directoriesToCheck,
-      entry: programConfiguration.entry,
-    },
-    excludedFilesRegex,
-    spinner
-  );
-  setAllImportedFilesMapping(allEntryFiles, filesMetadata);
-  const webpackChunkMetadata = createWebpackChunkMetadata(
-    filesMetadata,
-    spinner
-  );
-  const allDuplicateFiles = getDuplicateFiles(webpackChunkMetadata);
-  if (codeAnalyerConfigurationObject.interact) {
-    const duplicateFilesChunksMapping =
-      getDuplicateFilesChunksMapping(allDuplicateFiles);
-
-    displayAllFilesInteractively(
-      allDuplicateFiles,
-      duplicateFilesChunksMapping
-    );
-  } else displayDuplicateFileDetails(allDuplicateFiles);
+const displayDuplicateFilesAnalysis = ({
+  filesArray,
+  filesUsageMapping,
+  interact,
+}) => {
+  if (interact) displayAllFilesInteractively(filesArray, filesUsageMapping);
+  else displayDuplicateFileDetails(filesArray);
 };
-
-if (isDeadfileCheckRequired(codeAnalyerConfigurationObject)) {
-  const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
-  analyseCodeAndDetectDeadfiles(filesMetadata, codeAnalyerConfigurationObject);
-}
-
-if (isIntraModuleDependenciesCheckRequired(codeAnalyerConfigurationObject)) {
-  const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
-  analyseCodeAndDetectIntraModuleDependencies(
-    filesMetadata,
-    codeAnalyerConfigurationObject
-  );
-}
-
-if (isDuplicatedFilesCheckRequired(codeAnalyerConfigurationObject)) {
-  const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
-  analyseCodeAndDetectAllDuplicateFiles(
-    filesMetadata,
-    codeAnalyerConfigurationObject
-  );
-}

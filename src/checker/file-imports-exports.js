@@ -11,8 +11,12 @@ const {
   isFileNotExcluded,
 } = require("../utility/helper");
 const getUsedFilesMapping = require("./utility");
-const { CHECK_IMPORTS, CHECK_EXPORTS } = require("../utility/constants");
-const { displayFileParseErrorMessage } = require("../utility/cli");
+const {
+  CHECK_IMPORTS,
+  CHECK_EXPORTS,
+  DISPLAY_TEXT,
+} = require("../utility/constants");
+const process = require("process");
 
 /**
  * Will be used to check file to get it's import and export variables, which will be used in the next stage where there usage will be checked
@@ -109,7 +113,12 @@ const traverseFileForCheckingImportsExports = (
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;
-    displayFileParseErrorMessage(fileLocation, err);
+    console.log(err)
+    process.send({
+      text: err,
+      fileLocation,
+      messageType: DISPLAY_TEXT,
+    });
   }
 };
 

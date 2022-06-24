@@ -71,8 +71,8 @@ Install code-analyser Cli with the following command
 
 ### Sample Examples
 
-> analyseCode --checkDeadFiles --entry='["./index.js"]' --directoriesToCheck='["./"]' --rootDirectory='./'
+- `analyseCode --checkDeadFiles --entry='["./index.js"]' --directoriesToCheck='["./"]' --rootDirectory='./'`
 
-> analyseCode --checkDuplicateFiles --entry='["./src/index.tsx"]' --interact
+- `analyseCode --checkDuplicateFiles --entry='["./src/index.tsx"]' --interact`
 
-> analyseCode --checkIntraModuleDependencies --exclude='[/node_modules|(\.git)|(Icon)|jpg|png|hdr|svg|glb|woff2|mp4|mdx|webp/]' --moduleToCheck="./index.jsx"
+- `analyseCode --checkIntraModuleDependencies --exclude='["./public"]' --moduleToCheck="./index.jsx"`
