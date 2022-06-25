@@ -1,3 +1,4 @@
+const process = require("process");
 const { traverseAST, buildAST } = require("../ast/index");
 const {
   updateFilesMetadata,
@@ -16,10 +17,9 @@ const {
   CHECK_EXPORTS,
   DISPLAY_TEXT,
 } = require("../utility/constants");
-const process = require("process");
 
 /**
- * Will be used to check file to get it's import and export variables, which will be used in the next stage where there usage will be checked
+ * Will be used to check file to get it's import and export variables, which will be used in the next stage where their usage will be checked
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
  * @param {Object} entryFilesMapping Mapping to check whether a given file is entry file or not
@@ -80,9 +80,9 @@ const traverseFileForCheckingImportsExports = (
         isFileExtensionValid(file) &&
         isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
-        if (!filesMetadata.filesMapping[file]) {
+        if (!filesMetadata.filesMapping[file])
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
-        }
+
         traverseFileForCheckingImportsExports(
           file,
           filesMetadata,
@@ -113,7 +113,6 @@ const traverseFileForCheckingImportsExports = (
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;
-    console.log(err)
     process.send({
       text: err,
       fileLocation,

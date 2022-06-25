@@ -7,7 +7,7 @@ const {
 // Global Configuration object which will be used to decide which files have to be parsed
 const codeAnalyerConfigurationObject = {
   checkDeadFiles: false,
-  checkIntraModuleDependencies: false,
+  checkDependenciesAtGivenDepth: false,
   checkDuplicateFiles: false,
   include: [],
   exclude: [IGNORED_FILES_REGEX, IGNORED_FOLDERS_REGEX],

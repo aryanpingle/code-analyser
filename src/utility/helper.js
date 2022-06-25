@@ -3,8 +3,9 @@ const { isFilePath } = require("./resolver");
 const isDeadfileCheckRequired = (programConfiguration) =>
   programConfiguration && programConfiguration.checkDeadFiles;
 
-const isIntraModuleDependenciesCheckRequired = (programConfiguration) =>
-  programConfiguration && programConfiguration.checkIntraModuleDependencies;
+const isDependenciesCheckRequiredAtGivenDepthCheckRequired = (
+  programConfiguration
+) => programConfiguration && programConfiguration.checkDependenciesAtGivenDepth;
 
 const isDuplicatedFilesCheckRequired = (programConfiguration) =>
   programConfiguration && programConfiguration.checkDuplicateFiles;
@@ -30,7 +31,7 @@ const isFileExtensionValid = (fileLocation) => /\.[jt]sx?$/.test(fileLocation);
 
 module.exports = {
   isDeadfileCheckRequired,
-  isIntraModuleDependenciesCheckRequired,
+  isDependenciesCheckRequiredAtGivenDepthCheckRequired,
   isDuplicatedFilesCheckRequired,
   isInstanceofRegexExpression,
   isFileNotExcluded,

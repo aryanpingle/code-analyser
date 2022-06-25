@@ -1,4 +1,4 @@
-Code-Analyser is a script which can be used to find out deadfiles present in the program. It can also be used to find out intra-module dependencies.
+Code-Analyser is a script which can be used to find out deadfiles present in the program. It can also be used to find out dependencies at a given depth, check for files which are present in more than one chunk.
 <br>
 
 # Some Resilient features:-
@@ -7,7 +7,7 @@ Code-Analyser is a script which can be used to find out deadfiles present in the
 - Support for CommonJs, ES6, TypeScript, and JSX
 - Allows multiple entry/ excluded files
 - Handles cyclic dependencies
-- Can find intra-module dependencies at any depth
+- Can find dependencies at any depth
 
 # Installation
 
@@ -26,8 +26,8 @@ Install code-analyser Cli with the following command
 - `checkDeadFiles` **(default: false)** \
    Set it as true if dead files check is required.
   Accepted values: True/ false
-- `checkIntraModuleDependencies` **(default: false)** \
-   Set it as true if intra-module dependencies check required. \
+- `checkDependenciesAtGivenDepth` **(default: false)** \
+   Set it as true if dependencies at a given depth check required. \
    Accepted values: True/ false
 - `checkDuplicateFiles` **(default: false)** \
    Set it as true if files present in multiple chunks check is required.\
@@ -51,10 +51,10 @@ Install code-analyser Cli with the following command
    Use it if extra path resolution required. Will check for `tsconfig.json` or `jsconfig.json` to provide access to use special paths. \
    Accepted values: Absolute/ relative path of the module
 - `moduleToCheck` \
-   Use it to provide entry file/ directory using which intra-module dependencies have to be retrieved. \
+   Use it to provide entry file/ directory using which dependencies at a given depth have to be retrieved. \
    Accepted values: Absolute/ relative path of the module
 - `depth` **(default: 1)** \
-   Provide the level at which intra-module dependencies should be checked. \
+   Provide the level at which dependencies should be checked. \
    Eg. if entry file = A/B/C/D and depth = 1 from back, thn it will check for dependencies of the form A/B/C/_ and not of the form A/B/C/D \
    Eg. if entry file = A/B/C/D and depth = 2 from front, thn it will check for dependencies of the form A/_ and not of the form A/B/\* \
    Accepted values: Integer
@@ -62,8 +62,8 @@ Install code-analyser Cli with the following command
    Used to decide whether the depth has to be checked from front or back. \
    Accepted values: True/ false
 - `checkAll` **(default: false)** \
-   Used with intra-module checker to get all intra-module dependencies or only the entry files of the intra-module depdencies \
-   By default will provide entry files of the intra-module dependencies \
+   Used with dependencies at a given depth checker to get all dependencies or only the entry files of the dependencies \
+   By default will provide entry files of the feasible dependencies \
    Accepted values: True/ false
 - `interact` **(default: false)** \
    Use it to display the output in an interactive way for better analysis \
@@ -75,4 +75,4 @@ Install code-analyser Cli with the following command
 
 - `analyseCode --checkDuplicateFiles --entry='["./src/index.tsx"]' --interact`
 
-- `analyseCode --checkIntraModuleDependencies --exclude='["./public"]' --moduleToCheck="./index.jsx"`
+- `analyseCode --checkDependenciesAtGivenDepth --exclude='["./public"]' --moduleToCheck="./index.jsx"`

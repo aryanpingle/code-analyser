@@ -9,7 +9,6 @@ const {
   isFileMappingNotPresent,
   isFileNotExcluded,
 } = require("../../utility/helper");
-const { isAllExportsImported } = require("../helper");
 const {
   ALL_EXPORTS_IMPORTED,
   IMPORT_SPECIFIER,

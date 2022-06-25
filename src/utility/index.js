@@ -64,11 +64,12 @@ const analyseCode = (allEntryFiles, filesMetadata) => {
 
 /**
  * Used to find dead files present in the feasible array of files provided
+ * Also sends message to parent process whether it identified all dead files successfully or not
  * @param {Array} allFilesToCheck Array of feasible files which have to be checked for dead files
  * @param {Object} filesMetadata Contains information related to all files
  * @returns Array of dead files found inside the allFilesToCheck array
  */
-const getDeadFiles = (allFilesToCheck, filesMetadata) => {
+const getDeadFilesAndSendMessageToParent = (allFilesToCheck, filesMetadata) => {
   const allDeadFiles = getAllDeadFiles(filesMetadata, allFilesToCheck);
   // If no errors were found while parsing these files
   if (filesMetadata.unparsableVistedFiles === 0)
@@ -86,26 +87,23 @@ const getDeadFiles = (allFilesToCheck, filesMetadata) => {
 };
 
 /**
- * Checks for all intra-module dependencies which were actually referred by any file
- * @param {Object} dependencyCheckerRelatedMetadata Contains information required by this function like location of the entry file and depth variable
+ * Checks for all dependencies at a provided depth which were actually referred by any file
+ * @param {Object} outsideModuleChecker Regex to decide whether a given file is a dependency at a given depth or not
  * @param {Object} filesMetadata Contains information related to all files
- * @returns Array of files which are intra-module dependencies of the provided module location and depth
+ * @returns Array of files which are dependencies at a given depth of the provided module location
  */
-const getIntraModuleDependencies = (
-  { moduleLocation, isDepthFromFront, depth, intraModuleDependencyRegex },
-  filesMetadata
-) => {
+const getDependenciesAtGivenDepth = (outsideModuleChecker, filesMetadata) => {
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
-  const intraModuleDependenciesArray = [];
+  const dependenciesAtGivenDepthArray = [];
   const filesMapping = filesMetadata.filesMapping;
   for (const file in filesMapping) {
     if (
-      // If the file is not excluded, satisfies intra-module dependency condition, and is also reffered
-      intraModuleDependencyRegex.test(file) &&
+      // If the file is not excluded, satisfies dependency at a given depth condition, and is also reffered
+      outsideModuleChecker.test(file) &&
       isFilePath(file) &&
       isFileNotExcluded(excludedFilesRegex, file)
     ) {
-      intraModuleDependenciesArray.push({
+      dependenciesAtGivenDepthArray.push({
         file,
         filePoints: getFilePoints(file, filesMapping),
       });
@@ -114,16 +112,16 @@ const getIntraModuleDependencies = (
   // If no errors found during traversal
   if (filesMetadata.unparsableVistedFiles === 0)
     process.send({
-      text: "Successfully identified all intra module dependencies",
+      text: "Successfully identified all dependencies at the provided depth",
       messageType: DISPLAY_TEXT,
     });
   else
     process.send({
-      text: "Unable to identify few intra module dependencies",
+      text: "Unable to identify few ddependencies at the provided depth",
       messageType: DISPLAY_TEXT,
     });
 
-  return intraModuleDependenciesArray;
+  return dependenciesAtGivenDepthArray;
 };
 
 /**
@@ -149,6 +147,7 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
       deadFileVisitedMapping[file] = true;
       return { file, filePoints: getFilePoints(file, filesMapping) };
     });
+
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
   for (const fileObject of deadFilesArray) {
     const file = fileObject.file;
@@ -180,7 +179,7 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
 };
 
 /**
- * Can be used to determine the significance of a particular file
+ * Used to determine the significance of a particular file
  * @param {String} file Absolute address of a file
  * @param {Object} filesMapping Contains information related to all files
  * @returns Points associated with the provided file
@@ -188,7 +187,9 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
 const getFilePoints = (file, filesMapping) => {
   let filePoints = 0;
   if (isFileExtensionValid(file)) filePoints += 100;
+  // If never referred
   if (!filesMapping[file]) filePoints += 10;
+  // If present deep inside a parent folder, then it's significance is lower as compared to those present closer to a parent folder
   filePoints -= getNumberOfSubPartsOfGivenAbsolutePath(file);
   return filePoints;
 };
@@ -206,7 +207,7 @@ const isFileReferred = (filesMapping, fileLocation) => {
   try {
     // If the entire object of the file was referred
     const referencesUsingThisFile = getReferencesOfVariableUsingGivenFile(
-      variable,
+      allExportedVariables,
       fileLocation
     );
     if (referencesUsingThisFile || allExportedVariables.isEntryFileObject) {
@@ -227,6 +228,7 @@ const isFileReferred = (filesMapping, fileLocation) => {
         isReferred = true;
         break;
       }
+      // default exports can contain many exports declared inside this file itself
       if (variable === DEFAULT) {
         for (const variablesInsideDefault in allExportedVariables[variable]) {
           try {
@@ -251,12 +253,19 @@ const isFileReferred = (filesMapping, fileLocation) => {
   return isReferred;
 };
 
+/**
+ * Used to check the references of a particular variable made using a file which exports this variable
+ * @param {Object} variable Variable to check
+ * @param {String} fileLocation Absolute address of the provided file
+ * @returns Integer denoting references made using this file
+ */
 const getReferencesOfVariableUsingGivenFile = (variable, fileLocation) => {
   let referencesUsingThisFile = variable.referenceCount;
   if (
     variable.individualFileReferencesMapping &&
     variable.individualFileReferencesMapping[fileLocation]
   ) {
+    // If file refers this variable too, then remove those references
     referencesUsingThisFile -=
       variable.individualFileReferencesMapping[fileLocation].referenceCount -
       variable.individualFileReferencesMapping[fileLocation]
@@ -265,7 +274,7 @@ const getReferencesOfVariableUsingGivenFile = (variable, fileLocation) => {
   return referencesUsingThisFile;
 };
 /**
- * Used to get all files (entry files, files which have to be checked for intra-module dependency/ deadfile)
+ * Used to get all files required by the program
  * @param {Object} programConfiguration Contains information related to which directories, entry files have to be retrieved
  * @param {RegExp} excludedFilesRegex Regex denoting the excluded files
  * @returns Object consisting of arrays of entry files and the files to check
@@ -422,27 +431,27 @@ const buildEntryFilesMappingFromArray = (entryFilesArray) => {
 };
 
 /**
- * Will generate a mapping containing information related to intra-module dependency and the files which import them
- * @param {Array} intraModuleDependenciesArray Array containing the intra-module dependencies
+ * Will generate a mapping containing information related to dependency at a given depth and the files which import them
+ * @param {Array} dependenciesAtGivenDepthArray Array containing the dependencies at a given depth
  * @param {Object} filesMetadata
  */
-const getIntraModuleDependenciesUsageMapping = (
-  intraModuleDependenciesArray,
+const getDependenciesAtGivenDepthUsageMapping = (
+  dependenciesAtGivenDepthArray,
   filesMetadata
 ) => {
-  const intraModuleDependenciesUsageMapping = {};
-  intraModuleDependenciesArray.forEach(
-    (fileObject) => (intraModuleDependenciesUsageMapping[fileObject.file] = [])
+  const dependenciesUsageMapping = {};
+  dependenciesAtGivenDepthArray.forEach(
+    (fileObject) => (dependenciesUsageMapping[fileObject.file] = [])
   );
   for (const file in filesMetadata.filesMapping) {
     for (const dependentFile in filesMetadata.filesMapping[file]
       .staticImportFilesMapping) {
-      if (intraModuleDependenciesUsageMapping[dependentFile]) {
-        intraModuleDependenciesUsageMapping[dependentFile].push(file);
+      if (dependenciesUsageMapping[dependentFile]) {
+        dependenciesUsageMapping[dependentFile].push(file);
       }
     }
   }
-  return intraModuleDependenciesUsageMapping;
+  return dependenciesUsageMapping;
 };
 
 /**
@@ -464,11 +473,11 @@ module.exports = {
   setAllFileExports,
   createWebpackChunkMetadata,
   analyseCode,
-  getDeadFiles,
-  getIntraModuleDependencies,
+  getDeadFilesAndSendMessageToParent,
+  getDependenciesAtGivenDepth,
   getAllRequiredFiles,
   getDuplicateFiles,
   buildEntryFilesMappingFromArray,
-  getIntraModuleDependenciesUsageMapping,
+  getDependenciesAtGivenDepthUsageMapping,
   getDuplicateFilesChunksMapping,
 };

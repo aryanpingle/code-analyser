@@ -1,15 +1,12 @@
-const {
-  getAllPropertiesFromNode,
-} = require("./utility");
-const {
-  isNotExportTypeReference,
-} = require("../helper");
+const { getAllPropertiesFromNode } = require("./utility");
+const { isNotExportTypeReference } = require("../helper");
 
 /**
  * Helps to update individual exports inside an exported variable which contains multiple children exports (eg. factory code)
  * @param {Object} nodeToParse AST node to parse
  * @param {Object} currentFileMetadata Contains information related to the current file
  * @param {Boolean} addReferences To decide whether references have to be added or subtracted
+ * @returns Boolean value denoting whether the property referred was an imported variable
  */
 const doAccessingPropertiesOfObjectOperations = (
   nodeToParse,
@@ -17,7 +14,7 @@ const doAccessingPropertiesOfObjectOperations = (
   addReferences
 ) => {
   const allPropertiesArray = getAllPropertiesFromNode(nodeToParse);
-  if (allPropertiesArray.length === 0) return;
+  if (allPropertiesArray.length === 0) return false;
 
   const headPropertyWhichIsPresentInsideCurrentFile = allPropertiesArray[0];
   if (
@@ -50,7 +47,8 @@ const doAccessingPropertiesOfObjectOperations = (
       currentIndex++;
     }
     exportedVariableToUpdate.referenceCount += valueToAdd;
-  }
+    return true;
+  } else return false;
 };
 
 /**
@@ -95,8 +93,9 @@ const doIdentifierOperationsOnImportedVariablesMetadata = (
         identifierName
       ].referenceCountObject.referenceCount += valueToAdd;
       if (!isNotExportTypeReference(path))
-        currentFileMetadata.importedVariablesMetadata[identifierName]
-          .referenceCountObject.exportReferenceCount++;
+        currentFileMetadata.importedVariablesMetadata[
+          identifierName
+        ].referenceCountObject.exportReferenceCount += valueToAdd;
     } catch (_) {}
   }
 };

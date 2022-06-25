@@ -32,6 +32,7 @@ const {
   DONT_UPDATE_REFERENCE_COUNT,
   WEBPACK_CHUNK_NAME,
 } = require("../../utility/constants");
+
 /**
  * Will set that the current file has been statically imported
  * @param {Object} importNode Node in AST containing information related to the statement
@@ -171,7 +172,7 @@ const doDynamicImportWithPromiseOperations = (
   currentFileMetadata.importedFilesMapping[importedFileAddress] = true;
   if (isNotTraversingToCheckForImportAddresses(type)) {
     const valueToMultiplyWith = addReferences ? 1 : -1;
-    // No need to check for variables if we are checking for intra-module dependencies
+    // No need to check for variables if we are checking for dependencies at a given depth
     try {
       if (isImportStatementArgumentsPresent(callExpressionNode)) {
         callExpressionNode.arguments[0].params.forEach((specifier) => {
@@ -325,6 +326,9 @@ const doDynamicImportsUsingLazyHookOperations = (
     // const X = lazy(()=>{import(...)}) type statement
     else if (isLazyImportDeclaration(parentNode)) {
       identifier = parentNode.declarations[0].id.name;
+    } else if (parentNode.key) {
+      // Class property
+      identifier = parentNode.key.name;
     }
     if (identifier) {
       currentFileMetadata.importedVariablesMetadata[identifier] =

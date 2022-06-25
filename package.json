@@ -1,7 +1,7 @@
 {
   "name": "code-analyser",
   "version": "1.4.0",
-  "description": "Script which finds dead files, intra-module dependencies, and files present in multiple chunks.",
+  "description": "Script which finds dead files, dependencies at given depth, and files present in multiple chunks.",
   "main": "index.js",
   "type": "commonjs",
   "bin": {

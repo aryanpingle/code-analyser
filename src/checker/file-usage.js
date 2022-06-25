@@ -1,3 +1,4 @@
+const process = require("process");
 const { traverseAST, buildAST } = require("../ast/index");
 const { getDefaultFileObject } = require("../ast/utility");
 const { CHECK_USAGE, DISPLAY_TEXT } = require("../utility/constants");
@@ -9,10 +10,9 @@ const {
   isFileNotExcluded,
 } = require("../utility/helper");
 const getUsedFilesMapping = require("./utility");
-const process = require("process");
 
 /**
- * Will be used to check file to update the imported, exported variables when they are regerred
+ * Will be used to check file to update the imported, exported variables when they are referred
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
  */

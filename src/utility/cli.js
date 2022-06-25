@@ -33,7 +33,7 @@ const setConfiguration = () => {
       case "checkDeadFiles":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
-      case "checkIntraModuleDependencies":
+      case "checkDependenciesAtGivenDepth":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
@@ -121,10 +121,10 @@ const produceAnalysdDeadFileResult = (
   console.log(statsTable.toString());
 };
 
-// Same as produceAnalysdDeadFileResult function but will provide information related to intra-module dependencies instead of dead files
-const produceAnalysedIntraModuleDependenciesResult = (
+// Same as produceAnalysdDeadFileResult function but will provide information related to dependencies at a given depth instead of dead files
+const produceAnalysedDependenciesAtGivenDepthResult = (
   filesMetadata,
-  { intraModuleDependencies, entryFiles }
+  { dependenciesAtGivenDepth, entryFiles }
 ) => {
   const statsTable = new cliTableBuilder({
     head: ["Type", "Count", "Percentage"],
@@ -137,14 +137,14 @@ const produceAnalysedIntraModuleDependenciesResult = (
     "Files Parsed",
     "Entry Files",
     "Feasible Static Dependencies",
-    "Intra-Module dependencies",
+    "Dependencies at the provided depth",
   ];
   const countArray = [
     totalFilesEcountered,
     totalFilesParsed,
     entryFiles,
     totalFilesEcountered - entryFiles,
-    intraModuleDependencies,
+    dependenciesAtGivenDepth,
   ];
   for (const index in typeArray) {
     statsTable.push([
@@ -198,7 +198,7 @@ const displayFilesOnScreen = (filesArray) => {
 /**
  * Can be used to display all files along with additional information to display with them on the screen interactively
  * @param {Array} filesArray Contains file name and other information
- * @param {Object} filesAdditionalInformationMapping Can be used to display which files use intra-module dependencies/ display webpack chunks
+ * @param {Object} filesAdditionalInformationMapping Can be used to display which files use retrieved dependencies/ display webpack chunks
  */
 const displayAllFilesInteractively = async (
   filesArray,
@@ -309,7 +309,7 @@ const displayTextOnConsole = ({ text, fileLocation }) => {
 module.exports = {
   setConfiguration,
   produceAnalysdDeadFileResult,
-  produceAnalysedIntraModuleDependenciesResult,
+  produceAnalysedDependenciesAtGivenDepthResult,
   displayDuplicateFileDetails,
   displayFilesOnScreen,
   displayAllFilesInteractively,

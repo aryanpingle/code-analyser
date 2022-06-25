@@ -67,7 +67,7 @@ const buildAST = (fileLocation) => {
 /**
  * Main function which actually traverse the AST of the file
  * @param {Object} traversalRelatedMetadata Metadata which contains information related to traversal like AST to traverse, current and all files' metadata
- * @param {String} type Traversal type (traverse according to requirement i.e. identifying deadfile/ intra-module dependencies)
+ * @param {String} type Traversal type (traverse according to requirement i.e. identifying deadfile/ dependencies at given depth/ duplicate files check)
  */
 const traverseAST = (
   { ast, currentFileMetadata, filesMetadata, addReferences = true },
@@ -144,23 +144,27 @@ const traverseAST = (
     MemberExpression(path) {
       if (type === CHECK_USAGE && isAccessingPropertyOfObject(path.node)) {
         // Checks for x.y or x["y"] type statements where parent's property is being accessed
-        doAccessingPropertiesOfObjectOperations(
-          path.node,
-          currentFileMetadata,
-          addReferences
-        );
-        path.skip();
+        if (
+          doAccessingPropertiesOfObjectOperations(
+            path.node,
+            currentFileMetadata,
+            addReferences
+          )
+        )
+          path.skip();
       }
     },
     TSQualifiedName(path) {
       if (type === CHECK_USAGE && isAccessingPropertyOfObject(path.node)) {
         // Checks for x.y or x["y"] type statements where parent's property is being accessed
-        doAccessingPropertiesOfObjectOperations(
-          path.node,
-          currentFileMetadata,
-          addReferences
-        );
-        path.skip();
+        if (
+          doAccessingPropertiesOfObjectOperations(
+            path.node,
+            currentFileMetadata,
+            addReferences
+          )
+        )
+          path.skip();
       }
     },
     VariableDeclarator(path) {
@@ -246,7 +250,10 @@ const traverseAST = (
           if (isNotTraversingToCheckForImportAddresses(type)) {
             const parentAssignmentPath = path.findParent(
               (path) =>
-                path.isVariableDeclaration() || path.isAssignmentExpression()
+                path.isVariableDeclaration() ||
+                path.isAssignmentExpression() ||
+                path.isClassProperty() ||
+                path.isClassPrivateProperty()
             );
             if (parentAssignmentPath) {
               // Checks for "const ... = lazy(()=>import(...))" type statements

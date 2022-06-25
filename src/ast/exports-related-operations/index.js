@@ -1,6 +1,6 @@
 const { getResolvedPathFromGivenPath } = require("../utility");
 const {
-  setImportedVariablesFromExportFromStatementSpecifier,
+  setImportedVariablesMetadataFromExportFromStatementSpecifier,
   extractVariableInformationFromSpecifier,
   getValuesFromStatement,
   setExportedVariablesFromArray,
@@ -37,7 +37,7 @@ const doExportDeclarationOperations = (
   ) {
     exportNode.specifiers.forEach((specifier) => {
       try {
-        setImportedVariablesFromExportFromStatementSpecifier(
+        setImportedVariablesMetadataFromExportFromStatementSpecifier(
           specifier,
           currentFileMetadata,
           importedFileAddress

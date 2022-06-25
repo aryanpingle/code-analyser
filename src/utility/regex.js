@@ -72,13 +72,13 @@ const buildExcludedFilesRegex = (
 };
 
 /**
- * Build a regex which will be used to set the intra-module dependencies' required condition
- * @param {String} moduleLocation Absolute/ Relative path of the module whose intra-module dependencies are required
+ * Build a regex which will be used to set the dependencies at given depth check's required condition
+ * @param {String} moduleLocation Absolute/ Relative path of the module relative to which the check has to be performed
  * @param {Boolean} isDepthFromFront To check whether the depth has to be measured from front or back
- * @param {Integer} depth Depth at which intra-module dependencies should be checked
- * @returns Regex containg the intra-module dependencies required condition
+ * @param {Integer} depth Depth at which dependencies should be checked
+ * @returns Regex containg the dependencies at given depth's required condition
  */
-const buildIntraModuleDependencyRegex = (
+const buildDependenciesAtGivenDepthRegex = (
   moduleLocation,
   isDepthFromFront,
   depth
@@ -99,7 +99,7 @@ const buildIntraModuleDependencyRegex = (
   )}(([\\/\].+)*)`;
   // Regex denotes any module which starts with the siblingLocation's path but doesn't start with module's ancestor directory at the given depth
   return {
-    intraModuleChecker: new RegExp(
+    outsideModuleChecker: new RegExp(
       `^(?!${regexCompatibleDirectoryLocation})`,
       "i"
     ),
@@ -127,5 +127,5 @@ const convertAddressIntoRegexCompatibleFormat = (addressString) => {
 };
 module.exports = {
   buildExcludedFilesRegex,
-  buildIntraModuleDependencyRegex,
+  buildDependenciesAtGivenDepthRegex,
 };

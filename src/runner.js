@@ -4,12 +4,12 @@ setConfiguration();
 const codeAnalyerConfigurationObject = require("./utility/configuration-object");
 const {
   buildExcludedFilesRegex,
-  buildIntraModuleDependencyRegex,
+  buildDependenciesAtGivenDepthRegex,
 } = require("./utility/regex");
 const { getDefaultFilesMetadata } = require("./utility/files");
 const {
-  getDeadFiles,
-  getIntraModuleDependencies,
+  getDeadFilesAndSendMessageToParent,
+  getDependenciesAtGivenDepth,
   getAllRequiredFiles,
   analyseCode,
   setAllStaticallyImportedFilesMapping,
@@ -18,19 +18,19 @@ const {
   createWebpackChunkMetadata,
   buildEntryFilesMappingFromArray,
   getDuplicateFiles,
-  getIntraModuleDependenciesUsageMapping,
+  getDependenciesAtGivenDepthUsageMapping,
   getDuplicateFilesChunksMapping,
 } = require("./utility/index");
 const {
   isDeadfileCheckRequired,
-  isIntraModuleDependenciesCheckRequired,
+  isDependenciesCheckRequiredAtGivenDepthCheckRequired,
   isDuplicatedFilesCheckRequired,
 } = require("./utility/helper");
 const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
 const {
   DEFAULT_TRUE_REGEX_STRING,
   CHECK_DEAD_FILES,
-  CHECK_INTRA_MODULE_DEPENDENCIES,
+  CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
   CHECK_DUPLICATE_FILES,
 } = require("./utility/constants");
 
@@ -58,15 +58,18 @@ const analyseCodeAndDetectDeadfiles = async (
   );
   const entryFilesMapping = buildEntryFilesMappingFromArray(allEntryFiles);
   setAllFileExports(allEntryFiles, filesMetadata, entryFilesMapping);
+  // Reset the visited files, will traverse them again
   filesMetadata.visitedFilesMapping = {};
   analyseCode(allEntryFiles, filesMetadata);
-  const allDeadFiles = getDeadFiles(allFilesToCheck, filesMetadata);
+  const allDeadFiles = getDeadFilesAndSendMessageToParent(
+    allFilesToCheck,
+    filesMetadata
+  );
   const filesLengthObject = {
     deadFiles: allDeadFiles.length,
     filesToCheck: allFilesToCheck.length,
     entryFiles: allEntryFiles.length,
   };
-
   process.send({
     filesMetadata,
     filesLengthObject,
@@ -77,11 +80,11 @@ const analyseCodeAndDetectDeadfiles = async (
 };
 
 /**
- * Function which first analyses the code and prints the intra-module dependencies present on the console
+ * Function which first analyses the code and prints the dependencies at a given depth on the console
  * @param {Object} filesMetadata Object which contains information related to all files parsed
  * @param {Object} programConfiguration Object which contains information related to which files have to be checked
  */
-const analyseCodeAndDetectIntraModuleDependencies = async (
+const analyseCodeAndDetectDependenciesAtGivenDepth = async (
   filesMetadata,
   programConfiguration
 ) => {
@@ -101,42 +104,39 @@ const analyseCodeAndDetectIntraModuleDependencies = async (
     isDepthFromFront: programConfiguration.isDepthFromFront,
     depth: programConfiguration.depth,
   };
-  const { intraModuleChecker, insideModuleChecker } =
-    buildIntraModuleDependencyRegex(
+  const { outsideModuleChecker, insideModuleChecker } =
+    buildDependenciesAtGivenDepthRegex(
       dependencyCheckerRelatedMetadata.moduleLocation,
       dependencyCheckerRelatedMetadata.isDepthFromFront,
       dependencyCheckerRelatedMetadata.depth
     );
-  dependencyCheckerRelatedMetadata.intraModuleDependencyRegex =
-    intraModuleChecker;
   filesMetadata.insideModuleRegex = codeAnalyerConfigurationObject.checkAll
     ? new RegExp(DEFAULT_TRUE_REGEX_STRING)
     : insideModuleChecker;
 
   setAllStaticallyImportedFilesMapping(allEntryFiles, filesMetadata);
 
-  const intraModuleDependencies = getIntraModuleDependencies(
-    dependencyCheckerRelatedMetadata,
+  const dependenciesAtGivenDepth = getDependenciesAtGivenDepth(
+    outsideModuleChecker,
     filesMetadata
   );
 
   const filesLengthObject = {
-    intraModuleDependencies: intraModuleDependencies.length,
+    dependenciesAtGivenDepth: dependenciesAtGivenDepth.length,
     entryFiles: allEntryFiles.length,
   };
 
-  const intraModuleDependenciesUsageMapping =
-    getIntraModuleDependenciesUsageMapping(
-      intraModuleDependencies,
-      filesMetadata
-    );
+  const dependenciesUsageMapping = getDependenciesAtGivenDepthUsageMapping(
+    dependenciesAtGivenDepth,
+    filesMetadata
+  );
 
   process.send({
     filesMetadata,
     filesLengthObject,
-    filesArray: intraModuleDependencies,
-    filesUsageMapping: intraModuleDependenciesUsageMapping,
-    messageType: CHECK_INTRA_MODULE_DEPENDENCIES,
+    filesArray: dependenciesAtGivenDepth,
+    filesUsageMapping: dependenciesUsageMapping,
+    messageType: CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
     interact: codeAnalyerConfigurationObject.interact,
   });
 };
@@ -178,9 +178,13 @@ if (isDeadfileCheckRequired(codeAnalyerConfigurationObject)) {
   analyseCodeAndDetectDeadfiles(filesMetadata, codeAnalyerConfigurationObject);
 }
 
-if (isIntraModuleDependenciesCheckRequired(codeAnalyerConfigurationObject)) {
+if (
+  isDependenciesCheckRequiredAtGivenDepthCheckRequired(
+    codeAnalyerConfigurationObject
+  )
+) {
   const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
-  analyseCodeAndDetectIntraModuleDependencies(
+  analyseCodeAndDetectDependenciesAtGivenDepth(
     filesMetadata,
     codeAnalyerConfigurationObject
   );

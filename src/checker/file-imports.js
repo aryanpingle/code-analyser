@@ -1,3 +1,4 @@
+const process = require("process");
 const { traverseAST, buildAST } = require("../ast/index");
 const { getDefaultCurrentFileMetadata } = require("../utility/files");
 const { getDefaultFileObject } = require("../ast/utility");
@@ -12,10 +13,9 @@ const {
   CHECK_ALL_IMPORTS_ADDRESSES,
   DISPLAY_TEXT,
 } = require("../utility/constants");
-const process = require("process");
 
 /**
- * Will be used to check a given file's imports (used while detecting intra-module dependencies/ duplicate files)
+ * Will be used to check a given file's imports (used while detecting dependencies at a given depth/ duplicate files)
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
  * @param {Boolean} checkStaticImportsOnly To decide whether only static imports of a file have to be checked or not

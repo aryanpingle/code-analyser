@@ -21,7 +21,7 @@ const {
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  * @param {Object} filesMetadata Contains inforamtion related to all files
  */
-const setImportedVariablesFromExportFromStatementSpecifier = (
+const setImportedVariablesMetadataFromExportFromStatementSpecifier = (
   specifier,
   currentFileMetadata,
   importedFileAddress
@@ -110,12 +110,15 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
       };
     else if (nodeToGetValues.declaration.declarations) {
       // export const x = () => {} type statements
-      const keyValuesPairArray = [];
+      let keyValuesPairArray = [];
       nodeToGetValues.declaration.declarations.forEach((declaration) => {
         if (declaration.id.name) {
           keyValuesPairArray.push({
             [declaration.id.name]: declaration.id.name,
           });
+        }
+        else if(declaration.id.properties){
+          keyValuesPairArray = getValuesFromObject(declaration.id.properties);
         }
       });
       return {
@@ -182,7 +185,7 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
 
 /**
  * Parses the given array to generate a new key-value pairs array
- * @param {Array} arrayToGetValuesFrom
+ * @param {Array} arrayToGetValuesFrom Given array to retrieve values from
  * @returns Array containing key-value pairs
  */
 const getValuesFromObject = (arrayToGetValuesFrom) => {
@@ -299,7 +302,7 @@ const setExportVariable = (
 };
 
 module.exports = {
-  setImportedVariablesFromExportFromStatementSpecifier,
+  setImportedVariablesMetadataFromExportFromStatementSpecifier,
   extractVariableInformationFromSpecifier,
   getValuesFromStatement,
   setExportedVariablesFromArray,
