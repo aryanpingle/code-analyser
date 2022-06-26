@@ -1,7 +1,7 @@
 const {
   getNewImportVariableObject,
   getNewDefaultObject,
-} = require("../utility");
+} = require("../common");
 const {
   ALL_EXPORTS_IMPORTED,
   INDIVIDUAL_IMPORT,
@@ -116,8 +116,7 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
           keyValuesPairArray.push({
             [declaration.id.name]: declaration.id.name,
           });
-        }
-        else if(declaration.id.properties){
+        } else if (declaration.id.properties) {
           keyValuesPairArray = getValuesFromObject(declaration.id.properties);
         }
       });
@@ -240,10 +239,10 @@ const setExportedVariablesFromArray = (
           importedVariable: null,
         };
       }
-      if (type === NORMAL_EXPORT) {
+      if (type === NORMAL_EXPORT)
         exportVariableMetadata.variableToUpdate =
           currentFileMetadata.exportedVariables;
-      } else {
+      else {
         if (!currentFileMetadata.exportedVariables[DEFAULT]) {
           currentFileMetadata.exportedVariables[DEFAULT] = getNewDefaultObject(
             currentFileMetadata.fileLocation,
@@ -280,8 +279,11 @@ const setExportVariable = (
         importedVariable.type === ALL_EXPORTS_IMPORTED
           ? filesMetadata.filesMapping[importedVariable.importedFrom]
               .exportedVariables
+          : importedVariable.isDefaultImport === false
+          ? filesMetadata.filesMapping[importedVariable.importedFrom]
+              .exportedVariables[importedVariable.name]
           : filesMetadata.filesMapping[importedVariable.importedFrom]
-              .exportedVariables[importedVariable.name];
+              .exportedVariables[DEFAULT][importedVariable.name];
 
       variableToUpdate[Object.values(variable)[0]] = importedVariableToSet;
 

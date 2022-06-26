@@ -1,7 +1,7 @@
 const process = require("process");
 const { setConfiguration } = require("./utility/cli");
 setConfiguration();
-const codeAnalyerConfigurationObject = require("./utility/configuration-object");
+const { codeAnalyerConfigurationObject } = require("./utility/configuration");
 const {
   buildExcludedFilesRegex,
   buildDependenciesAtGivenDepthRegex,
@@ -9,22 +9,22 @@ const {
 const { getDefaultFilesMetadata } = require("./utility/files");
 const {
   getDeadFilesAndSendMessageToParent,
-  getDependenciesAtGivenDepth,
-  getAllRequiredFiles,
   analyseCode,
-  setAllStaticallyImportedFilesMapping,
-  setAllImportedFilesMapping,
   setAllFileExports,
-  createWebpackChunkMetadata,
   buildEntryFilesMappingFromArray,
-  getDuplicateFiles,
+  getDependenciesAtGivenDepth,
   getDependenciesAtGivenDepthUsageMapping,
+  getAllRequiredFiles,
+  setImportedFilesMapping,
+  createWebpackChunkMetadata,
+  getDuplicateFiles,
   getDuplicateFilesChunksMapping,
-} = require("./utility/index");
+} = require("./utility/featureSpecificOperations/index");
 const {
   isDeadfileCheckRequired,
   isDependenciesCheckRequiredAtGivenDepthCheckRequired,
   isDuplicatedFilesCheckRequired,
+  isPossibleChunksMetdataCheckRequired,
 } = require("./utility/helper");
 const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
 const {
@@ -32,6 +32,7 @@ const {
   CHECK_DEAD_FILES,
   CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
   CHECK_DUPLICATE_FILES,
+  CHECK_POSSIBLE_CHUNKS_METADATA,
 } = require("./utility/constants");
 
 const excludedFilesRegex = buildExcludedFilesRegex(
@@ -113,8 +114,9 @@ const analyseCodeAndDetectDependenciesAtGivenDepth = async (
   filesMetadata.insideModuleRegex = codeAnalyerConfigurationObject.checkAll
     ? new RegExp(DEFAULT_TRUE_REGEX_STRING)
     : insideModuleChecker;
-
-  setAllStaticallyImportedFilesMapping(allEntryFiles, filesMetadata);
+  setImportedFilesMapping(allEntryFiles, filesMetadata, {
+    checkStaticImportsOnly: true,
+  });
 
   const dependenciesAtGivenDepth = getDependenciesAtGivenDepth(
     outsideModuleChecker,
@@ -158,7 +160,9 @@ const analyseCodeAndDetectAllDuplicateFiles = async (
     },
     excludedFilesRegex
   );
-  setAllImportedFilesMapping(allEntryFiles, filesMetadata);
+  setImportedFilesMapping(allEntryFiles, filesMetadata, {
+    checkStaticImportsOnly: false,
+  });
   const webpackChunkMetadata = createWebpackChunkMetadata(filesMetadata);
   const allDuplicateFiles = getDuplicateFiles(webpackChunkMetadata);
 
@@ -170,6 +174,38 @@ const analyseCodeAndDetectAllDuplicateFiles = async (
     filesUsageMapping: duplicateFilesChunksMapping,
     messageType: CHECK_DUPLICATE_FILES,
     interact: codeAnalyerConfigurationObject.interact,
+  });
+};
+
+/**
+ * Function which first analyses the code and then prints the files which are present in more than one chunk on the console
+ * @param {Object} filesMetadata Object which contains information related to all files parsed
+ * @param {Object} programConfiguration Object which contains information related to which files have to be checked
+ */
+const analyseCodeAndDetectAllPossibleChunksMetadata = async (
+  filesMetadata,
+  programConfiguration
+) => {
+  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
+  const { allEntryFiles } = await getAllRequiredFiles(
+    {
+      directoriesToCheck: programConfiguration.directoriesToCheck,
+      entry: programConfiguration.entry,
+    },
+    excludedFilesRegex
+  );
+  setImportedFilesMapping(allEntryFiles, filesMetadata, {
+    checkStaticImportsOnly: false,
+    checkForFileSize: true,
+  });
+  const allFilesParsedArray = [];
+  for (const file in filesMetadata.filesMapping)
+    allFilesParsedArray.push({ file });
+  process.send({
+    filesArray: allFilesParsedArray,
+    filesMetadata,
+    excludedFilesRegexString: filesMetadata.excludedFilesRegex.source,
+    messageType: CHECK_POSSIBLE_CHUNKS_METADATA,
   });
 };
 
@@ -193,6 +229,14 @@ if (
 if (isDuplicatedFilesCheckRequired(codeAnalyerConfigurationObject)) {
   const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
   analyseCodeAndDetectAllDuplicateFiles(
+    filesMetadata,
+    codeAnalyerConfigurationObject
+  );
+}
+
+if (isPossibleChunksMetdataCheckRequired(codeAnalyerConfigurationObject)) {
+  const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
+  analyseCodeAndDetectAllPossibleChunksMetadata(
     filesMetadata,
     codeAnalyerConfigurationObject
   );

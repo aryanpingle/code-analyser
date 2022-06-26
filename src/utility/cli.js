@@ -1,13 +1,24 @@
+const process = require("process");
 const { Select } = require("enquirer");
 const yargs = require("yargs");
 const cliTableBuilder = require("cli-table3");
 const {
   getRequiredTypeElementFromString,
   getArrayOfElementsFromString,
-} = require("./parse-string");
-const codeAnalyerConfigurationObject = require("./configuration-object");
+  getSizeFromInteger,
+} = require("./parseElements");
+const { codeAnalyerConfigurationObject } = require("./configuration");
 const { buildTrie, getFirstNodeNotContainingOneChild } = require("./trie");
-const { GO_BACK, YELLOW_COLOR, GREEN_COLOR } = require("./constants");
+const {
+  GO_BACK,
+  YELLOW_COLOR,
+  GREEN_COLOR,
+  CLEAR,
+  BOLD,
+} = require("./constants");
+const {
+  getAllDependentFiles,
+} = require("./featureSpecificOperations/possibleChunksMetadata");
 
 /**
  * Will be called to set the configuration of the program using the arguments provided on the CLI
@@ -33,6 +44,7 @@ const setConfiguration = () => {
       case "checkDeadFiles":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
+        break;
       case "checkDependenciesAtGivenDepth":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
@@ -40,6 +52,11 @@ const setConfiguration = () => {
       case "checkDuplicateFiles":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
+        break;
+      case "checkPossibleChunksMetadata":
+        codeAnalyerConfigurationObject[configuration] =
+          getRequiredTypeElementFromString(configurationObject[configuration]);
+        break;
       case "isDepthFromFront":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
@@ -198,11 +215,16 @@ const displayFilesOnScreen = (filesArray) => {
 /**
  * Can be used to display all files along with additional information to display with them on the screen interactively
  * @param {Array} filesArray Contains file name and other information
- * @param {Object} filesAdditionalInformationMapping Can be used to display which files use retrieved dependencies/ display webpack chunks
+ * @param {Object} filesUsageMapping Can be used to display which files use retrieved dependencies/ display webpack chunks
  */
 const displayAllFilesInteractively = async (
   filesArray,
-  filesAdditionalInformationMapping = {}
+  {
+    filesUsageMapping = {},
+    checkForPossibleChunkMetadata = false,
+    filesMetadata = {},
+    excludedRegex,
+  }
 ) => {
   if (filesArray.length === 0) {
     console.log(
@@ -220,11 +242,17 @@ const displayAllFilesInteractively = async (
       nodesInLastVisitedPaths[nodesInLastVisitedPaths.length - 1].node
     );
     const pathToCheck = firstNodeNotContainingOneChild.pathTillNode;
-    if (filesAdditionalInformationMapping[pathToCheck])
+    if (filesUsageMapping[pathToCheck])
       displayFileAdditionalInformation(
         pathToCheck,
-        filesAdditionalInformationMapping[pathToCheck]
+        filesUsageMapping[pathToCheck]
       );
+    if (
+      checkForPossibleChunkMetadata &&
+      filesMetadata.filesMapping[pathToCheck]
+    )
+      displayPossibleChunksMetadata(pathToCheck, filesMetadata, excludedRegex);
+
     const { selectedNode: nextNodeToCheck, choiceIndex } =
       await interactivelyDisplayAndGetNextNode(
         firstNodeNotContainingOneChild,
@@ -243,7 +271,7 @@ const displayAllFilesInteractively = async (
         selectedChoiceIndex: null,
       });
     }
-    console.clear();
+    process.stdout.write(CLEAR);
   }
 };
 
@@ -304,6 +332,56 @@ const displayFileAdditionalInformation = (file, additionalInformationArray) => {
 const displayTextOnConsole = ({ text, fileLocation }) => {
   if (fileLocation) console.log(YELLOW_COLOR, "Unable to parse:", fileLocation);
   console.log(GREEN_COLOR, text);
+};
+
+/**
+ * Function to get and display all the dependencies of the provided file, along with the approx uncompressed chunk size
+ * @param {String} fileLocation
+ * @param {Object} filesMetadata
+ * @param {Regex} excludedRegex To exclude files which aren't required to be checked
+ */
+const displayPossibleChunksMetadata = (
+  fileLocation,
+  filesMetadata,
+  excludedRegex
+) => {
+  const currentFileSet = getAllDependentFiles(fileLocation, {
+    filesMetadata,
+    excludedRegex,
+  });
+  displayChunkMetadaRelatedInformation(
+    Array.from(currentFileSet),
+    filesMetadata.filesMapping
+  );
+};
+
+/**
+ * Function (called by displayPossibleChunksMetadata) which displays the given dependencies of the file on the screen
+ * @param {Array} fileInformationArray Contains information related to dependencies of a given file and size of each file
+ * @param {Object} filesMapping Contains size of each file
+ */
+const displayChunkMetadaRelatedInformation = (
+  fileInformationArray,
+  filesMapping
+) => {
+  fileInformationArray.sort(
+    (firstFile, secondFile) =>
+      filesMapping[secondFile].fileSize - filesMapping[firstFile].fileSize
+  );
+  const statsTable = new cliTableBuilder({
+    head: ["Index", "File Name", "File Size"],
+  });
+  let totalSize = 0;
+  fileInformationArray.forEach((file, index) => {
+    totalSize += filesMapping[file].fileSize;
+    statsTable.push([
+      index + 1,
+      file,
+      getSizeFromInteger(filesMapping[file].fileSize),
+    ]);
+  });
+  console.log(statsTable.toString());
+  console.log(BOLD, `\nTotal Chunk Size: ${getSizeFromInteger(totalSize)}\n`);
 };
 
 module.exports = {

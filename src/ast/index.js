@@ -1,7 +1,7 @@
 const { default: traverse } = require("@babel/traverse");
 const { parse } = require("@babel/parser");
 const fs = require("fs");
-const { astParserPlugins, astOtherSettings } = require("./ast-settings");
+const { astParserPlugins, astOtherSettings } = require("./astSettings");
 const {
   isExportFromTypeStatement,
   isSubPartOfDynamicImport,
@@ -19,7 +19,7 @@ const {
   doExportDeclarationOperations,
   doExportSpecifiersOperations,
   doModuleExportStatementOperations,
-} = require("./exports-related-operations");
+} = require("./exportsRelatedOperations");
 
 const {
   doImportDeclartionOperations,
@@ -29,13 +29,13 @@ const {
   doDynamicImportWithPromiseOperationsAfterSetup,
   doOperationsOnSubPartOfDynamicImports,
   doDynamicImportsUsingLazyHookOperations,
-} = require("./imports-related-operations");
+} = require("./importsRelatedOperations");
 
 const {
   doIdentifierOperationsOnImportedVariables,
   doIdentifierOperationsOnImportedVariablesMetadata,
   doAccessingPropertiesOfObjectOperations,
-} = require("./references-related-operations");
+} = require("./referencesRelatedOperations");
 const {
   CHECK_EXPORTS,
   NAMED_EXPORT,

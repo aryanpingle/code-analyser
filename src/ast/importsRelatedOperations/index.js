@@ -5,7 +5,7 @@ const {
   getResolvedImportedFileDetails,
   getNewImportVariableObject,
   getNewDefaultObject,
-} = require("../utility");
+} = require("../common");
 const {
   isSpecifiersPresent,
   isRequireStatement,
@@ -92,7 +92,7 @@ const doImportDeclartionOperationsAfterSetup = (
             DEFAULT
           ] = getNewDefaultObject(importedFileAddress);
         }
-        if (traverseType === "CHECK_USAGE")
+        if (traverseType === CHECK_USAGE)
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
             DEFAULT
           ].referenceCount += valueToAdd;
@@ -132,8 +132,7 @@ const doRequireOrImportStatementOperations = (
     };
     setImportedVariablesDuringImportStage(
       importStageMetadata,
-      currentFileMetadata,
-      filesMetadata
+      currentFileMetadata
     );
     if (operationType === CHECK_USAGE) {
       const updateVariablesMetadata = {

@@ -19,11 +19,12 @@ const {
   ERROR,
   RUNNER_FILE,
   SIGINT,
+  CHECK_POSSIBLE_CHUNKS_METADATA,
 } = require("./utility/constants");
 
 // Child process where computation part of the program will be done
 const childProcess = fork(path.join(__dirname, RUNNER_FILE), process.argv, {
-  silent: true,
+  // silent: true,
 });
 
 // When child process sends computed data back
@@ -35,6 +36,7 @@ childProcess.on(MESSAGE, (data) => {
     interact,
     filesArray,
     filesUsageMapping,
+    excludedFilesRegexString,
     messageType,
     text,
   } = data;
@@ -66,12 +68,23 @@ childProcess.on(MESSAGE, (data) => {
       };
       displayDuplicateFilesAnalysis(duplicateFilesMetadata);
       break;
+    case CHECK_POSSIBLE_CHUNKS_METADATA:
+      const possibleChunksMetadata = {
+        filesArray,
+        filesMetadata,
+        excludedFilesRegexString,
+        interact: true,
+      };
+      displayPossibleChunksMetadata(possibleChunksMetadata);
+
+      break;
     case DISPLAY_TEXT:
       const textMetadata = {
         text,
         fileLocation,
       };
       displayTextOnConsole(textMetadata);
+      break;
   }
 });
 
@@ -96,7 +109,7 @@ const displayDeadFilesAnalysis = ({
   interact,
 }) => {
   produceAnalysdDeadFileResult(filesMetadata, filesLengthObject);
-  if (interact) displayAllFilesInteractively(filesArray);
+  if (interact) displayAllFilesInteractively(filesArray, {});
   else displayFilesOnScreen(filesArray);
 };
 
@@ -115,7 +128,7 @@ const displayDependenciesAtGivenDepthAnalysis = ({
     filesMetadata,
     filesLengthObject
   );
-  if (interact) displayAllFilesInteractively(filesArray, filesUsageMapping);
+  if (interact) displayAllFilesInteractively(filesArray, { filesUsageMapping });
   else displayFilesOnScreen(filesArray);
 };
 
@@ -128,6 +141,24 @@ const displayDuplicateFilesAnalysis = ({
   filesUsageMapping,
   interact,
 }) => {
-  if (interact) displayAllFilesInteractively(filesArray, filesUsageMapping);
+  if (interact) displayAllFilesInteractively(filesArray, { filesUsageMapping });
   else displayDuplicateFileDetails(filesArray);
+};
+
+/**
+ * Function to display possible chunks metadata on the console
+ * @param {Object} possibleChunksMetadata Contains information required to print possible chunks metadata and their analysis on the console
+ */
+const displayPossibleChunksMetadata = ({
+  filesArray,
+  filesMetadata,
+  interact,
+  excludedFilesRegexString,
+}) => {
+  displayAllFilesInteractively(filesArray, {
+    filesMetadata,
+    checkForPossibleChunkMetadata: true,
+    interact,
+    excludedRegex: new RegExp(excludedFilesRegexString, "i"),
+  });
 };

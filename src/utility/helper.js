@@ -10,6 +10,9 @@ const isDependenciesCheckRequiredAtGivenDepthCheckRequired = (
 const isDuplicatedFilesCheckRequired = (programConfiguration) =>
   programConfiguration && programConfiguration.checkDuplicateFiles;
 
+const isPossibleChunksMetdataCheckRequired = (programConfiguration) =>
+  programConfiguration && programConfiguration.checkPossibleChunksMetadata;
+
 const isInstanceofRegexExpression = (givenString) =>
   givenString instanceof RegExp;
 
@@ -33,6 +36,7 @@ module.exports = {
   isDeadfileCheckRequired,
   isDependenciesCheckRequiredAtGivenDepthCheckRequired,
   isDuplicatedFilesCheckRequired,
+  isPossibleChunksMetdataCheckRequired,
   isInstanceofRegexExpression,
   isFileNotExcluded,
   isFileExtensionNotValid,

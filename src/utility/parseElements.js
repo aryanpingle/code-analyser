@@ -1,4 +1,4 @@
-const { NUMBER, BOOLEAN, TRUE } = require("./constants");
+const { NUMBER, BOOLEAN, TRUE, SIZES_ARRAY } = require("./constants");
 
 // Parses the given string and return the appropriate type element (number, regex, string)
 const getRequiredTypeElementFromString = (
@@ -27,7 +27,25 @@ const getArrayOfElementsFromString = (arrayString) => {
       return getRequiredTypeElementFromString(entryElement);
     });
 };
+
+const getSizeFromInteger = (givenInteger) => {
+  const possibleSizes = SIZES_ARRAY;
+  const MULTIPLIER_TO_GET_NEXT_SIZE = 1024;
+  let sizeToCheck = 1;
+  for (const size of possibleSizes) {
+    sizeToCheck *= MULTIPLIER_TO_GET_NEXT_SIZE;
+    if (givenInteger / sizeToCheck < 1) {
+      sizeToCheck /= MULTIPLIER_TO_GET_NEXT_SIZE;
+      return `${(givenInteger / sizeToCheck).toFixed(2)} ${size}`;
+    }
+  }
+  sizeToCheck /= MULTIPLIER_TO_GET_NEXT_SIZE;
+  return `${(givenInteger / sizeToCheck).toFixed(2)} ${
+    possibleSizes[possibleSizes.length - 1]
+  }`;
+};
 module.exports = {
   getRequiredTypeElementFromString,
   getArrayOfElementsFromString,
+  getSizeFromInteger,
 };

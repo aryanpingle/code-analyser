@@ -196,6 +196,7 @@ const getNewImportVariableObject = (
     name,
     localName,
     type,
+    isDefaultImport: false,
     importedFrom: importedFileAddress,
     referenceCountObject: {
       referenceCount: count,

@@ -4,7 +4,7 @@ const {
   getDefaultFileObject,
   getNewImportVariableObject,
   getNewDefaultObject,
-} = require("../utility");
+} = require("../common");
 const {
   isFileMappingNotPresent,
   isFileNotExcluded,
@@ -77,14 +77,13 @@ const setImportedVariableInCurrentFileMetadata = (
 
 /**
  * Set require and dynamic import's imported variables which were parsed from the given node
- * @param {Object} nodeToParse AST node which will be parsed
+ * @param {Object} nodeToGetValues AST node which will be parsed
  * @param {String} importedFileAddress Absolute address of the imported file
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  */
 const setImportedVariablesDuringImportStage = (
   { nodeToGetValues: nodeToParse, importedFileAddress },
-  currentFileMetadata,
-  filesMetadata
+  currentFileMetadata
 ) => {
   if (!nodeToParse) return;
   if (nodeToParse.type === IDENTIFIER) {
@@ -96,6 +95,9 @@ const setImportedVariablesDuringImportStage = (
         INDIVIDUAL_IMPORT,
         importedFileAddress
       );
+    currentFileMetadata.importedVariablesMetadata[
+      localName
+    ].isDefaultImport = true;
   } else if (nodeToParse.type === OBJECT_PATTERN) {
     nodeToParse.properties.forEach((property) => {
       const localName = property.value.name;
@@ -107,6 +109,9 @@ const setImportedVariablesDuringImportStage = (
           INDIVIDUAL_IMPORT,
           importedFileAddress
         );
+      currentFileMetadata.importedVariablesMetadata[
+        localName
+      ].isDefaultImport = true;
     });
   }
 };
@@ -171,9 +176,9 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
         try {
           // Individual import
           currentFileMetadata.importedVariables[localEntityName] =
-            filesMetadata.filesMapping[importedFileAddress].exportedVariables[DEFAULT][
-              importedEntityName
-            ];
+            filesMetadata.filesMapping[importedFileAddress].exportedVariables[
+              DEFAULT
+            ][importedEntityName];
           // Update references as it is an import type reference
           if (type === DONT_UPDATE_REFERENCE_COUNT)
             currentFileMetadata.importedVariables[

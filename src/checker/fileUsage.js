@@ -1,6 +1,6 @@
 const process = require("process");
 const { traverseAST, buildAST } = require("../ast/index");
-const { getDefaultFileObject } = require("../ast/utility");
+const { getDefaultFileObject } = require("../ast/common");
 const { CHECK_USAGE, DISPLAY_TEXT } = require("../utility/constants");
 const { getDefaultCurrentFileMetadata } = require("../utility/files");
 const {
@@ -9,7 +9,7 @@ const {
   isFileMappingNotPresent,
   isFileNotExcluded,
 } = require("../utility/helper");
-const getUsedFilesMapping = require("./utility");
+const {getUsedFilesMapping} = require("./utility");
 
 /**
  * Will be used to check file to update the imported, exported variables when they are referred

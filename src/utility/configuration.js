@@ -9,6 +9,7 @@ const codeAnalyerConfigurationObject = {
   checkDeadFiles: false,
   checkDependenciesAtGivenDepth: false,
   checkDuplicateFiles: false,
+  checkPossibleChunksMetadata: false,
   include: [],
   exclude: [IGNORED_FILES_REGEX, IGNORED_FOLDERS_REGEX],
   rootDirectory: EMPTY_STRING,
@@ -18,4 +19,7 @@ const codeAnalyerConfigurationObject = {
   interact: false,
 };
 
-module.exports = codeAnalyerConfigurationObject;
+// Used to cache already computed dependencies of a given file (Used when checking possible chunks metadata)
+const cachedMapping = {};
+
+module.exports = { codeAnalyerConfigurationObject, cachedMapping };

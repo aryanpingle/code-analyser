@@ -2,6 +2,7 @@ module.exports = {
   CHECK_DEPENDENCIES_AT_GIVEN_DEPTH: "CHECK_DEPENDENCIES_AT_GIVEN_DEPTH",
   CHECK_DEAD_FILES: "CHECK_DEAD_FILES",
   CHECK_DUPLICATE_FILES: "CHECK_DUPLICATE_FILES",
+  CHECK_POSSIBLE_CHUNKS_METADATA: "CHECK_POSSIBLE_CHUNKS_METADATA",
   DISPLAY_TEXT: "DISPLAY_TEXT",
 
   MESSAGE: "message",
@@ -11,6 +12,8 @@ module.exports = {
 
   GREEN_COLOR: "\x1b[32m",
   YELLOW_COLOR: "\x1b[33m",
+  CLEAR: "\033c",
+  BOLD: "\x1b[1m",
 
   CHECK_ALL_IMPORTS_ADDRESSES: "CHECK_ALL_IMPORTS_ADDRESSES",
   CHECK_STATIC_IMPORTS_ADDRESSES: "CHECK_STATIC_IMPORTS_ADDRESSES",
@@ -81,4 +84,5 @@ module.exports = {
     /(\.git)|(\.spec\.(.*))|(\.mock\.(.*))|(\.fixtures?\.(.*))|(\.test\.(.*))|\.json$|\.md$|\.jpe?g$|\.png$|\.woff2$|\.hdr$|\.mp[0-9]$|\.svg$|\.glb$|\.mdx$|\.webp$|\.jade$|\.coffee$|\.styl$|\.story\.(.*)|\.babelrc$|\.env$|\.config\.(.*)/,
   IGNORED_FOLDERS_REGEX:
     /node_modules|__spec__|__mocks?__|__tests?__|__fixtures?__|\/spec\/|\/tests?\/|\/mocks?\/|\/fixtures?\/|__generated__|storybook|stories/,
+  SIZES_ARRAY: ["B", "KB", "MB", "GB", "TB", "PB"],
 };

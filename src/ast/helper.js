@@ -1,4 +1,4 @@
-const { getCallExpressionFromNode } = require("./utility");
+const { getCallExpressionFromNode } = require("./common");
 const {
   IMPORT,
   MEMBER_EXPRESSION,

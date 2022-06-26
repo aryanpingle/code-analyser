@@ -1,29 +1,33 @@
 const process = require("process");
 const { traverseAST, buildAST } = require("../ast/index");
-const { getDefaultCurrentFileMetadata } = require("../utility/files");
-const { getDefaultFileObject } = require("../ast/utility");
+const {
+  updateFilesMetadata,
+  getDefaultCurrentFileMetadata,
+} = require("../utility/files");
+const { getDefaultFileObject } = require("../ast/common");
 const {
   isFileExtensionValid,
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
 } = require("../utility/helper");
+const { getUsedFilesMapping } = require("./utility");
 const {
-  CHECK_STATIC_IMPORTS_ADDRESSES,
-  CHECK_ALL_IMPORTS_ADDRESSES,
+  CHECK_IMPORTS,
+  CHECK_EXPORTS,
   DISPLAY_TEXT,
 } = require("../utility/constants");
 
 /**
- * Will be used to check a given file's imports (used while detecting dependencies at a given depth/ duplicate files)
+ * Will be used to check file to get it's import and export variables, which will be used in the next stage where their usage will be checked
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
- * @param {Boolean} checkStaticImportsOnly To decide whether only static imports of a file have to be checked or not
+ * @param {Object} entryFilesMapping Mapping to check whether a given file is entry file or not
  */
-const checkFileImports = (
+const checkFileImportExports = (
   entyFileLocation,
   filesMetadata,
-  checkStaticImportsOnly
+  entryFilesMapping
 ) => {
   if (isFileMappingNotPresent(entyFileLocation, filesMetadata)) {
     filesMetadata.filesMapping[entyFileLocation] =
@@ -34,33 +38,28 @@ const checkFileImports = (
     isFileNotVisited(entyFileLocation, filesMetadata) &&
     isFileExtensionValid(entyFileLocation)
   ) {
-    traverseFileForStaticImports(
+    traverseFileForCheckingImportsExports(
       entyFileLocation,
       filesMetadata,
-      checkStaticImportsOnly
+      entryFilesMapping
     );
   }
 };
 
 /**
- * This function will traverse a file to get it's imported/ statically imported files
+ * This function will traverse a file to get all imports and exports variable
+ * Will also set their corresponding objects (imports will refer exported variables' objects)
  * @param {String} fileLocation Address of the file which has to be traversed
  * @param {Object} filesMetadata Object containing information related to all files
- * @param {Boolean} checkStaticImports To decide whether only static imports of a file have to be checked or not
+ * @param {Object} entryFilesMapping To check whether a file is entry file or not
  */
-const traverseFileForStaticImports = (
+const traverseFileForCheckingImportsExports = (
   fileLocation,
   filesMetadata,
-  checkStaticImports
+  entryFilesMapping
 ) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
-    if (
-      checkStaticImports &&
-      !filesMetadata.insideModuleRegex.test(fileLocation)
-    )
-      return;
-
     let ast = buildAST(fileLocation);
     let currentFileMetadata = getDefaultCurrentFileMetadata(fileLocation);
     let traversalRelatedMetadata = {
@@ -68,20 +67,10 @@ const traverseFileForStaticImports = (
       currentFileMetadata,
       filesMetadata,
     };
-    const traverseType = checkStaticImports
-      ? CHECK_STATIC_IMPORTS_ADDRESSES
-      : CHECK_ALL_IMPORTS_ADDRESSES;
-    traverseAST(traversalRelatedMetadata, traverseType);
-    // Whether we need to check for static imports or should we include dynamic imports too
-    let requiredImportedFilesMapping = checkStaticImports
-      ? currentFileMetadata.staticImportFilesMapping
-      : currentFileMetadata.importedFilesMapping;
-    // If we are checking to find duplicate files, therefore would need to traverse all files
-
-    filesMetadata.filesMapping[fileLocation].staticImportFilesMapping =
-      currentFileMetadata.staticImportFilesMapping;
-
-    // Setting ast as null, to save memory
+    traverseAST(traversalRelatedMetadata, CHECK_IMPORTS);
+    updateFilesMetadata(filesMetadata, currentFileMetadata);
+    let requiredImportedFilesMapping = getUsedFilesMapping(currentFileMetadata);
+    // Setting ast as null, to save memory, will build it again after traversing all imported files of the current file
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
@@ -91,10 +80,14 @@ const traverseFileForStaticImports = (
         isFileExtensionValid(file) &&
         isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
-        if (!filesMetadata.filesMapping[file]) {
+        if (!filesMetadata.filesMapping[file])
           filesMetadata.filesMapping[file] = getDefaultFileObject(file);
-        }
-        traverseFileForStaticImports(file, filesMetadata, checkStaticImports);
+
+        traverseFileForCheckingImportsExports(
+          file,
+          filesMetadata,
+          entryFilesMapping
+        );
       } else if (
         isFileMappingNotPresent(file, filesMetadata) &&
         isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
@@ -102,6 +95,21 @@ const traverseFileForStaticImports = (
         filesMetadata.filesMapping[file] = getDefaultFileObject(file);
       }
     }
+
+    ast = buildAST(fileLocation);
+    let isEntryFile = entryFilesMapping[fileLocation] ? true : false;
+    currentFileMetadata = getDefaultCurrentFileMetadata(
+      fileLocation,
+      isEntryFile
+    );
+    traversalRelatedMetadata = {
+      ast,
+      currentFileMetadata,
+      filesMetadata,
+    };
+
+    traverseAST(traversalRelatedMetadata, CHECK_EXPORTS);
+    updateFilesMetadata(filesMetadata, currentFileMetadata);
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;
@@ -113,4 +121,4 @@ const traverseFileForStaticImports = (
   }
 };
 
-module.exports = { checkFileImports };
+module.exports = { checkFileImportExports };

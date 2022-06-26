@@ -32,6 +32,9 @@ Install code-analyser Cli with the following command
 - `checkDuplicateFiles` **(default: false)** \
    Set it as true if files present in multiple chunks check is required.\
    Accepted values: True/ false
+- `checkPossibleChunksMetadata` **(default: false)**\
+   Set it as true if need to find uncompressed chunk size and all files which will be present inside the chunk, if user chunks using a given file \
+   Accepted values: True/ false
 - `entry` \
    One can provide entry files using it. \
    Accepted values: Array consisiting of Regex, relative paths, or absolute paths.

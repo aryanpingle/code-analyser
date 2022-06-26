@@ -8,7 +8,7 @@ const {
   isFileNotExcluded,
   isFileExtensionNotValid,
 } = require("./helper");
-const { getNewDefaultObject } = require("../ast/utility");
+const { getNewDefaultObject } = require("../ast/common");
 const process = require("process");
 const { DEFAULT } = require("./constants");
 

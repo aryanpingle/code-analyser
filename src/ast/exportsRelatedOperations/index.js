@@ -1,4 +1,4 @@
-const { getResolvedPathFromGivenPath } = require("../utility");
+const { getResolvedPathFromGivenPath } = require("../common");
 const {
   setImportedVariablesMetadataFromExportFromStatementSpecifier,
   extractVariableInformationFromSpecifier,

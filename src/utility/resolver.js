@@ -1,7 +1,7 @@
 const path = require("path");
 const enhancedResolve = require("enhanced-resolve");
 const { existsSync, statSync } = require("fs");
-const codeAnalyerConfigurationObject = require("./configuration-object");
+const { codeAnalyerConfigurationObject } = require("./configuration");
 const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
 const JsConfigPathsPlugin = require("jsconfig-paths-webpack-plugin");
 const process = require("process");
