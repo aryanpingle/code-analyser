@@ -24,7 +24,7 @@ const {
 
 // Child process where computation part of the program will be done
 const childProcess = fork(path.join(__dirname, RUNNER_FILE), process.argv, {
-  // silent: true,
+  silent: true,
 });
 
 // When child process sends computed data back

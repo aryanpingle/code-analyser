@@ -373,12 +373,11 @@ const displayChunkMetadaRelatedInformation = (
   });
   let totalSize = 0;
   fileInformationArray.forEach((file, index) => {
-    totalSize += filesMapping[file].fileSize;
-    statsTable.push([
-      index + 1,
-      file,
-      getSizeFromInteger(filesMapping[file].fileSize),
-    ]);
+    const currentFileSize = filesMapping[file].fileSize
+      ? filesMapping[file].fileSize
+      : 0;
+    totalSize += currentFileSize;
+    statsTable.push([index + 1, file, getSizeFromInteger(currentFileSize)]);
   });
   console.log(statsTable.toString());
   console.log(BOLD, `\nTotal Chunk Size: ${getSizeFromInteger(totalSize)}\n`);

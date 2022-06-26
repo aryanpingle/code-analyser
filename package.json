@@ -1,7 +1,7 @@
 {
   "name": "code-analyser",
   "version": "1.4.0",
-  "description": "Script which finds dead files, dependencies at given depth, and files present in multiple chunks.",
+  "description": "Code-Analyser is a script which contains many features, which allow easier analysis of a project.",
   "main": "index.js",
   "type": "commonjs",
   "bin": {
@@ -12,6 +12,18 @@
     "script": "node src/index.js "
   },
   "author": "Daksh Sharma",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Daksh2104/code-analyser.git"
+  },
+  "homepage": "https://github.com/Daksh2104/code-analyser",
+  "keywords": [
+    "Code-Analyser",
+    "AST",
+    "check",
+    "dependency",
+    "dependencies"
+  ],
   "license": "ISC",
   "dependencies": {
     "@babel/generator": "^7.18.2",
