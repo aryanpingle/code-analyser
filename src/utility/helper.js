@@ -7,11 +7,14 @@ const isDependenciesCheckRequiredAtGivenDepthCheckRequired = (
   programConfiguration
 ) => programConfiguration && programConfiguration.checkDependenciesAtGivenDepth;
 
-const isDuplicatedFilesCheckRequired = (programConfiguration) =>
-  programConfiguration && programConfiguration.checkDuplicateFiles;
+const isFilesContributingInMultipleChunksCheckRequired = (
+  programConfiguration
+) =>
+  programConfiguration &&
+  programConfiguration.checkFilesContributingInMultipleChunks;
 
-const isPossibleChunksMetdataCheckRequired = (programConfiguration) =>
-  programConfiguration && programConfiguration.checkPossibleChunksMetadata;
+const isChunkMetadataOfGivenFileCheckRequired = (programConfiguration) =>
+  programConfiguration && programConfiguration.checkChunkMetadataUsingGivenFile;
 
 const isInstanceofRegexExpression = (givenString) =>
   givenString instanceof RegExp;
@@ -35,8 +38,8 @@ const isFileExtensionValid = (fileLocation) => /\.[jt]sx?$/.test(fileLocation);
 module.exports = {
   isDeadfileCheckRequired,
   isDependenciesCheckRequiredAtGivenDepthCheckRequired,
-  isDuplicatedFilesCheckRequired,
-  isPossibleChunksMetdataCheckRequired,
+  isFilesContributingInMultipleChunksCheckRequired,
+  isChunkMetadataOfGivenFileCheckRequired,
   isInstanceofRegexExpression,
   isFileNotExcluded,
   isFileExtensionNotValid,

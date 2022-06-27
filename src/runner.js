@@ -17,22 +17,22 @@ const {
   getAllRequiredFiles,
   setImportedFilesMapping,
   createWebpackChunkMetadata,
-  getDuplicateFiles,
-  getDuplicateFilesChunksMapping,
+  getFilesContributingInMultipleChunks,
+  getFilesContributingInMultipleChunksMapping,
 } = require("./utility/featureSpecificOperations/index");
 const {
   isDeadfileCheckRequired,
   isDependenciesCheckRequiredAtGivenDepthCheckRequired,
-  isDuplicatedFilesCheckRequired,
-  isPossibleChunksMetdataCheckRequired,
+  isFilesContributingInMultipleChunksCheckRequired,
+  isChunkMetadataOfGivenFileCheckRequired,
 } = require("./utility/helper");
 const { resolveAddressWithProvidedDirectory } = require("./utility/resolver");
 const {
   DEFAULT_TRUE_REGEX_STRING,
   CHECK_DEAD_FILES,
   CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
-  CHECK_DUPLICATE_FILES,
-  CHECK_POSSIBLE_CHUNKS_METADATA,
+  CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS,
+  CHECK_CHUNKS_METADATA_USING_GIVEN_FILE,
 } = require("./utility/constants");
 
 const excludedFilesRegex = buildExcludedFilesRegex(
@@ -148,7 +148,7 @@ const analyseCodeAndDetectDependenciesAtGivenDepth = async (
  * @param {Object} filesMetadata Object which contains information related to all files parsed
  * @param {Object} programConfiguration Object which contains information related to which files have to be checked
  */
-const analyseCodeAndDetectAllDuplicateFiles = async (
+const analyseCodeAndDetectAllFilesPresetInMultipleChunks = async (
   filesMetadata,
   programConfiguration
 ) => {
@@ -164,15 +164,16 @@ const analyseCodeAndDetectAllDuplicateFiles = async (
     checkStaticImportsOnly: false,
   });
   const webpackChunkMetadata = createWebpackChunkMetadata(filesMetadata);
-  const allDuplicateFiles = getDuplicateFiles(webpackChunkMetadata);
+  const allFilesInMultipleChunks =
+    getFilesContributingInMultipleChunks(webpackChunkMetadata);
 
-  const duplicateFilesChunksMapping =
-    getDuplicateFilesChunksMapping(allDuplicateFiles);
+  const allFilesInMultipleChunksMapping =
+    getFilesContributingInMultipleChunksMapping(allFilesInMultipleChunks);
 
   process.send({
-    filesArray: allDuplicateFiles,
-    filesUsageMapping: duplicateFilesChunksMapping,
-    messageType: CHECK_DUPLICATE_FILES,
+    filesArray: allFilesInMultipleChunks,
+    filesUsageMapping: allFilesInMultipleChunksMapping,
+    messageType: CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS,
     interact: codeAnalyerConfigurationObject.interact,
   });
 };
@@ -182,7 +183,7 @@ const analyseCodeAndDetectAllDuplicateFiles = async (
  * @param {Object} filesMetadata Object which contains information related to all files parsed
  * @param {Object} programConfiguration Object which contains information related to which files have to be checked
  */
-const analyseCodeAndDetectAllPossibleChunksMetadata = async (
+const analyseCodeAndDetectChunkMetadataOfFiles = async (
   filesMetadata,
   programConfiguration
 ) => {
@@ -205,7 +206,7 @@ const analyseCodeAndDetectAllPossibleChunksMetadata = async (
     filesArray: allFilesParsedArray,
     filesMetadata,
     excludedFilesRegexString: filesMetadata.excludedFilesRegex.source,
-    messageType: CHECK_POSSIBLE_CHUNKS_METADATA,
+    messageType: CHECK_CHUNKS_METADATA_USING_GIVEN_FILE,
   });
 };
 
@@ -226,17 +227,21 @@ if (
   );
 }
 
-if (isDuplicatedFilesCheckRequired(codeAnalyerConfigurationObject)) {
+if (
+  isFilesContributingInMultipleChunksCheckRequired(
+    codeAnalyerConfigurationObject
+  )
+) {
   const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
-  analyseCodeAndDetectAllDuplicateFiles(
+  analyseCodeAndDetectAllFilesPresetInMultipleChunks(
     filesMetadata,
     codeAnalyerConfigurationObject
   );
 }
 
-if (isPossibleChunksMetdataCheckRequired(codeAnalyerConfigurationObject)) {
+if (isChunkMetadataOfGivenFileCheckRequired(codeAnalyerConfigurationObject)) {
   const filesMetadata = getDefaultFilesMetadata(excludedFilesRegex);
-  analyseCodeAndDetectAllPossibleChunksMetadata(
+  analyseCodeAndDetectChunkMetadataOfFiles(
     filesMetadata,
     codeAnalyerConfigurationObject
   );

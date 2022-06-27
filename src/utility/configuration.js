@@ -8,18 +8,19 @@ const {
 const codeAnalyerConfigurationObject = {
   checkDeadFiles: false,
   checkDependenciesAtGivenDepth: false,
-  checkDuplicateFiles: false,
-  checkPossibleChunksMetadata: false,
+  checkFilesContributingInMultipleChunks: false,
+  checkChunkMetadataUsingGivenFile: false,
   include: [],
   exclude: [IGNORED_FILES_REGEX, IGNORED_FOLDERS_REGEX],
   rootDirectory: EMPTY_STRING,
   isDepthFromFront: false,
   checkAll: false,
+  totalFilesToShow: -1,
   depth: 1,
   interact: false,
 };
 
-// Used to cache already computed dependencies of a given file (Used when checking possible chunks metadata)
+// Used to cache already computed dependencies of a given file (Used when checking chunk metadata of a given file)
 const cachedMapping = {};
 
 module.exports = { codeAnalyerConfigurationObject, cachedMapping };

@@ -67,7 +67,7 @@ const buildAST = (fileLocation) => {
 /**
  * Main function which actually traverse the AST of the file
  * @param {Object} traversalRelatedMetadata Metadata which contains information related to traversal like AST to traverse, current and all files' metadata
- * @param {String} type Traversal type (traverse according to requirement i.e. identifying deadfile/ dependencies at given depth/ duplicate files check)
+ * @param {String} type Traversal type (traverse according to requirement i.e. identifying deadfile/ dependencies at given depth/ files contributing in multiple chunks check)
  */
 const traverseAST = (
   { ast, currentFileMetadata, filesMetadata, addReferences = true },

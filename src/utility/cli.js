@@ -7,7 +7,10 @@ const {
   getArrayOfElementsFromString,
   getSizeFromInteger,
 } = require("./parseElements");
-const { codeAnalyerConfigurationObject } = require("./configuration");
+const {
+  codeAnalyerConfigurationObject,
+  cachedMapping,
+} = require("./configuration");
 const { buildTrie, getFirstNodeNotContainingOneChild } = require("./trie");
 const {
   GO_BACK,
@@ -18,7 +21,7 @@ const {
 } = require("./constants");
 const {
   getAllDependentFiles,
-} = require("./featureSpecificOperations/possibleChunksMetadata");
+} = require("./featureSpecificOperations/chunkMetadataOfAGivenFile");
 
 /**
  * Will be called to set the configuration of the program using the arguments provided on the CLI
@@ -49,11 +52,11 @@ const setConfiguration = () => {
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
-      case "checkDuplicateFiles":
+      case "checkFilesContributingInMultipleChunks":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
-      case "checkPossibleChunksMetadata":
+      case "checkChunkMetadataUsingGivenFile":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
@@ -88,6 +91,10 @@ const setConfiguration = () => {
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
       case "checkAll":
+        codeAnalyerConfigurationObject[configuration] =
+          getRequiredTypeElementFromString(configurationObject[configuration]);
+        break;
+      case "totalFilesToShow":
         codeAnalyerConfigurationObject[configuration] =
           getRequiredTypeElementFromString(configurationObject[configuration]);
         break;
@@ -177,7 +184,7 @@ const produceAnalysedDependenciesAtGivenDepthResult = (
  * Will create a new table on the CLI which shows a file, along with the chunks (inside which it is present), which is present in more than one chunk
  * @param {Array} filesObjectArray Array containing the each file's object which contains the chunks inside which it is present and it's address
  */
-const displayDuplicateFileDetails = (filesObjectArray) => {
+const displayFilesContributingInMultipleChunksDetails = (filesObjectArray) => {
   filesObjectArray.forEach((fileObject) => {
     const statsTable = new cliTableBuilder({
       head: ["File", fileObject.file],
@@ -221,7 +228,7 @@ const displayAllFilesInteractively = async (
   filesArray,
   {
     filesUsageMapping = {},
-    checkForPossibleChunkMetadata = false,
+    checkForChunkMetadataOfGivenFile = false,
     filesMetadata = {},
     excludedRegex,
   }
@@ -248,10 +255,14 @@ const displayAllFilesInteractively = async (
         filesUsageMapping[pathToCheck]
       );
     if (
-      checkForPossibleChunkMetadata &&
+      checkForChunkMetadataOfGivenFile &&
       filesMetadata.filesMapping[pathToCheck]
     )
-      displayPossibleChunksMetadata(pathToCheck, filesMetadata, excludedRegex);
+      dsiplayChunkMetadataOfGivenFile(
+        pathToCheck,
+        filesMetadata,
+        excludedRegex
+      );
 
     const { selectedNode: nextNodeToCheck, choiceIndex } =
       await interactivelyDisplayAndGetNextNode(
@@ -340,11 +351,15 @@ const displayTextOnConsole = ({ text, fileLocation }) => {
  * @param {Object} filesMetadata
  * @param {Regex} excludedRegex To exclude files which aren't required to be checked
  */
-const displayPossibleChunksMetadata = (
+const dsiplayChunkMetadataOfGivenFile = (
   fileLocation,
   filesMetadata,
   excludedRegex
 ) => {
+  console.log(
+    GREEN_COLOR,
+    "Computing all the dependencies and overall chunk size..."
+  );
   const currentFileSet = getAllDependentFiles(fileLocation, {
     filesMetadata,
     excludedRegex,
@@ -356,7 +371,7 @@ const displayPossibleChunksMetadata = (
 };
 
 /**
- * Function (called by displayPossibleChunksMetadata) which displays the given dependencies of the file on the screen
+ * Function (called by dsiplayChunkMetadataOfGivenFile) which displays the given dependencies of the file on the screen
  * @param {Array} fileInformationArray Contains information related to dependencies of a given file and size of each file
  * @param {Object} filesMapping Contains size of each file
  */
@@ -364,30 +379,46 @@ const displayChunkMetadaRelatedInformation = (
   fileInformationArray,
   filesMapping
 ) => {
+  console.log(CLEAR);
+  if (fileInformationArray.length === 0) return;
   fileInformationArray.sort(
     (firstFile, secondFile) =>
-      filesMapping[secondFile].fileSize - filesMapping[firstFile].fileSize
+      cachedMapping[secondFile].effectiveSize -
+      cachedMapping[firstFile].effectiveSize
   );
   const statsTable = new cliTableBuilder({
     head: ["Index", "File Name", "File Size"],
   });
-  let totalSize = 0;
-  fileInformationArray.forEach((file, index) => {
-    const currentFileSize = filesMapping[file].fileSize
-      ? filesMapping[file].fileSize
+  for (const index in fileInformationArray) {
+    if (
+      yargs.argv.totalFilesToShow !== -1 &&
+      index >= yargs.argv.totalFilesToShow
+    )
+      break;
+    const file = fileInformationArray[index];
+    const currentFileSize = cachedMapping[file]
+      ? cachedMapping[file].effectiveSize
       : 0;
-    totalSize += currentFileSize;
-    statsTable.push([index + 1, file, getSizeFromInteger(currentFileSize)]);
-  });
+    statsTable.push([
+      parseInt(index) + 1,
+      file,
+      getSizeFromInteger(currentFileSize),
+    ]);
+  }
   console.log(statsTable.toString());
-  console.log(BOLD, `\nTotal Chunk Size: ${getSizeFromInteger(totalSize)}\n`);
+  console.log(
+    BOLD,
+    `\nTotal Chunk Size: ${getSizeFromInteger(
+      cachedMapping[fileInformationArray[0]].effectiveSize
+    )}\n`
+  );
 };
 
 module.exports = {
   setConfiguration,
   produceAnalysdDeadFileResult,
   produceAnalysedDependenciesAtGivenDepthResult,
-  displayDuplicateFileDetails,
+  displayFilesContributingInMultipleChunksDetails,
   displayFilesOnScreen,
   displayAllFilesInteractively,
   displayTextOnConsole,

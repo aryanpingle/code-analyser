@@ -1,3 +1,21 @@
+<h2 align="center">Code Analyser</h2>
+<div align="center">
+
+[![Status](https://img.shields.io/badge/status-active-success.svg)]()
+[![GitHub Pull Requests](https://img.shields.io/github/issues-pr/kylelobo/The-Documentation-Compendium.svg)](https://github.com/Daksh2104/code-analyser/pulls)
+
+  </div>
+
+# Table of Contents
+
+- [Overview](#overview)
+- [Resilient features](#some-resilient-features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [Sample Examples](#sample-examples)
+
+# Overview
+
 Code-Analyser is a script which contains many features, which allow easier analysis of a project. Some of the aspects of the code which can be analysed are:-
 
 - **Find dead files inside a project**\
@@ -26,7 +44,7 @@ Install code-analyser CLI with the following command:-
 > npm install -g code-analyser
 > <br>
 
-# Usage and Examples
+# Usage
 
 `analyseCode <options>`
 
@@ -42,11 +60,11 @@ Install code-analyser CLI with the following command:-
    Set it as true if dependencies at a given depth check is required. \
    Accepted values: True/ false
   <br>
-- `checkDuplicateFiles` **(default: false)** \
+- `checkFilesContributingInMultipleChunks` **(default: false)** \
    Set it as true if files present in multiple chunks check is required.\
    Accepted values: True/ false
   <br>
-- `checkPossibleChunksMetadata` **(default: false)**\
+- `checkChunkMetadataUsingGivenFile` **(default: false)**\
    Set it as true if need to find uncompressed chunk size and all files which will be present inside the chunk, if user chunks using a given file. \
    Accepted values: True/ false
 
@@ -68,7 +86,7 @@ Install code-analyser CLI with the following command:-
    Accepted values: Array consisting of Regex, relative/ absolute paths.
   <br>
 - `directoriesToCheck` \
-   Used along with `checkDeadFiles`, `checkDuplicateFiles`, and `checkPossibleChunksMetadata` options to provide directories from which entry files (if regex provided as an entry element)/ files to check (in case of dead files check only) will be retrieved. \
+   Used along with `checkDeadFiles`, `checkFilesContributingInMultipleChunks`, and `checkChunkMetadataUsingGivenFile` options to provide directories from which entry files (if regex provided as an entry element)/ files to check (in case of dead files check only) will be retrieved. \
    Accepted values: Array consisting of relative/ absolute paths
   <br>
 - `moduleToCheck` \
@@ -79,7 +97,7 @@ Install code-analyser CLI with the following command:-
 
 - `interact` **(default: false)** \
    Use it to display the output in an interactive way for better analysis \
-   Will be always true when using `checkPossibleChunksMetadata` option \
+   Will be always true when using `checkChunkMetadataUsingGivenFile` option \
    Accepted values: True/ false
   <br>
 - `rootDirectory` \
@@ -102,10 +120,12 @@ Install code-analyser CLI with the following command:-
    By default will provide the first feasible dependencies. \
    Setting it as true, will allow recursive check for feasible dependencies inside a feasible dependency. \
   Accepted values: True/ false
+- `totalFilesToShow` **(default: All)** \
+  Used when finding chunk metadata of a given file. Used to provide the maximum number of files present inside that chunk to report back to the user. Will show the topmost files which have the largest individual chunk size. By default, will report all the files present inside that chunk.
 
 # Sample Examples
 
 - `analyseCode --checkDeadFiles --entry='["./index.js"]' --directoriesToCheck='["./"]' --rootDirectory='./'`
-- `analyseCode --checkDuplicateFiles --entry='["./src/index.tsx"]' --interact`
+- `analyseCode --checkFilesContributingInMultipleChunks --entry='["./src/index.tsx"]' --interact`
 - `analyseCode --checkDependenciesAtGivenDepth --exclude='["./public"]' --moduleToCheck="./index.jsx" --interact`
-- `analyseCode --checkPossibleChunksMetadata --entry="[/index\.jsx/]" --directoriesToCheck='["./src"]'`
+- `analyseCode --checkChunkMetadataUsingGivenFile --entry="[/index\.jsx/]" --directoriesToCheck='["./src"]'`

@@ -13,12 +13,15 @@ const getAllDependentFiles = (
 ) => {
   const currentFilesSet = new Set();
   currentFilesSet.add(fileLocation);
-  cachedMapping[fileLocation] = currentFilesSet;
+  cachedMapping[fileLocation] = {
+    dependencySet: currentFilesSet,
+    effectiveSize: filesMetadata.filesMapping[fileLocation].fileSize,
+  };
   for (const dependentFile in filesMetadata.filesMapping[fileLocation]
     .staticImportFilesMapping) {
     if (!isFileNotExcluded(excludedRegex, dependentFile)) continue;
     const dependentFileSet = cachedMapping[dependentFile]
-      ? cachedMapping[dependentFile]
+      ? cachedMapping[dependentFile].dependencySet
       : getAllDependentFiles(dependentFile, {
           filesMetadata,
           cachedMapping,
@@ -28,8 +31,25 @@ const getAllDependentFiles = (
       currentFilesSet.add(dependentFileSetElement);
     }
   }
-  cachedMapping[fileLocation] = currentFilesSet;
+  cachedMapping[fileLocation] = {
+    dependencySet: currentFilesSet,
+    effectiveSize: getEffectiveSizeFromSet(
+      Array.from(currentFilesSet),
+      filesMetadata
+    ),
+  };
   return currentFilesSet;
 };
 
+const getEffectiveSizeFromSet = (currentFilesArray, filesMetadata) => {
+  return currentFilesArray.reduce((reducedValue, file) => {
+    return (
+      reducedValue +
+      (filesMetadata.filesMapping[file] &&
+      filesMetadata.filesMapping[file].fileSize
+        ? filesMetadata.filesMapping[file].fileSize
+        : 0)
+    );
+  }, 0);
+};
 module.exports = { getAllDependentFiles };

@@ -11,9 +11,9 @@ const {
 const { getAllRequiredFiles, setImportedFilesMapping } = require("./common");
 const {
   createWebpackChunkMetadata,
-  getDuplicateFiles,
-  getDuplicateFilesChunksMapping,
-} = require("./duplicateFiles");
+  getFilesContributingInMultipleChunks,
+  getFilesContributingInMultipleChunksMapping,
+} = require("./filesContributingInMultipleChunks");
 
 module.exports = {
   getDeadFilesAndSendMessageToParent,
@@ -25,6 +25,6 @@ module.exports = {
   getAllRequiredFiles,
   setImportedFilesMapping,
   createWebpackChunkMetadata,
-  getDuplicateFiles,
-  getDuplicateFilesChunksMapping,
+  getFilesContributingInMultipleChunks,
+  getFilesContributingInMultipleChunksMapping,
 };

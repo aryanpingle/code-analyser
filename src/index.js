@@ -7,19 +7,20 @@ const {
   displayAllFilesInteractively,
   displayFilesOnScreen,
   produceAnalysedDependenciesAtGivenDepthResult,
-  displayDuplicateFileDetails,
+  displayFilesContributingInMultipleChunksDetails,
   displayTextOnConsole,
 } = require("./utility/cli");
 const {
   CHECK_DEAD_FILES,
   CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
-  CHECK_DUPLICATE_FILES,
+  CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS,
   DISPLAY_TEXT,
   MESSAGE,
   ERROR,
   RUNNER_FILE,
   SIGINT,
-  CHECK_POSSIBLE_CHUNKS_METADATA,
+  CHECK_CHUNKS_METADATA_USING_GIVEN_FILE,
+  GREEN_COLOR,
 } = require("./utility/constants");
 
 // Child process where computation part of the program will be done
@@ -60,22 +61,24 @@ childProcess.on(MESSAGE, (data) => {
       };
       displayDependenciesAtGivenDepthAnalysis(dependenciesMetadata);
       break;
-    case CHECK_DUPLICATE_FILES:
-      const duplicateFilesMetadata = {
+    case CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS:
+      const filesContributingInMultipleChunksMetadata = {
         filesArray,
         filesUsageMapping,
         interact,
       };
-      displayDuplicateFilesAnalysis(duplicateFilesMetadata);
+      displayFilesInMultipleChunksAnalysis(
+        filesContributingInMultipleChunksMetadata
+      );
       break;
-    case CHECK_POSSIBLE_CHUNKS_METADATA:
-      const possibleChunksMetadata = {
+    case CHECK_CHUNKS_METADATA_USING_GIVEN_FILE:
+      const chunksMetadata = {
         filesArray,
         filesMetadata,
         excludedFilesRegexString,
         interact: true,
       };
-      displayPossibleChunksMetadata(possibleChunksMetadata);
+      displayAllFilesChunkMetadataInteractively(chunksMetadata);
 
       break;
     case DISPLAY_TEXT:
@@ -133,31 +136,32 @@ const displayDependenciesAtGivenDepthAnalysis = ({
 };
 
 /**
- * Function to display duplicate files related data on the console
- * @param {Object} duplicateFilesMetadata Contains information required to print duplicate files and it's analysis on the console
+ * Function to display files present in multiple chunks related data on the console
+ * @param {Object} filesContributingInMultipleChunksMetadata Contains information required to print files present in multiple chunks and it's analysis on the console
  */
-const displayDuplicateFilesAnalysis = ({
+const displayFilesInMultipleChunksAnalysis = ({
   filesArray,
   filesUsageMapping,
   interact,
 }) => {
   if (interact) displayAllFilesInteractively(filesArray, { filesUsageMapping });
-  else displayDuplicateFileDetails(filesArray);
+  else displayFilesContributingInMultipleChunksDetails(filesArray);
 };
 
 /**
- * Function to display possible chunks metadata on the console
- * @param {Object} possibleChunksMetadata Contains information required to print possible chunks metadata and their analysis on the console
+ * Function to display all chunks metadata using given files interactively on the console
+ * @param {Object} chunksMetadata Contains information required to print a given file's chunk analysis on the console
  */
-const displayPossibleChunksMetadata = ({
+const displayAllFilesChunkMetadataInteractively = ({
   filesArray,
   filesMetadata,
   interact,
   excludedFilesRegexString,
 }) => {
+  console.log(GREEN_COLOR, "Established relationship between all files");
   displayAllFilesInteractively(filesArray, {
     filesMetadata,
-    checkForPossibleChunkMetadata: true,
+    checkForChunkMetadataOfGivenFile: true,
     interact,
     excludedRegex: new RegExp(excludedFilesRegexString, "i"),
   });

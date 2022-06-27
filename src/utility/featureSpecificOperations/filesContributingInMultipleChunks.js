@@ -57,9 +57,9 @@ const generateDefaultFileChunksObject = (filesMetadata, fileLocation) => {
  * Displays the files (along with the chunks inside which it is present) which are present in more than one chunk on the console
  * @param {Object} webpackChunkMetadata Data Structure containing information related to the chunks inside which a file is present
  */
-const getDuplicateFiles = (webpackChunkMetadata) => {
+const getFilesContributingInMultipleChunks = (webpackChunkMetadata) => {
   const fileWebpackChunkMapping = {};
-  const duplicateFilesDetails = [];
+  const filesInMultipleChunksDetails = [];
   for (const file in webpackChunkMetadata) {
     const fileChunksSet = getAllRelatedChunks(
       file,
@@ -67,13 +67,13 @@ const getDuplicateFiles = (webpackChunkMetadata) => {
       fileWebpackChunkMapping
     );
     if (fileChunksSet.size > 1) {
-      duplicateFilesDetails.push({
+      filesInMultipleChunksDetails.push({
         file,
         chunksArray: Array.from(fileChunksSet),
       });
     }
   }
-  return duplicateFilesDetails;
+  return filesInMultipleChunksDetails;
 };
 
 /**
@@ -116,20 +116,19 @@ const getAllRelatedChunks = (
 };
 
 /**
- * Generates a mapping from given duplicate files array,
- * contains information related to the duplicate files and the chunks inside which they are present
- * @param {Array} duplicateFilesArray
+ * Generates a mapping from given array containing files which are present in multiple chunks
+ * @param {Array} filesInMultipleChunksArray
  */
-const getDuplicateFilesChunksMapping = (duplicateFilesArray) => {
-  const duplicateFilesChunksMapping = {};
-  duplicateFilesArray.forEach((fileObject) => {
-    duplicateFilesChunksMapping[fileObject.file] = fileObject.chunksArray;
+const getFilesContributingInMultipleChunksMapping = (filesInMultipleChunksArray) => {
+  const filesInMultipleChunksMapping = {};
+  filesInMultipleChunksArray.forEach((fileObject) => {
+    filesInMultipleChunksMapping[fileObject.file] = fileObject.chunksArray;
   });
-  return duplicateFilesChunksMapping;
+  return filesInMultipleChunksMapping;
 };
 
 module.exports = {
   createWebpackChunkMetadata,
-  getDuplicateFiles,
-  getDuplicateFilesChunksMapping,
+  getFilesContributingInMultipleChunks,
+  getFilesContributingInMultipleChunksMapping,
 };

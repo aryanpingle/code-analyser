@@ -15,7 +15,7 @@ const {
 } = require("../utility/constants");
 const { getFileSize } = require("./utility");
 /**
- * Will be used to check a given file's imports (used while detecting dependencies at a given depth/ duplicate files)
+ * Will be used to check a given file's imports (used while detecting dependencies at a given depth/ files contributing in multiple chunks)
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
  * @param {Boolean} checkStaticImportsOnly To decide whether only static imports of a file have to be checked or not
@@ -80,7 +80,7 @@ const traverseFileForImports = (
     let requiredImportedFilesMapping = checkStaticImportsOnly
       ? currentFileMetadata.staticImportFilesMapping
       : currentFileMetadata.importedFilesMapping;
-    // If we are checking to find duplicate files, therefore would need to traverse all files
+    // If we are checking to find files which are contributing in multiple chunks, therefore would need to traverse all files
 
     filesMetadata.filesMapping[fileLocation].staticImportFilesMapping =
       currentFileMetadata.staticImportFilesMapping;
