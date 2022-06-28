@@ -25,18 +25,24 @@ const getUsedFilesMapping = (currentFileMetadata) => {
   return usedFilesMapping;
 };
 
+/**
+ * Get size (in bytes) of the code after removing whitespaces, comments
+ * @param {Object} fileAst AST of the given file (will be used to generate the minified code)
+ * @param {String} fileLocation Absolute address of the given file
+ * @returns Size (in bytes) of the minified code
+ */
 const getFileSize = (fileAst, fileLocation) => {
   const code = fs.readFileSync(fileLocation).toString();
+  // Will minify the original code, Eg. will remove unnecssary whitespaces, comments
   const minifiedCode = generate(
     fileAst,
     {
       minified: true,
       comments: false,
-      compact: true,
-      concise: true,
     },
     code
   );
   return Buffer.byteLength(minifiedCode.code);
 };
+
 module.exports = { getUsedFilesMapping, getFileSize };

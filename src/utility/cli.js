@@ -387,7 +387,7 @@ const displayChunkMetadaRelatedInformation = (
       cachedMapping[firstFile].effectiveSize
   );
   const statsTable = new cliTableBuilder({
-    head: ["Index", "File Name", "File Size"],
+    head: ["Index", "File Name", "Effective Size"],
   });
   for (const index in fileInformationArray) {
     if (

@@ -128,10 +128,12 @@ const analyseCodeAndDetectDependenciesAtGivenDepth = async (
     entryFiles: allEntryFiles.length,
   };
 
-  const dependenciesUsageMapping = getDependenciesAtGivenDepthUsageMapping(
-    dependenciesAtGivenDepth,
-    filesMetadata
-  );
+  const dependenciesUsageMapping = codeAnalyerConfigurationObject.interact
+    ? getDependenciesAtGivenDepthUsageMapping(
+        dependenciesAtGivenDepth,
+        filesMetadata
+      )
+    : null;
 
   process.send({
     filesMetadata,
