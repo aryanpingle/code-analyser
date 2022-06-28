@@ -14,6 +14,7 @@ const {
   getFilesContributingInMultipleChunks,
   getFilesContributingInMultipleChunksMapping,
 } = require("./filesContributingInMultipleChunks");
+const getAllDependentFiles = require("./chunkMetadataOfAGivenFile");
 
 module.exports = {
   getDeadFilesAndSendMessageToParent,
@@ -27,4 +28,5 @@ module.exports = {
   createWebpackChunkMetadata,
   getFilesContributingInMultipleChunks,
   getFilesContributingInMultipleChunksMapping,
+  getAllDependentFiles,
 };

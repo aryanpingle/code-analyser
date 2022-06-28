@@ -1,38 +1,33 @@
 const { isFileNotExcluded } = require("../helper");
-const { cachedMapping } = require("../configuration");
+const { cacheMapping } = require("../configuration");
 
 /**
  * Function to find all the dependencies of the provided file and their file sizes
  * @param {String} fileLocation File whose dependencies are needed
- * @param {Object} metadata Contains information related to all files, and regex to exclude unwanted dependencies
+ * @param {Object} filesMetadata Contains information related to all files
  * @returns Set containing all dependencies of a given file along with their size
  */
-const getAllDependentFiles = (
-  fileLocation,
-  { filesMetadata, excludedRegex }
-) => {
+const getAllDependentFiles = (fileLocation, filesMetadata) => {
   const currentFilesSet = new Set();
   currentFilesSet.add(fileLocation);
-  cachedMapping[fileLocation] = {
+  cacheMapping[fileLocation] = {
     dependencySet: currentFilesSet,
     effectiveSize: filesMetadata.filesMapping[fileLocation].fileSize,
   };
   for (const dependentFile in filesMetadata.filesMapping[fileLocation]
     .staticImportFilesMapping) {
-    if (!isFileNotExcluded(excludedRegex, dependentFile)) continue;
-    const dependentFileSet = cachedMapping[dependentFile]
-      ? cachedMapping[dependentFile].dependencySet
-      : getAllDependentFiles(dependentFile, {
-          filesMetadata,
-          cachedMapping,
-          excludedRegex,
-        });
+    if (!isFileNotExcluded(filesMetadata.excludedFilesRegex, dependentFile))
+      continue;
+    const dependentFileSet = cacheMapping[dependentFile]
+      ? cacheMapping[dependentFile].dependencySet
+      : getAllDependentFiles(dependentFile, filesMetadata);
     for (const dependentFileSetElement of dependentFileSet) {
       currentFilesSet.add(dependentFileSetElement);
     }
   }
-  cachedMapping[fileLocation] = {
+  cacheMapping[fileLocation] = {
     dependencySet: currentFilesSet,
+    dependencyArray: Array.from(currentFilesSet),
     effectiveSize: getEffectiveSizeFromSet(
       Array.from(currentFilesSet),
       filesMetadata
@@ -52,4 +47,4 @@ const getEffectiveSizeFromSet = (currentFilesArray, filesMetadata) => {
     );
   }, 0);
 };
-module.exports = { getAllDependentFiles };
+module.exports = getAllDependentFiles;

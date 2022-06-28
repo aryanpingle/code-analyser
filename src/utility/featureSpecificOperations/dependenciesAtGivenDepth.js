@@ -1,4 +1,7 @@
-const { DISPLAY_TEXT } = require("../constants");
+const {
+  DISPLAY_TEXT,
+  SUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE,
+} = require("../constants");
 const { isFileNotExcluded } = require("../helper");
 const { isFilePath } = require("../resolver");
 const { getFilePoints } = require("./common");
@@ -29,12 +32,12 @@ const getDependenciesAtGivenDepth = (outsideModuleChecker, filesMetadata) => {
   // If no errors found during traversal
   if (filesMetadata.unparsableVistedFiles === 0)
     process.send({
-      text: "Successfully identified all dependencies at the provided depth",
+      text: SUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE,
       messageType: DISPLAY_TEXT,
     });
   else
     process.send({
-      text: "Unable to identify few ddependencies at the provided depth",
+      text: UNSUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE,
       messageType: DISPLAY_TEXT,
     });
 

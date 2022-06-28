@@ -56,6 +56,7 @@ const traverseFileForImports = (
   try {
     if (
       checkStaticImportsOnly &&
+      filesMetadata.insideModuleRegex &&
       !filesMetadata.insideModuleRegex.test(fileLocation)
     )
       return;

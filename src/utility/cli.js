@@ -7,10 +7,7 @@ const {
   getArrayOfElementsFromString,
   getSizeFromInteger,
 } = require("./parseElements");
-const {
-  codeAnalyerConfigurationObject,
-  cachedMapping,
-} = require("./configuration");
+const { codeAnalyerConfigurationObject } = require("./configuration");
 const { buildTrie, getFirstNodeNotContainingOneChild } = require("./trie");
 const {
   GO_BACK,
@@ -19,9 +16,6 @@ const {
   CLEAR,
   BOLD,
 } = require("./constants");
-const {
-  getAllDependentFiles,
-} = require("./featureSpecificOperations/chunkMetadataOfAGivenFile");
 
 /**
  * Will be called to set the configuration of the program using the arguments provided on the CLI
@@ -222,15 +216,14 @@ const displayFilesOnScreen = (filesArray) => {
 /**
  * Can be used to display all files along with additional information to display with them on the screen interactively
  * @param {Array} filesArray Contains file name and other information
- * @param {Object} filesUsageMapping Can be used to display which files use retrieved dependencies/ display webpack chunks
+ * @param {Object} metadata Contains additional information which are printed specifically for some features
  */
 const displayAllFilesInteractively = async (
   filesArray,
   {
     filesUsageMapping = {},
     checkForChunkMetadataOfGivenFile = false,
-    filesMetadata = {},
-    excludedRegex,
+    cacheMapping = {},
   }
 ) => {
   if (filesArray.length === 0) {
@@ -254,15 +247,8 @@ const displayAllFilesInteractively = async (
         pathToCheck,
         filesUsageMapping[pathToCheck]
       );
-    if (
-      checkForChunkMetadataOfGivenFile &&
-      filesMetadata.filesMapping[pathToCheck]
-    )
-      dsiplayChunkMetadataOfGivenFile(
-        pathToCheck,
-        filesMetadata,
-        excludedRegex
-      );
+    if (checkForChunkMetadataOfGivenFile && cacheMapping[pathToCheck])
+      displayChunkMetadaRelatedInformation(cacheMapping, pathToCheck);
 
     const { selectedNode: nextNodeToCheck, choiceIndex } =
       await interactivelyDisplayAndGetNextNode(
@@ -346,58 +332,27 @@ const displayTextOnConsole = ({ text, fileLocation }) => {
 };
 
 /**
- * Function to get and display all the dependencies of the provided file, along with the approx uncompressed chunk size
- * @param {String} fileLocation
- * @param {Object} filesMetadata
- * @param {Regex} excludedRegex To exclude files which aren't required to be checked
+ * Function which displays the dependencies of the chunk corresponding to the given file on the screen
+ * @param {Object} cacheMapping Cached data which is used to display information related to each file which is present inside the chunk
+ * @param {String} fileLocation Absolute address of the file which will used as an entry to build the chunk's metadata
  */
-const dsiplayChunkMetadataOfGivenFile = (
-  fileLocation,
-  filesMetadata,
-  excludedRegex
-) => {
-  console.log(
-    GREEN_COLOR,
-    "Computing all the dependencies and overall chunk size..."
-  );
-  const currentFileSet = getAllDependentFiles(fileLocation, {
-    filesMetadata,
-    excludedRegex,
-  });
-  displayChunkMetadaRelatedInformation(
-    Array.from(currentFileSet),
-    filesMetadata.filesMapping
-  );
-};
-
-/**
- * Function (called by dsiplayChunkMetadataOfGivenFile) which displays the given dependencies of the file on the screen
- * @param {Array} fileInformationArray Contains information related to dependencies of a given file and size of each file
- * @param {Object} filesMapping Contains size of each file
- */
-const displayChunkMetadaRelatedInformation = (
-  fileInformationArray,
-  filesMapping
-) => {
-  console.log(CLEAR);
+const displayChunkMetadaRelatedInformation = (cacheMapping, fileLocation) => {
+  const fileInformationArray = cacheMapping[fileLocation].dependencyArray;
   if (fileInformationArray.length === 0) return;
   fileInformationArray.sort(
     (firstFile, secondFile) =>
-      cachedMapping[secondFile].effectiveSize -
-      cachedMapping[firstFile].effectiveSize
+      cacheMapping[secondFile].effectiveSize -
+      cacheMapping[firstFile].effectiveSize
   );
   const statsTable = new cliTableBuilder({
     head: ["Index", "File Name", "Effective Size"],
   });
+  const totalFilesToShow = yargs.argv.totalFilesToShow;
   for (const index in fileInformationArray) {
-    if (
-      yargs.argv.totalFilesToShow !== -1 &&
-      index >= yargs.argv.totalFilesToShow
-    )
-      break;
+    if (totalFilesToShow !== -1 && index >= totalFilesToShow) break;
     const file = fileInformationArray[index];
-    const currentFileSize = cachedMapping[file]
-      ? cachedMapping[file].effectiveSize
+    const currentFileSize = cacheMapping[file]
+      ? cacheMapping[file].effectiveSize
       : 0;
     statsTable.push([
       parseInt(index) + 1,
@@ -409,7 +364,7 @@ const displayChunkMetadaRelatedInformation = (
   console.log(
     BOLD,
     `\nTotal Chunk Size: ${getSizeFromInteger(
-      cachedMapping[fileInformationArray[0]].effectiveSize
+      cacheMapping[fileInformationArray[0]].effectiveSize
     )}\n`
   );
 };
@@ -419,6 +374,7 @@ module.exports = {
   produceAnalysdDeadFileResult,
   produceAnalysedDependenciesAtGivenDepthResult,
   displayFilesContributingInMultipleChunksDetails,
+  displayChunkMetadaRelatedInformation,
   displayFilesOnScreen,
   displayAllFilesInteractively,
   displayTextOnConsole,

@@ -2,6 +2,7 @@ const { EMPTY_STRING } = require("./constants");
 const {
   getAllSubPartsOfGivenAbsolutePath,
   resolveAddressWithProvidedDirectory,
+  getFileNameFromElement,
 } = require("./resolver");
 
 /**
@@ -12,8 +13,9 @@ const {
 const buildTrie = (filesObjectsArray) => {
   const headNode = getNewTrieNode(EMPTY_STRING);
 
-  filesObjectsArray.forEach((fileObject) => {
-    const fileSubParts = getAllSubPartsOfGivenAbsolutePath(fileObject.file);
+  filesObjectsArray.forEach((fileElement) => {
+    const fileName = getFileNameFromElement(fileElement);
+    const fileSubParts = getAllSubPartsOfGivenAbsolutePath(fileName);
     let nodeToTraverse = headNode;
     fileSubParts.forEach((subPart, index) => {
       if (index === 0) return;

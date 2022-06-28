@@ -80,11 +80,33 @@ module.exports = {
   MODULE: "module",
   EXPORTS: "exports",
 
+  DEFAULT_ENTRY_ARRAY: [/.[jt]sx?$/],
   DEFAULT_REGEX_STRING: "!^()",
   DEFAULT_TRUE_REGEX_STRING: "^()",
   IGNORED_FILES_REGEX:
     /(\.git)|(\.spec\.(.*))|(\.mock\.(.*))|(\.fixtures?\.(.*))|(\.test\.(.*))|\.json$|\.md$|\.jpe?g$|\.png$|\.woff2$|\.hdr$|\.mp[0-9]$|\.svg$|\.glb$|\.mdx$|\.webp$|\.jade$|\.coffee$|\.styl$|\.story\.(.*)|\.babelrc$|\.env$|\.config\.(.*)/,
   IGNORED_FOLDERS_REGEX:
     /node_modules|__spec__|__mocks?__|__tests?__|__fixtures?__|\/spec\/|\/tests?\/|\/mocks?\/|\/fixtures?\/|__generated__|storybook|stories/,
+
+  VALID_EXTENSIONS_ARRAY: [".js", ".jsx", ".ts", ".tsx", ".d.ts"],
+  DEFAULT_MODULES_ARRAY: ["src", "node_modules"],
   SIZES_ARRAY: ["B", "KB", "MB", "GB", "TB", "PB"],
+
+  SUCCESSFUL_RETRIEVAL_OF_ALL_FILES_MESSAGE:
+    "Successfully retrieved all files inside the directories to check",
+  SUCCESSFUL_RETRIEVAL_OF_ALL_ENTRY_FILES_MESSAGE:
+    "Successfully retrieved all entry files",
+  ANALYSED_CODEBASE_MESSAGE: "Analysed the codebase",
+  SUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE:
+    "Successfully identified all dead files",
+  UNSUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE:
+    "Unable to identify few dead files",
+  SUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE:
+    "Successfully identified all dependencies at the provided depth",
+  UNSUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE:
+    "Unable to identify few dependencies at the provided depth",
+  ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE:
+    "Established relationship between different files",
+  IDENTIFICATION_OF_GIVEN_FILE_CHUNK_METADATA_MESSAGE:
+    "Identified all the files along with their effective size which are present inside the chunk",
 };

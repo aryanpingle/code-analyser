@@ -1,7 +1,10 @@
 const process = require("process");
 const { setConfiguration } = require("./utility/cli");
 setConfiguration();
-const { codeAnalyerConfigurationObject } = require("./utility/configuration");
+const {
+  codeAnalyerConfigurationObject,
+  cacheMapping,
+} = require("./utility/configuration");
 const {
   buildExcludedFilesRegex,
   buildDependenciesAtGivenDepthRegex,
@@ -19,6 +22,7 @@ const {
   createWebpackChunkMetadata,
   getFilesContributingInMultipleChunks,
   getFilesContributingInMultipleChunksMapping,
+  getAllDependentFiles,
 } = require("./utility/featureSpecificOperations/index");
 const {
   isDeadfileCheckRequired,
@@ -33,6 +37,9 @@ const {
   CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
   CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS,
   CHECK_CHUNKS_METADATA_USING_GIVEN_FILE,
+  DISPLAY_TEXT,
+  ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE,
+  IDENTIFICATION_OF_GIVEN_FILE_CHUNK_METADATA_MESSAGE,
 } = require("./utility/constants");
 
 const excludedFilesRegex = buildExcludedFilesRegex(
@@ -189,25 +196,27 @@ const analyseCodeAndDetectChunkMetadataOfFiles = async (
   filesMetadata,
   programConfiguration
 ) => {
-  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
-  const { allEntryFiles } = await getAllRequiredFiles(
-    {
-      directoriesToCheck: programConfiguration.directoriesToCheck,
-      entry: programConfiguration.entry,
-    },
-    excludedFilesRegex
+  const entryFile = resolveAddressWithProvidedDirectory(
+    process.cwd(),
+    programConfiguration.moduleToCheck
   );
-  setImportedFilesMapping(allEntryFiles, filesMetadata, {
-    checkStaticImportsOnly: false,
+  setImportedFilesMapping([entryFile], filesMetadata, {
+    checkStaticImportsOnly: true,
     checkForFileSize: true,
   });
-  const allFilesParsedArray = [];
-  for (const file in filesMetadata.filesMapping)
-    allFilesParsedArray.push({ file });
   process.send({
-    filesArray: allFilesParsedArray,
-    filesMetadata,
-    excludedFilesRegexString: filesMetadata.excludedFilesRegex.source,
+    text: ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE,
+    messageType: DISPLAY_TEXT,
+  });
+  const givenFileDependencySet = getAllDependentFiles(entryFile, filesMetadata);
+  process.send({
+    text: IDENTIFICATION_OF_GIVEN_FILE_CHUNK_METADATA_MESSAGE,
+    messageType: DISPLAY_TEXT,
+  });
+  process.send({
+    filesArray: Array.from(givenFileDependencySet),
+    cacheMapping,
+    entryFile,
     messageType: CHECK_CHUNKS_METADATA_USING_GIVEN_FILE,
   });
 };

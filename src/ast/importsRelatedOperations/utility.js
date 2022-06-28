@@ -95,9 +95,6 @@ const setImportedVariablesDuringImportStage = (
         INDIVIDUAL_IMPORT,
         importedFileAddress
       );
-    currentFileMetadata.importedVariablesMetadata[
-      localName
-    ].isDefaultImport = true;
   } else if (nodeToParse.type === OBJECT_PATTERN) {
     nodeToParse.properties.forEach((property) => {
       const localName = property.value.name;

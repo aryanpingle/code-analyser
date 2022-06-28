@@ -1,5 +1,9 @@
 const { checkFileImports } = require("../../checker/fileImports");
-const { DISPLAY_TEXT } = require("../constants");
+const {
+  DISPLAY_TEXT,
+  SUCCESSFUL_RETRIEVAL_OF_ALL_FILES_MESSAGE,
+  SUCCESSFUL_RETRIEVAL_OF_ALL_ENTRY_FILES_MESSAGE,
+} = require("../constants");
 const { getAllFilesToCheck, getAllEntryFiles } = require("../files");
 const { isFileExtensionValid } = require("../helper");
 const { getNumberOfSubPartsOfGivenAbsolutePath } = require("../resolver");
@@ -51,7 +55,7 @@ const getAllRequiredFiles = async (
     excludedFilesRegex
   );
   process.send({
-    text: "Successfully retrieved all files inside the directories to check",
+    text: SUCCESSFUL_RETRIEVAL_OF_ALL_FILES_MESSAGE,
     messageType: DISPLAY_TEXT,
   });
 
@@ -61,7 +65,7 @@ const getAllRequiredFiles = async (
     excludedFilesRegex
   );
   process.send({
-    text: "Successfully retrieved all entry files",
+    text: SUCCESSFUL_RETRIEVAL_OF_ALL_ENTRY_FILES_MESSAGE,
     messageType: DISPLAY_TEXT,
   });
 

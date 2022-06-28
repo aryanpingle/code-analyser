@@ -3,7 +3,13 @@ const {
   checkDeadFileImportsUsage,
 } = require("../../checker/fileUsage");
 const { checkFileImportExports } = require("../../checker/fileImportsExports");
-const { DISPLAY_TEXT, DEFAULT } = require("../constants");
+const {
+  DISPLAY_TEXT,
+  DEFAULT,
+  ANALYSED_CODEBASE_MESSAGE,
+  SUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE,
+  UNSUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE,
+} = require("../constants");
 const { isFileNotExcluded } = require("../helper");
 const { getFilePoints } = require("./common");
 
@@ -29,7 +35,7 @@ const analyseCode = (allEntryFiles, filesMetadata) => {
     checkFileUsage(entryFile, filesMetadata)
   );
   process.send({
-    text: "Analysed the codebase",
+    text: ANALYSED_CODEBASE_MESSAGE,
     messageType: DISPLAY_TEXT,
   });
 };
@@ -46,12 +52,12 @@ const getDeadFilesAndSendMessageToParent = (allFilesToCheck, filesMetadata) => {
   // If no errors were found while parsing these files
   if (filesMetadata.unparsableVistedFiles === 0)
     process.send({
-      text: "Successfully identified all dead files",
+      text: SUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE,
       messageType: DISPLAY_TEXT,
     });
   else
     process.send({
-      text: "Unable to identify few dead files",
+      text: UNSUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE,
       messageType: DISPLAY_TEXT,
     });
 

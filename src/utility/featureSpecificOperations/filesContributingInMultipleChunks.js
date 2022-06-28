@@ -1,4 +1,8 @@
-const { DISPLAY_TEXT, CHUNKS } = require("../constants");
+const {
+  DISPLAY_TEXT,
+  CHUNKS,
+  ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE,
+} = require("../constants");
 const { isFileNotExcluded } = require("../helper");
 
 /**
@@ -32,7 +36,7 @@ const createWebpackChunkMetadata = (filesMetadata) => {
     }
   }
   process.send({
-    text: "Established relationship between different files",
+    text: ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE,
     messageType: DISPLAY_TEXT,
   });
 
@@ -119,7 +123,9 @@ const getAllRelatedChunks = (
  * Generates a mapping from given array containing files which are present in multiple chunks
  * @param {Array} filesInMultipleChunksArray
  */
-const getFilesContributingInMultipleChunksMapping = (filesInMultipleChunksArray) => {
+const getFilesContributingInMultipleChunksMapping = (
+  filesInMultipleChunksArray
+) => {
   const filesInMultipleChunksMapping = {};
   filesInMultipleChunksArray.forEach((fileObject) => {
     filesInMultipleChunksMapping[fileObject.file] = fileObject.chunksArray;

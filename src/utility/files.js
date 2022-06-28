@@ -10,7 +10,7 @@ const {
 } = require("./helper");
 const { getNewDefaultObject } = require("../ast/common");
 const process = require("process");
-const { DEFAULT } = require("./constants");
+const { DEFAULT, DEFAULT_ENTRY_ARRAY } = require("./constants");
 
 /**
  * Returns the default filesMetadata object
@@ -75,7 +75,7 @@ const getDefaultCurrentFileMetadata = (fileLocation, isEntryFile = false) => {
  * @returns Array consisting of all entry files
  */
 const getAllEntryFiles = async (
-  entryArray = [/.[jt]sx?$/],
+  entryArray = DEFAULT_ENTRY_ARRAY,
   allFilesToCheck = [],
   excludedFilesRegex
 ) => {

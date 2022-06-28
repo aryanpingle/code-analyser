@@ -13,6 +13,9 @@ const {
   INBUILT_NODE_MODULE,
   EMPTY_STRING,
   SPACE,
+  OBJECT,
+  VALID_EXTENSIONS_ARRAY,
+  DEFAULT_MODULES_ARRAY,
 } = require("./constants");
 
 /**
@@ -79,8 +82,8 @@ const isFilePath = (givenPath) => {
 };
 
 const settings = {
-  extensions: [".js", ".jsx", ".ts", ".tsx", ".d.ts"],
-  modules: ["src", "node_modules"],
+  extensions: VALID_EXTENSIONS_ARRAY,
+  modules: DEFAULT_MODULES_ARRAY,
   plugins: [],
 };
 
@@ -201,6 +204,9 @@ const joinSubPartsTillGivenDepth = (subPartsArray, depth) => {
 
 const getPathBaseName = (fileLocation) => path.basename(fileLocation);
 
+const getFileNameFromElement = (fileElement) =>
+  typeof fileElement === OBJECT ? fileElement.file : fileElement;
+
 module.exports = {
   pathResolver,
   resolveAddressWithProvidedDirectory,
@@ -212,4 +218,5 @@ module.exports = {
   getAllSubPartsOfGivenAbsolutePath,
   joinSubPartsTillGivenDepth,
   getNumberOfSubPartsOfGivenAbsolutePath,
+  getFileNameFromElement,
 };

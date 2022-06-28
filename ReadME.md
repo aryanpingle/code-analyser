@@ -86,12 +86,15 @@ Install code-analyser CLI with the following command:-
    Accepted values: Array consisting of Regex, relative/ absolute paths.
   <br>
 - `directoriesToCheck` \
-   Used along with `checkDeadFiles`, `checkFilesContributingInMultipleChunks`, and `checkChunkMetadataUsingGivenFile` options to provide directories from which entry files (if regex provided as an entry element)/ files to check (in case of dead files check only) will be retrieved. \
+   Used along with `checkDeadFiles`, and `checkFilesContributingInMultipleChunks` options to provide directories from which entry files (if regex provided as an entry element)/
+  files to check (in case of dead files check only) will be retrieved. \
    Accepted values: Array consisting of relative/ absolute paths
+
   <br>
+
 - `moduleToCheck` \
-   Use it to provide entry file/ directory using which dependencies at a given depth have to be retrieved. \
-   Accepted values: Absolute/ relative path of the module
+  Used along with `checkDependenciesAtGivenDepth`, and `checkChunkMetadataUsingGivenFile` to provide the module using which either dependencies at given depth or chunk metadata has to be computed. \
+  Accepted values: Absolute/ relative path of the module
 
 ### Other options
 
@@ -126,6 +129,6 @@ Install code-analyser CLI with the following command:-
 # Sample Examples
 
 - `analyseCode --checkDeadFiles --entry='["./index.js"]' --directoriesToCheck='["./"]' --rootDirectory='./'`
-- `analyseCode --checkFilesContributingInMultipleChunks --entry='["./src/index.tsx"]' --interact`
-- `analyseCode --checkDependenciesAtGivenDepth --exclude='["./public"]' --moduleToCheck="./index.jsx" --interact`
-- `analyseCode --checkChunkMetadataUsingGivenFile --entry="[/index\.jsx/]" --directoriesToCheck='["./src"]'`
+- `analyseCode --checkFilesContributingInMultipleChunks --entry='["./src/index.tsx"]' --exclude='["./src/common"]' --interact`
+- `analyseCode --checkDependenciesAtGivenDepth --exclude='["./public"]' --moduleToCheck="./index.jsx" --depth=2 --isDepthFromFront=true --checkAll --interact`
+- `analyseCode --checkChunkMetadataUsingGivenFile --moduleToCheck="[/index\.jsx/]" --totalFilesToShow=50`

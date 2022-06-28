@@ -9,6 +9,7 @@ const {
   produceAnalysedDependenciesAtGivenDepthResult,
   displayFilesContributingInMultipleChunksDetails,
   displayTextOnConsole,
+  displayChunkMetadaRelatedInformation,
 } = require("./utility/cli");
 const {
   CHECK_DEAD_FILES,
@@ -20,7 +21,6 @@ const {
   RUNNER_FILE,
   SIGINT,
   CHECK_CHUNKS_METADATA_USING_GIVEN_FILE,
-  GREEN_COLOR,
 } = require("./utility/constants");
 
 // Child process where computation part of the program will be done
@@ -37,7 +37,8 @@ childProcess.on(MESSAGE, (data) => {
     interact,
     filesArray,
     filesUsageMapping,
-    excludedFilesRegexString,
+    cacheMapping,
+    entryFile,
     messageType,
     text,
   } = data;
@@ -74,9 +75,8 @@ childProcess.on(MESSAGE, (data) => {
     case CHECK_CHUNKS_METADATA_USING_GIVEN_FILE:
       const chunksMetadata = {
         filesArray,
-        filesMetadata,
-        excludedFilesRegexString,
-        interact: true,
+        cacheMapping,
+        entryFile,
       };
       displayAllFilesChunkMetadataInteractively(chunksMetadata);
 
@@ -154,15 +154,12 @@ const displayFilesInMultipleChunksAnalysis = ({
  */
 const displayAllFilesChunkMetadataInteractively = ({
   filesArray,
-  filesMetadata,
-  interact,
-  excludedFilesRegexString,
+  cacheMapping,
+  entryFile,
 }) => {
-  console.log(GREEN_COLOR, "Established relationship between all files");
+  displayChunkMetadaRelatedInformation(cacheMapping, entryFile);
   displayAllFilesInteractively(filesArray, {
-    filesMetadata,
     checkForChunkMetadataOfGivenFile: true,
-    interact,
-    excludedRegex: new RegExp(excludedFilesRegexString, "i"),
+    cacheMapping,
   });
 };

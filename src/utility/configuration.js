@@ -21,6 +21,6 @@ const codeAnalyerConfigurationObject = {
 };
 
 // Used to cache already computed dependencies of a given file (Used when checking chunk metadata of a given file)
-const cachedMapping = {};
+const cacheMapping = {};
 
-module.exports = { codeAnalyerConfigurationObject, cachedMapping };
+module.exports = { codeAnalyerConfigurationObject, cacheMapping };
