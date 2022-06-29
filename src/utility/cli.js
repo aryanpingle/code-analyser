@@ -2,12 +2,7 @@ const process = require("process");
 const { Select } = require("enquirer");
 const yargs = require("yargs");
 const cliTableBuilder = require("cli-table3");
-const {
-  getRequiredTypeElementFromString,
-  getArrayOfElementsFromString,
-  getSizeFromInteger,
-} = require("./parseElements");
-const { codeAnalyerConfigurationObject } = require("./configuration");
+const { getSizeFromInteger } = require("./parseElements");
 const { buildTrie, getFirstNodeNotContainingOneChild } = require("./trie");
 const {
   GO_BACK,
@@ -16,89 +11,6 @@ const {
   CLEAR,
   BOLD,
 } = require("./constants");
-
-/**
- * Will be called to set the configuration of the program using the arguments provided on the CLI
- */
-const setConfiguration = () => {
-  const configurationObject = yargs.argv;
-  for (const configuration in configurationObject) {
-    switch (configuration) {
-      case "entry":
-        codeAnalyerConfigurationObject[configuration] =
-          getArrayOfElementsFromString(configurationObject[configuration]);
-        break;
-      case "include":
-        codeAnalyerConfigurationObject[configuration].push(
-          ...getArrayOfElementsFromString(configurationObject[configuration])
-        );
-        break;
-      case "exclude":
-        codeAnalyerConfigurationObject[configuration].push(
-          ...getArrayOfElementsFromString(configurationObject[configuration])
-        );
-        break;
-      case "checkDeadFiles":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-      case "checkDependenciesAtGivenDepth":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-      case "checkFilesContributingInMultipleChunks":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-      case "checkChunkMetadataUsingGivenFile":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-      case "isDepthFromFront":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-      case "moduleToCheck":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(
-            configurationObject[configuration],
-            true
-          );
-        break;
-      case "directoriesToCheck":
-        codeAnalyerConfigurationObject[configuration] =
-          getArrayOfElementsFromString(configurationObject[configuration]);
-        break;
-      case "rootDirectory":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(
-            configurationObject[configuration],
-            true
-          );
-        break;
-      case "depth":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-      case "interact":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-      case "checkAll":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-      case "totalFilesToShow":
-        codeAnalyerConfigurationObject[configuration] =
-          getRequiredTypeElementFromString(configurationObject[configuration]);
-        break;
-    }
-  }
-  if (codeAnalyerConfigurationObject.directoriesToCheck)
-    codeAnalyerConfigurationObject.include.push(
-      ...codeAnalyerConfigurationObject.directoriesToCheck
-    );
-};
 
 /**
  * Will be used to print the analysed data
@@ -370,7 +282,6 @@ const displayChunkMetadaRelatedInformation = (cacheMapping, fileLocation) => {
 };
 
 module.exports = {
-  setConfiguration,
   produceAnalysdDeadFileResult,
   produceAnalysedDependenciesAtGivenDepthResult,
   displayFilesContributingInMultipleChunksDetails,

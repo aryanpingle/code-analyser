@@ -12,6 +12,10 @@
 - [Resilient features](#some-resilient-features)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Options](#options)
+  - [Feature to check options](#feature-to-check-options)
+  - [Files to check options](#files-to-check-options)
+  - [Other options](#other-options)
 - [Sample Examples](#sample-examples)
 
 # Overview
@@ -39,14 +43,21 @@ Code-Analyser is a script which contains many features, which allow easier analy
 
 # Installation
 
-Install code-analyser CLI with the following command:-
+Install code-analyser CLI with any one of the following commands:-
 
-> npm install -g code-analyser
-> <br>
+```
+$ npm install -g code-analyser
+```
+
+```
+$ yarn global add code-analyser
+```
 
 # Usage
 
-`analyseCode <options>`
+```
+$ analyseCode <options>
+```
 
 # Options
 
@@ -89,9 +100,7 @@ Install code-analyser CLI with the following command:-
    Used along with `checkDeadFiles`, and `checkFilesContributingInMultipleChunks` options to provide directories from which entry files (if regex provided as an entry element)/
   files to check (in case of dead files check only) will be retrieved. \
    Accepted values: Array consisting of relative/ absolute paths
-
   <br>
-
 - `moduleToCheck` \
   Used along with `checkDependenciesAtGivenDepth`, and `checkChunkMetadataUsingGivenFile` to provide the module using which either dependencies at given depth or chunk metadata has to be computed. \
   Accepted values: Absolute/ relative path of the module
@@ -124,11 +133,28 @@ Install code-analyser CLI with the following command:-
    Setting it as true, will allow recursive check for feasible dependencies inside a feasible dependency. \
   Accepted values: True/ false
 - `totalFilesToShow` **(default: All)** \
-  Used when finding chunk metadata of a given file. Used to provide the maximum number of files present inside that chunk to report back to the user. Will show the topmost files which have the largest individual chunk size. By default, will report all the files present inside that chunk.
+  Used when finding chunk metadata of a given file to provide the maximum number of files present inside that chunk to report back to the user. \
+  Will show the topmost files which have the largest individual chunk size. By default, will report all the files present inside that chunk. \
+  Accepted values: Integer denoting the total number of files to show.
 
 # Sample Examples
 
-- `analyseCode --checkDeadFiles --entry='["./index.js"]' --directoriesToCheck='["./"]' --rootDirectory='./'`
-- `analyseCode --checkFilesContributingInMultipleChunks --entry='["./src/index.tsx"]' --exclude='["./src/common"]' --interact`
-- `analyseCode --checkDependenciesAtGivenDepth --exclude='["./public"]' --moduleToCheck="./index.jsx" --depth=2 --isDepthFromFront=true --checkAll --interact`
-- `analyseCode --checkChunkMetadataUsingGivenFile --moduleToCheck="[/index\.jsx/]" --totalFilesToShow=50`
+```
+$ analyseCode --checkDeadFiles --entry='["./index.js"]' --directoriesToCheck='["./"]' --rootDirectory='./'
+```
+
+```
+$ analyseCode --checkFilesContributingInMultipleChunks --entry='["./src/index.tsx"]' --exclude='["./src/common"]' --interact
+```
+
+```
+$ analyseCode --checkDependenciesAtGivenDepth --exclude='["./public"]' --moduleToCheck="./index.jsx" --depth=2 --isDepthFromFront=true --checkAll --interact
+```
+
+```
+$ analyseCode --checkChunkMetadataUsingGivenFile --moduleToCheck="[/index\.jsx/]" --totalFilesToShow=50
+```
+
+# Author
+
+[Daksh Sharma](https://github.com/Daksh2104)

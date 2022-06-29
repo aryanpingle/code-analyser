@@ -1,10 +1,10 @@
 const process = require("process");
-const { setConfiguration } = require("./utility/cli");
-setConfiguration();
 const {
   codeAnalyerConfigurationObject,
+  setConfiguration,
   cacheMapping,
 } = require("./utility/configuration");
+setConfiguration();
 const {
   buildExcludedFilesRegex,
   buildDependenciesAtGivenDepthRegex,
