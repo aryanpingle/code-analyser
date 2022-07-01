@@ -1,17 +1,18 @@
-const { EMPTY_STRING } = require("./constants");
-const {
+import { EMPTY_STRING } from "./constants.js";
+import {
   getAllSubPartsOfGivenAbsolutePath,
   resolveAddressWithProvidedDirectory,
   getFileNameFromElement,
-} = require("./resolver");
+} from "./resolver.js";
+import objectFactory from "./factory.js";
 
 /**
  * Will build a trie based on the given
  * @param {Array} filesObjectsArray
  * @returns Trie containing information related to paths of all files given in the array
  */
-const buildTrie = (filesObjectsArray) => {
-  const headNode = getNewTrieNode(EMPTY_STRING);
+export const buildTrie = (filesObjectsArray) => {
+  const headNode = objectFactory.createNewTrieNode(EMPTY_STRING);
 
   filesObjectsArray.forEach((fileElement) => {
     const fileName = getFileNameFromElement(fileElement);
@@ -24,7 +25,8 @@ const buildTrie = (filesObjectsArray) => {
           nodeToTraverse.pathTillNode,
           subPart
         ).trim();
-        nodeToTraverse.childrens[subPart] = getNewTrieNode(
+
+        nodeToTraverse.childrens[subPart] = objectFactory.createNewTrieNode(
           subPart,
           pathTillNode,
           index + 1 === fileSubParts.length
@@ -36,30 +38,16 @@ const buildTrie = (filesObjectsArray) => {
   return headNode;
 };
 
-const getNewTrieNode = (baseName, pathTillNode = " ", isFile = false) => {
-  return {
-    baseName,
-    pathTillNode,
-    childrens: {},
-    isFile,
-  };
-};
-
 /**
  * Will be used to ignore nodes which have just one children to allow faster parsing of the trie
  * @param {Object} givenNode
  * @returns Trie node containing zero or more than one childrens
  */
-const getFirstNodeNotContainingOneChild = (givenNode) => {
+export const getFirstNodeNotContainingOneChild = (givenNode) => {
   let nodeToTraverse = givenNode;
   while (Object.keys(nodeToTraverse.childrens).length === 1) {
     nodeToTraverse =
       nodeToTraverse.childrens[Object.keys(nodeToTraverse.childrens)[0]];
   }
   return nodeToTraverse;
-};
-
-module.exports = {
-  buildTrie,
-  getFirstNodeNotContainingOneChild,
 };

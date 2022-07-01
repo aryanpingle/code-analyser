@@ -1,11 +1,11 @@
-const {
+import {
   TS_QUALIFIED_NAME,
   LEFT,
   RIGHT,
   MEMBER_EXPRESSION,
   OBJECT,
   PROPERTY,
-} = require("../../utility/constants");
+} from "../../utility/constants.js";
 
 /**
  * Returns all individual properties present in a x.y.z or x["y"]["z"] type statements
@@ -13,7 +13,7 @@ const {
  * @param {Object} node AST node where this statement was encountered
  * @returns Array containing the parsed properties
  */
-const getAllPropertiesFromNode = (node) => {
+export const getAllPropertiesFromNode = (node) => {
   const allPropertiesArray = [];
   let headNode = node;
   let typeToCheck, childPropertyToCheck, nodePropertyToCheck;
@@ -37,5 +37,3 @@ const getAllPropertiesFromNode = (node) => {
 
   return allPropertiesArray;
 };
-
-module.exports = { getAllPropertiesFromNode };

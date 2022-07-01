@@ -1,22 +1,19 @@
-const process = require("process");
-const { traverseAST, buildAST } = require("../ast/index");
-const {
-  updateFilesMetadata,
-  getDefaultCurrentFileMetadata,
-} = require("../utility/files");
-const { getDefaultFileObject } = require("../ast/common");
-const {
+import process from "process";
+import { traverseAST, buildAST } from "../ast/index.js";
+import { updateFilesMetadata } from "../utility/files.js";
+import objectFactory from "../utility/factory.js";
+import {
   isFileExtensionValid,
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
-} = require("../utility/helper");
-const { getUsedFilesMapping } = require("./utility");
-const {
+} from "../utility/helper.js";
+import { getUsedFilesMapping } from "./utility.js";
+import {
   CHECK_IMPORTS,
   CHECK_EXPORTS,
   DISPLAY_TEXT,
-} = require("../utility/constants");
+} from "../utility/constants.js";
 
 /**
  * Will be used to check file to get it's import and export variables, which will be used in the next stage where their usage will be checked
@@ -24,14 +21,14 @@ const {
  * @param {Object} filesMetadata Object containing information related to all files
  * @param {Object} entryFilesMapping Mapping to check whether a given file is entry file or not
  */
-const checkFileImportExports = (
+export const checkFileImportExports = (
   entyFileLocation,
   filesMetadata,
   entryFilesMapping
 ) => {
   if (isFileMappingNotPresent(entyFileLocation, filesMetadata)) {
     filesMetadata.filesMapping[entyFileLocation] =
-      getDefaultFileObject(entyFileLocation);
+      objectFactory.createNewDefaultFileObject(entyFileLocation);
   }
   filesMetadata.filesMapping[entyFileLocation].isEntryFile = true;
   if (
@@ -61,7 +58,8 @@ const traverseFileForCheckingImportsExports = (
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
-    let currentFileMetadata = getDefaultCurrentFileMetadata(fileLocation);
+    let currentFileMetadata =
+      objectFactory.createNewDefaultCurrentFileMetadataObject(fileLocation);
     let traversalRelatedMetadata = {
       ast,
       currentFileMetadata,
@@ -69,19 +67,21 @@ const traverseFileForCheckingImportsExports = (
     };
     traverseAST(traversalRelatedMetadata, CHECK_IMPORTS);
     updateFilesMetadata(filesMetadata, currentFileMetadata);
-    let requiredImportedFilesMapping = getUsedFilesMapping(currentFileMetadata);
+    const requiredImportedFilesMapping =
+      getUsedFilesMapping(currentFileMetadata);
     // Setting ast as null, to save memory, will build it again after traversing all imported files of the current file
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
-    for (const file in requiredImportedFilesMapping) {
+    Object.keys(requiredImportedFilesMapping).forEach((file) => {
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
         isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
         if (!filesMetadata.filesMapping[file])
-          filesMetadata.filesMapping[file] = getDefaultFileObject(file);
+          filesMetadata.filesMapping[file] =
+            objectFactory.createNewDefaultFileObject(file);
 
         traverseFileForCheckingImportsExports(
           file,
@@ -92,16 +92,18 @@ const traverseFileForCheckingImportsExports = (
         isFileMappingNotPresent(file, filesMetadata) &&
         isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
-        filesMetadata.filesMapping[file] = getDefaultFileObject(file);
+        filesMetadata.filesMapping[file] =
+          objectFactory.createNewDefaultFileObject(file);
       }
-    }
+    });
 
     ast = buildAST(fileLocation);
-    let isEntryFile = entryFilesMapping[fileLocation] ? true : false;
-    currentFileMetadata = getDefaultCurrentFileMetadata(
-      fileLocation,
-      isEntryFile
-    );
+    const isEntryFile = entryFilesMapping[fileLocation] ? true : false;
+    currentFileMetadata =
+      objectFactory.createNewDefaultCurrentFileMetadataObject(
+        fileLocation,
+        isEntryFile
+      );
     traversalRelatedMetadata = {
       ast,
       currentFileMetadata,
@@ -120,5 +122,3 @@ const traverseFileForCheckingImportsExports = (
     });
   }
 };
-
-module.exports = { checkFileImportExports };

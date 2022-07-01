@@ -1,16 +1,17 @@
-const { getResolvedPathFromGivenPath } = require("../common");
-const {
+import { getResolvedPathFromGivenPath } from "../common.js";
+import {
   setImportedVariablesMetadataFromExportFromStatementSpecifier,
   extractVariableInformationFromSpecifier,
   getValuesFromStatement,
   setExportedVariablesFromArray,
-} = require("./utility");
-const {
+  setEntryFileExportRecursively,
+} from "./utility.js";
+import {
   isSpecifiersPresent,
   isExportFromTypeStatement,
   isNotTraversingToCheckForImportAddresses,
-} = require("../helper");
-const { ALL_EXPORTS_AS_OBJECT } = require("../../utility/constants");
+} from "../helper.js";
+import { ALL_EXPORTS_AS_OBJECT } from "../../utility/constants.js";
 
 /**
  * Will set all variables present in the statement as the exported variables of the current file
@@ -18,7 +19,7 @@ const { ALL_EXPORTS_AS_OBJECT } = require("../../utility/constants");
  * @param {Object} currentFileMetadata Contains information related to the current file
  * @param {String} traverseType Whether imports usage check phase
  */
-const doExportDeclarationOperations = (
+export const doExportDeclarationOperations = (
   exportNode,
   currentFileMetadata,
   traverseType
@@ -54,7 +55,7 @@ const doExportDeclarationOperations = (
  * @param {Object} currentFileMetadata Contains information related to the current file
  * @param {Object} filesMetadata Contains information related to all files
  */
-const doExportSpecifiersOperations = (
+export const doExportSpecifiersOperations = (
   { nodeToGetValues, type },
   currentFileMetadata,
   filesMetadata
@@ -68,7 +69,7 @@ const doExportSpecifiersOperations = (
     if (nodeToGetValues.specifiers) {
       nodeToGetValues.specifiers.forEach((specifier) => {
         try {
-          let { specifierType, exportName, importName } =
+          const { specifierType, exportName, importName } =
             extractVariableInformationFromSpecifier(specifier);
           if (specifierType === ALL_EXPORTS_AS_OBJECT) {
             currentFileMetadata.exportedVariables[exportName] =
@@ -79,24 +80,30 @@ const doExportSpecifiersOperations = (
                 importName
               ];
           }
-          currentFileMetadata.exportedVariables[exportName].isEntryFileObject |=
-            currentFileMetadata.isEntryFile;
+          if (currentFileMetadata.isEntryFile)
+            setEntryFileExportRecursively(
+              currentFileMetadata.exportedVariables[exportName]
+            );
         } catch (_) {}
       });
     } else {
       // "export * from ..." type statements
       try {
-        for (const variable in filesMetadata.filesMapping[importedFileAddress]
-          .exportedVariables) {
-          try {
-            currentFileMetadata.exportedVariables[variable] =
-              filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-                variable
-              ];
-            currentFileMetadata.exportedVariables[variable].isEntryFileObject |=
-              currentFileMetadata.isEntryFile;
-          } catch (_) {}
-        }
+        const importedFileExportedVariablesMapping =
+          filesMetadata.filesMapping[importedFileAddress].exportedVariables;
+
+        Object.entries(importedFileExportedVariablesMapping).forEach(
+          ([variableName, variableObject]) => {
+            try {
+              currentFileMetadata.exportedVariables[variableName] =
+                variableObject;
+              if (currentFileMetadata.isEntryFile)
+                setEntryFileExportRecursively(
+                  currentFileMetadata.exportedVariables[variableName]
+                );
+            } catch (_) {}
+          }
+        );
       } catch (_) {}
     }
   } else {
@@ -119,7 +126,7 @@ const doExportSpecifiersOperations = (
  * @param {Object} currentFileMetadata Object containing information related to the current file
  * @param {Object} filesMetadata Contains information related to all files
  */
-const doModuleExportStatementOperations = (
+export const doModuleExportStatementOperations = (
   nodeToGetValues,
   currentFileMetadata,
   filesMetadata
@@ -131,10 +138,4 @@ const doModuleExportStatementOperations = (
     currentFileMetadata,
     filesMetadata
   );
-};
-
-module.exports = {
-  doExportDeclarationOperations,
-  doExportSpecifiersOperations,
-  doModuleExportStatementOperations,
 };

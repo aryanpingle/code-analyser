@@ -1,17 +1,17 @@
-const {
+import {
   checkFileUsage,
   checkDeadFileImportsUsage,
-} = require("../../checker/fileUsage");
-const { checkFileImportExports } = require("../../checker/fileImportsExports");
-const {
+} from "../../checker/fileUsage.js";
+import { checkFileImportExports } from "../../checker/fileImportsExports.js";
+import {
   DISPLAY_TEXT,
   DEFAULT,
   ANALYSED_CODEBASE_MESSAGE,
   SUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE,
   UNSUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE,
-} = require("../constants");
-const { isFileNotExcluded } = require("../helper");
-const { getFilePoints } = require("./common");
+} from "../constants.js";
+import { isFileNotExcluded } from "../helper.js";
+import { getFilePoints } from "./common.js";
 
 /**
  * Sets each file's exported variables which will be used later on during the CHECK_USAGE stage
@@ -19,7 +19,11 @@ const { getFilePoints } = require("./common");
  * @param {Object} filesMetadata Contains information related to all files
  * @param {Object} entryFilesMapping Mapping to check whether a file is an entry file or not
  */
-const setAllFileExports = (allEntryFiles, filesMetadata, entryFilesMapping) => {
+export const setAllFileExports = (
+  allEntryFiles,
+  filesMetadata,
+  entryFilesMapping
+) => {
   allEntryFiles.forEach((entryFile) =>
     checkFileImportExports(entryFile, filesMetadata, entryFilesMapping)
   );
@@ -30,7 +34,7 @@ const setAllFileExports = (allEntryFiles, filesMetadata, entryFilesMapping) => {
  * @param {Array} allEntryFiles Array containing all entry files
  * @param {Object} filesMetadata Contains information related to all files
  */
-const analyseCode = (allEntryFiles, filesMetadata) => {
+export const analyseCode = (allEntryFiles, filesMetadata) => {
   allEntryFiles.forEach((entryFile) =>
     checkFileUsage(entryFile, filesMetadata)
   );
@@ -47,7 +51,10 @@ const analyseCode = (allEntryFiles, filesMetadata) => {
  * @param {Object} filesMetadata Contains information related to all files
  * @returns Array of dead files found inside the allFilesToCheck array
  */
-const getDeadFilesAndSendMessageToParent = (allFilesToCheck, filesMetadata) => {
+export const getDeadFilesAndSendMessageToParent = (
+  allFilesToCheck,
+  filesMetadata
+) => {
   const allDeadFiles = getAllDeadFiles(filesMetadata, allFilesToCheck);
   // If no errors were found while parsing these files
   if (filesMetadata.unparsableVistedFiles === 0)
@@ -88,13 +95,14 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
       return { file, filePoints: getFilePoints(file, filesMapping) };
     });
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
-  for (const fileObject of deadFilesArray) {
+  deadFilesArray.forEach((fileObject) => {
     const file = fileObject.file;
     deadFileVisitedMapping[file] = true;
-    if (filesMapping[file]) {
-      // Will be used to check whether imports of a dead file where referred inside this file only, if so then they will also become dead file now
-      checkDeadFileImportsUsage(file, filesMetadata);
-      for (const importedFile in filesMapping[file].importedFilesMapping) {
+    if (!filesMapping[file]) return;
+    // Will be used to check whether imports of a dead file where referred inside this file only, if so then they will also become dead file now
+    checkDeadFileImportsUsage(file, filesMetadata);
+    Object.keys(filesMapping[file].importedFilesMapping).forEach(
+      (importedFile) => {
         if (
           // First we haven't checked that file
           !deadFileVisitedMapping[importedFile] &&
@@ -112,8 +120,8 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
           });
         }
       }
-    }
-  }
+    );
+  });
   return deadFilesArray;
 };
 
@@ -138,41 +146,41 @@ const isFileReferred = (filesMapping, fileLocation) => {
     }
   } catch (_) {}
   if (isReferred) return true;
-  for (const variable in allExportedVariables) {
-    try {
-      const referencesUsingThisFile = getReferencesOfVariableUsingGivenFile(
-        allExportedVariables[variable],
-        fileLocation
-      );
-      if (
-        referencesUsingThisFile ||
-        allExportedVariables[variable].isEntryFileObject
-      ) {
-        isReferred = true;
-        break;
-      }
-      // default exports can contain many exports declared inside this file itself
-      if (variable === DEFAULT) {
-        for (const variablesInsideDefault in allExportedVariables[variable]) {
+  Object.entries(allExportedVariables).some(
+    ([variableName, variableObject]) => {
+      try {
+        const referencesUsingThisFile = getReferencesOfVariableUsingGivenFile(
+          variableObject,
+          fileLocation
+        );
+        if (referencesUsingThisFile || variableObject.isEntryFileObject) {
+          isReferred = true;
+          return true;
+        }
+        // default exports can contain many exports declared inside this file itself
+        if (variableName !== DEFAULT) return false;
+
+        Object.entries(variableObject).some(([_, childObject]) => {
           try {
             const referencesUsingThisFile =
-              getReferencesOfVariableUsingGivenFile(
-                allExportedVariables[variable][variablesInsideDefault],
-                fileLocation
-              );
-            if (
-              referencesUsingThisFile ||
-              allExportedVariables[variable][variablesInsideDefault]
-                .isEntryFileObject
-            ) {
+              getReferencesOfVariableUsingGivenFile(childObject, fileLocation);
+
+            if (referencesUsingThisFile || childObject.isEntryFileObject) {
               isReferred = true;
-              break;
+              return true;
             }
-          } catch (_) {}
-        }
+            return false;
+          } catch (_) {
+            return false;
+          }
+        });
+        if (isReferred) return true;
+        return false;
+      } catch (_) {
+        return false;
       }
-    } catch (_) {}
-  }
+    }
+  );
   return isReferred;
 };
 
@@ -202,15 +210,8 @@ const getReferencesOfVariableUsingGivenFile = (variable, fileLocation) => {
  * @param {Array} entryFilesArray Array of entry files
  * @returns Mapping of files
  */
-const buildEntryFilesMappingFromArray = (entryFilesArray) => {
+export const buildEntryFilesMappingFromArray = (entryFilesArray) => {
   const entryFilesMapping = {};
   entryFilesArray.forEach((file) => (entryFilesMapping[file] = true));
   return entryFilesMapping;
-};
-
-module.exports = {
-  setAllFileExports,
-  analyseCode,
-  getDeadFilesAndSendMessageToParent,
-  buildEntryFilesMappingFromArray,
 };

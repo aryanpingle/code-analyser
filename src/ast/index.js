@@ -1,8 +1,8 @@
-const { default: traverse } = require("@babel/traverse");
-const { parse } = require("@babel/parser");
-const fs = require("fs");
-const { astParserPlugins, astOtherSettings } = require("./astSettings");
-const {
+import _traverse from "@babel/traverse";
+import { parse } from "@babel/parser";
+import fs from "fs";
+import { astParserPlugins, astOtherSettings } from "./astSettings.js";
+import {
   isExportFromTypeStatement,
   isSubPartOfDynamicImport,
   isDynamicImportWithPromise,
@@ -13,15 +13,15 @@ const {
   isModuleExportStatement,
   isNotTraversingToCheckForImportAddresses,
   isNotTraversingToCheckForStaticImportAddresses,
-} = require("./helper");
+} from "./helper.js";
 
-const {
+import {
   doExportDeclarationOperations,
   doExportSpecifiersOperations,
   doModuleExportStatementOperations,
-} = require("./exportsRelatedOperations");
+} from "./exportsRelatedOperations/index.js";
 
-const {
+import {
   doImportDeclartionOperations,
   doImportDeclartionOperationsAfterSetup,
   doRequireOrImportStatementOperations,
@@ -29,27 +29,28 @@ const {
   doDynamicImportWithPromiseOperationsAfterSetup,
   doOperationsOnSubPartOfDynamicImports,
   doDynamicImportsUsingLazyHookOperations,
-} = require("./importsRelatedOperations");
+} from "./importsRelatedOperations/index.js";
 
-const {
+import {
   doIdentifierOperationsOnImportedVariables,
   doIdentifierOperationsOnImportedVariablesMetadata,
   doAccessingPropertiesOfObjectOperations,
-} = require("./referencesRelatedOperations");
-const {
+} from "./referencesRelatedOperations/index.js";
+import {
   CHECK_EXPORTS,
   NAMED_EXPORT,
   ALL_EXPORTED,
   DEFAULT,
   CHECK_USAGE,
-} = require("../utility/constants");
+} from "../utility/constants.js";
 
+const traverse = _traverse.default;
 /**
  * Builds the AST of the file, by first getting the file's code
  * @param {String} fileLocation Address of the file whose AST has to be build
  * @returns AST of the file's code
  */
-const buildAST = (fileLocation) => {
+export const buildAST = (fileLocation) => {
   const code = fs.readFileSync(fileLocation).toString();
   try {
     return parse(code, {
@@ -69,7 +70,7 @@ const buildAST = (fileLocation) => {
  * @param {Object} traversalRelatedMetadata Metadata which contains information related to traversal like AST to traverse, current and all files' metadata
  * @param {String} type Traversal type (traverse according to requirement i.e. identifying deadfile/ dependencies at given depth/ files contributing in multiple chunks check)
  */
-const traverseAST = (
+export const traverseAST = (
   { ast, currentFileMetadata, filesMetadata, addReferences = true },
   type
 ) => {
@@ -178,7 +179,7 @@ const traverseAST = (
           addReferences,
           operationType: type,
         };
-        // Checks for "const ... = require(...)", "const ... = import(...)" type statements
+        // Checks for "const ... from ...)", "const ... = import(...)" type statements
         doRequireOrImportStatementOperations(
           requireOrImportStatementMetadata,
           currentFileMetadata,
@@ -197,7 +198,7 @@ const traverseAST = (
             filesMetadata
           );
         }
-        // Checks for "... = require(...)",  "... = import(...)"" type statements
+        // Checks for "... from ...)",  "... = import(...)"" type statements
         if (isRequireOrImportStatement(path.node.right)) {
           const requireOrImportStatementMetadata = {
             nodeToGetAddress: path.node.right,
@@ -318,9 +319,4 @@ const traverseAST = (
       }
     },
   });
-};
-
-module.exports = {
-  buildAST,
-  traverseAST,
 };

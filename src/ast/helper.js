@@ -1,5 +1,5 @@
-const { getCallExpressionFromNode } = require("./common");
-const {
+import { getCallExpressionFromNode } from "./common.js";
+import {
   IMPORT,
   MEMBER_EXPRESSION,
   THEN,
@@ -13,18 +13,18 @@ const {
   CHECK_ALL_IMPORTS_ADDRESSES,
   CHECK_STATIC_IMPORTS_ADDRESSES,
   DEFAULT,
-} = require("../utility/constants");
+} from "../utility/constants.js";
 
-const isExportFromTypeStatement = (node) =>
+export const isExportFromTypeStatement = (node) =>
   node && node.source && node.source.value;
 
-const isSubPartOfDynamicImport = (callExpressionNode) =>
+export const isSubPartOfDynamicImport = (callExpressionNode) =>
   callExpressionNode &&
   callExpressionNode.callee &&
   callExpressionNode.callee.type === IMPORT &&
   callExpressionNode.arguments;
 
-const isDynamicImportWithPromise = (memberNode) => {
+export const isDynamicImportWithPromise = (memberNode) => {
   return (
     memberNode &&
     memberNode.type === MEMBER_EXPRESSION &&
@@ -36,7 +36,7 @@ const isDynamicImportWithPromise = (memberNode) => {
   );
 };
 
-const isRequireOrImportStatement = (node) => {
+export const isRequireOrImportStatement = (node) => {
   const callExpression = getCallExpressionFromNode(node);
   return (
     callExpression &&
@@ -46,20 +46,20 @@ const isRequireOrImportStatement = (node) => {
   );
 };
 
-const isSpecifiersPresent = (node) =>
+export const isSpecifiersPresent = (node) =>
   node && node.specifiers && node.specifiers.length > 0;
 
-const isImportStatementArgumentsPresent = (callExpressionNode) =>
+export const isImportStatementArgumentsPresent = (callExpressionNode) =>
   callExpressionNode &&
   callExpressionNode.arguments &&
   callExpressionNode.arguments.length &&
   callExpressionNode.arguments[0].params &&
   callExpressionNode.arguments[0].params.length;
 
-const isRequireStatement = (node) =>
+export const isRequireStatement = (node) =>
   node && node.callee && node.callee.name === REQUIRE;
 
-const isModuleExportStatement = (node) =>
+export const isModuleExportStatement = (node) =>
   node &&
   node.type === MEMBER_EXPRESSION &&
   node.object &&
@@ -67,25 +67,20 @@ const isModuleExportStatement = (node) =>
   node.property &&
   node.property.name === EXPORTS;
 
-const isAccessingPropertyOfObject = (node) => {
+export const isAccessingPropertyOfObject = (node) => {
   let headNode = node;
-  let typeToCheck, childPropertyToCheck;
-  if (headNode.type === TS_QUALIFIED_NAME) {
-    typeToCheck = TS_QUALIFIED_NAME;
-    childPropertyToCheck = LEFT;
-  } else {
-    typeToCheck = MEMBER_EXPRESSION;
-    childPropertyToCheck = OBJECT;
-  }
+  const typeToCheck =
+    headNode.type === TS_QUALIFIED_NAME ? TS_QUALIFIED_NAME : MEMBER_EXPRESSION;
+  const childPropertyToCheck =
+    headNode.type === TS_QUALIFIED_NAME ? LEFT : OBJECT;
   // while there still exists more than one property
-  while (headNode && headNode.type === typeToCheck) {
+  while (headNode && headNode.type === typeToCheck)
     headNode = headNode[childPropertyToCheck];
-  }
   if (!headNode) return false;
   return headNode.type === IDENTIFIER;
 };
 
-const isNotExportTypeReference = (path) => {
+export const isNotExportTypeReference = (path) => {
   const parentNode = path.findParent(
     (path) => path.isExportNamespaceSpecifier() || path.isExportSpecifier()
   );
@@ -137,23 +132,23 @@ const isNotExportTypeReference = (path) => {
   );
 };
 
-const isLazyImportDeclaration = (parentNode) =>
+export const isLazyImportDeclaration = (parentNode) =>
   parentNode &&
   parentNode.declarations &&
   parentNode.declarations[0] &&
   parentNode.declarations[0].id;
 
-const isTraversingToCheckForImportAddresses = (traverseType) =>
+export const isTraversingToCheckForImportAddresses = (traverseType) =>
   traverseType === CHECK_ALL_IMPORTS_ADDRESSES ||
   traverseType === CHECK_STATIC_IMPORTS_ADDRESSES;
 
-const isNotTraversingToCheckForImportAddresses = (traverseType) =>
+export const isNotTraversingToCheckForImportAddresses = (traverseType) =>
   !isTraversingToCheckForImportAddresses(traverseType);
 
-const isNotTraversingToCheckForStaticImportAddresses = (traverseType) =>
+export const isNotTraversingToCheckForStaticImportAddresses = (traverseType) =>
   traverseType !== CHECK_STATIC_IMPORTS_ADDRESSES;
 
-const isAllExportsImported = (filesMetadata, importedFileAddress) => {
+export const isAllExportsImported = (filesMetadata, importedFileAddress) => {
   return !(
     filesMetadata.filesMapping[importedFileAddress] &&
     Object.keys(
@@ -161,22 +156,4 @@ const isAllExportsImported = (filesMetadata, importedFileAddress) => {
     ).length === 4 &&
     filesMetadata.filesMapping[importedFileAddress].exportedVariables[DEFAULT]
   );
-};
-
-module.exports = {
-  isExportFromTypeStatement,
-  isSubPartOfDynamicImport,
-  isDynamicImportWithPromise,
-  isRequireOrImportStatement,
-  isSpecifiersPresent,
-  isImportStatementArgumentsPresent,
-  isRequireStatement,
-  isModuleExportStatement,
-  isNotExportTypeReference,
-  isAccessingPropertyOfObject,
-  isLazyImportDeclaration,
-  isTraversingToCheckForImportAddresses,
-  isNotTraversingToCheckForImportAddresses,
-  isNotTraversingToCheckForStaticImportAddresses,
-  isAllExportsImported,
 };

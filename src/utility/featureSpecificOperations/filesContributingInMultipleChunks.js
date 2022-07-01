@@ -1,40 +1,41 @@
-const {
+import {
   DISPLAY_TEXT,
   CHUNKS,
   ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE,
-} = require("../constants");
-const { isFileNotExcluded } = require("../helper");
+} from "../constants.js";
+import { isFileNotExcluded } from "../helper.js";
 
 /**
  * Will be used to create a new Data Structure which will contain information of each file and the chunks inside which it is present
  * @param {Object} filesMetadata Contains information related to all files
  * @returns Data Structure containing mapping of file and it's dependencies and the chunks inside which it is present
  */
-const createWebpackChunkMetadata = (filesMetadata) => {
+export const createWebpackChunkMetadata = (filesMetadata) => {
   const allFilesChunksMetadata = {};
   const filesMapping = filesMetadata.filesMapping;
   const excludedFilesRegex = filesMetadata.excludedFilesRegex;
-  for (const file in filesMapping) {
-    if (!isFileNotExcluded(excludedFilesRegex, file)) continue;
-    if (!allFilesChunksMetadata[file]) {
-      allFilesChunksMetadata[file] = generateDefaultFileChunksObject(
+  Object.entries(filesMapping).forEach(([fileName, fileObject]) => {
+    if (!isFileNotExcluded(excludedFilesRegex, fileName)) return;
+    if (!allFilesChunksMetadata[fileName])
+      allFilesChunksMetadata[fileName] = generateDefaultFileChunksObject(
         filesMetadata,
-        file
+        fileName
       );
-    }
-    for (const chunkName in filesMapping[file].webpackChunkConfiguration) {
-      allFilesChunksMetadata[file].chunks.push(chunkName);
-    }
-    for (const importedFile in filesMapping[file].staticImportFilesMapping) {
-      if (!isFileNotExcluded(excludedFilesRegex, importedFile)) continue;
+    Object.keys(fileObject.webpackChunkConfiguration).forEach((chunkName) =>
+      allFilesChunksMetadata[fileName].chunks.push(chunkName)
+    );
+
+    Object.keys(fileObject.staticImportFilesMapping).forEach((importedFile) => {
+      if (!isFileNotExcluded(excludedFilesRegex, importedFile)) return;
       if (!allFilesChunksMetadata[importedFile])
         allFilesChunksMetadata[importedFile] = generateDefaultFileChunksObject(
           filesMetadata,
           importedFile
         );
-      allFilesChunksMetadata[importedFile][file] = allFilesChunksMetadata[file];
-    }
-  }
+      allFilesChunksMetadata[importedFile][fileName] =
+        allFilesChunksMetadata[fileName];
+    });
+  });
   process.send({
     text: ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE,
     messageType: DISPLAY_TEXT,
@@ -61,10 +62,10 @@ const generateDefaultFileChunksObject = (filesMetadata, fileLocation) => {
  * Displays the files (along with the chunks inside which it is present) which are present in more than one chunk on the console
  * @param {Object} webpackChunkMetadata Data Structure containing information related to the chunks inside which a file is present
  */
-const getFilesContributingInMultipleChunks = (webpackChunkMetadata) => {
+export const getFilesContributingInMultipleChunks = (webpackChunkMetadata) => {
   const fileWebpackChunkMapping = {};
   const filesInMultipleChunksDetails = [];
-  for (const file in webpackChunkMetadata) {
+  Object.keys(webpackChunkMetadata).forEach((file) => {
     const fileChunksSet = getAllRelatedChunks(
       file,
       webpackChunkMetadata,
@@ -76,7 +77,7 @@ const getFilesContributingInMultipleChunks = (webpackChunkMetadata) => {
         chunksArray: Array.from(fileChunksSet),
       });
     }
-  }
+  });
   return filesInMultipleChunksDetails;
 };
 
@@ -96,25 +97,25 @@ const getAllRelatedChunks = (
     return fileWebpackChunkMapping[fileLocation];
   const fileChunksSet = new Set(webpackChunkMetadata[fileLocation].chunks);
   fileWebpackChunkMapping[fileLocation] = fileChunksSet;
-  for (const dependentFile in webpackChunkMetadata[fileLocation]) {
-    if (dependentFile === CHUNKS) continue;
+  Object.keys(webpackChunkMetadata[fileLocation]).forEach((dependentFile) => {
+    if (dependentFile === CHUNKS) return;
     if (fileWebpackChunkMapping[dependentFile]) {
-      if (fileWebpackChunkMapping[dependentFile].size) {
-        for (const dependentChunk of fileWebpackChunkMapping[dependentFile])
-          fileChunksSet.add(dependentChunk);
-      }
-      continue;
+      if (fileWebpackChunkMapping[dependentFile].size)
+        fileWebpackChunkMapping[dependentFile].forEach((dependentChunk) =>
+          fileChunksSet.add(dependentChunk)
+        );
+      return;
     }
     const dependentFileChunksSet = getAllRelatedChunks(
       dependentFile,
       webpackChunkMetadata,
       fileWebpackChunkMapping
     );
-    if (dependentFileChunksSet.size) {
-      for (const dependentChunk of dependentFileChunksSet)
-        fileChunksSet.add(dependentChunk);
-    }
-  }
+    if (dependentFileChunksSet.size)
+      dependentFileChunksSet.forEach((dependentChunk) =>
+        fileChunksSet.add(dependentChunk)
+      );
+  });
   fileWebpackChunkMapping[fileLocation] = fileChunksSet;
   return fileChunksSet;
 };
@@ -123,7 +124,7 @@ const getAllRelatedChunks = (
  * Generates a mapping from given array containing files which are present in multiple chunks
  * @param {Array} filesInMultipleChunksArray
  */
-const getFilesContributingInMultipleChunksMapping = (
+export const getFilesContributingInMultipleChunksMapping = (
   filesInMultipleChunksArray
 ) => {
   const filesInMultipleChunksMapping = {};
@@ -131,10 +132,4 @@ const getFilesContributingInMultipleChunksMapping = (
     filesInMultipleChunksMapping[fileObject.file] = fileObject.chunksArray;
   });
   return filesInMultipleChunksMapping;
-};
-
-module.exports = {
-  createWebpackChunkMetadata,
-  getFilesContributingInMultipleChunks,
-  getFilesContributingInMultipleChunksMapping,
 };

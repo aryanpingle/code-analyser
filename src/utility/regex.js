@@ -1,18 +1,18 @@
-const {
+import process from "process";
+import {
   resolveAddressWithProvidedDirectory,
   joinSubPartsTillGivenDepth,
   getAllSubPartsOfGivenAbsolutePath,
-} = require("./resolver");
-const { isInstanceofRegexExpression } = require("./helper");
-const process = require("process");
-const { EMPTY_STRING, DEFAULT_REGEX_STRING } = require("./constants");
+} from "./resolver.js";
+import { isInstanceofRegexExpression } from "./helper.js";
+import { EMPTY_STRING, DEFAULT_REGEX_STRING } from "./constants.js";
 
 /**
  * Builds a regex which excludes files based on the input given in the configuration file initially
  * @param {Array} excludedModulesArray Array consisting of paths/ regex expressions of files/ directories which have to be exlcuded
  * @returns Regex denoting the excluded files
  */
-const buildExcludedFilesRegex = (
+export const buildExcludedFilesRegex = (
   excludedModulesArray,
   includedModulesArray
 ) => {
@@ -78,7 +78,7 @@ const buildExcludedFilesRegex = (
  * @param {Integer} depth Depth at which dependencies should be checked
  * @returns Regex containg the dependencies at given depth's required condition
  */
-const buildDependenciesAtGivenDepthRegex = (
+export const buildDependenciesAtGivenDepthRegex = (
   moduleLocation,
   isDepthFromFront,
   depth
@@ -99,11 +99,11 @@ const buildDependenciesAtGivenDepthRegex = (
   )}(([\\/\].+)*)`;
   // Regex denotes any module which starts with the siblingLocation's path but doesn't start with module's ancestor directory at the given depth
   return {
-    outsideModuleChecker: new RegExp(
+    outsideModuleCheckRegex: new RegExp(
       `^(?!${regexCompatibleDirectoryLocation})`,
       "i"
     ),
-    insideModuleChecker: new RegExp(
+    insideModuleCheckRegex: new RegExp(
       `^${regexCompatibleDirectoryLocation}`,
       "i"
     ),
@@ -116,16 +116,13 @@ const buildDependenciesAtGivenDepthRegex = (
  * @returns Regex compatible address string
  */
 const convertAddressIntoRegexCompatibleFormat = (addressString) => {
-  let convertedAddress = EMPTY_STRING;
-  for (const character of addressString) {
+  const characterArray = [...addressString];
+  const convertedAddress = characterArray.reduce((parsedAddress, character) => {
     // Use regex to check for any special character used
-    convertedAddress += /[\/\[\]\*\+\?\.\|\^\{\}\-\$\,]/.test(character)
+    parsedAddress += /[\/\[\]\*\+\?\.\|\^\{\}\-\$\,]/.test(character)
       ? `\\${character}`
       : character;
-  }
+    return parsedAddress;
+  }, EMPTY_STRING);
   return convertedAddress;
-};
-module.exports = {
-  buildExcludedFilesRegex,
-  buildDependenciesAtGivenDepthRegex,
 };

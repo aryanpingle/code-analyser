@@ -1,8 +1,10 @@
 #!/usr/bin/env node
-const { fork } = require("child_process");
-const process = require("process");
-const path = require("path");
-const {
+import { fork } from "child_process";
+import process from "process";
+import path, { dirname } from "path";
+import { fileURLToPath } from "url";
+
+import {
   produceAnalysdDeadFileResult,
   displayAllFilesInteractively,
   displayFilesOnScreen,
@@ -10,8 +12,9 @@ const {
   displayFilesContributingInMultipleChunksDetails,
   displayTextOnConsole,
   displayChunkMetadaRelatedInformation,
-} = require("./utility/cli");
-const {
+} from "./utility/cli/index.js";
+
+import {
   CHECK_DEAD_FILES,
   CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
   CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS,
@@ -21,12 +24,17 @@ const {
   RUNNER_FILE,
   SIGINT,
   CHECK_CHUNKS_METADATA_USING_GIVEN_FILE,
-} = require("./utility/constants");
+} from "./utility/constants.js";
 
+const directoryAddress = dirname(fileURLToPath(import.meta.url));
 // Child process where computation part of the program will be done
-const childProcess = fork(path.join(__dirname, RUNNER_FILE), process.argv, {
-  silent: true,
-});
+const childProcess = fork(
+  path.join(directoryAddress, RUNNER_FILE),
+  process.argv,
+  {
+    // silent: true,
+  }
+);
 
 // When child process sends computed data back
 childProcess.on(MESSAGE, (data) => {
@@ -159,7 +167,7 @@ const displayAllFilesChunkMetadataInteractively = ({
 }) => {
   displayChunkMetadaRelatedInformation(cacheMapping, entryFile);
   displayAllFilesInteractively(filesArray, {
-    checkForChunkMetadataOfGivenFile: true,
+    checkMetadataOfGivenChunk: true,
     cacheMapping,
   });
 };

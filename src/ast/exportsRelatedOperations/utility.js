@@ -1,8 +1,5 @@
-const {
-  getNewImportVariableObject,
-  getNewDefaultObject,
-} = require("../common");
-const {
+import objectFactory from "../../utility/factory.js";
+import {
   ALL_EXPORTS_IMPORTED,
   INDIVIDUAL_IMPORT,
   EXPORT_SPECIFIER,
@@ -13,7 +10,7 @@ const {
   DEFAULT,
   NORMAL_EXPORT,
   DEFAULT_OBJECT_EXPORT,
-} = require("../../utility/constants");
+} from "../../utility/constants.js";
 
 /**
  * Will parse the export statement's specifier and set it as an import of the current file
@@ -21,20 +18,16 @@ const {
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  * @param {Object} filesMetadata Contains inforamtion related to all files
  */
-const setImportedVariablesMetadataFromExportFromStatementSpecifier = (
+export const setImportedVariablesMetadataFromExportFromStatementSpecifier = (
   specifier,
   currentFileMetadata,
   importedFileAddress
 ) => {
   const exportName = specifier.exported.name;
-  let importName = exportName;
-  let type = ALL_EXPORTS_IMPORTED;
-  if (specifier.local) {
-    importName = specifier.local.name;
-    type = INDIVIDUAL_IMPORT;
-  }
+  const importName = specifier.local ? specifier.local.name : exportName;
+  const type = specifier.local ? INDIVIDUAL_IMPORT : ALL_EXPORTS_IMPORTED;
   currentFileMetadata.importedVariablesMetadata[importName] =
-    getNewImportVariableObject(
+    objectFactory.createNewImportMetadataObject(
       exportName,
       importName,
       type,
@@ -47,19 +40,17 @@ const setImportedVariablesMetadataFromExportFromStatementSpecifier = (
  * @param {Object} specifier Provided AST node
  * @returns export type, import and export name of the exported variable
  */
-const extractVariableInformationFromSpecifier = (specifier) => {
+export const extractVariableInformationFromSpecifier = (specifier) => {
+  const exportName = specifier.exported.name;
+  const importName =
+    specifier.type === EXPORT_SPECIFIER ? specifier.local.name : exportName;
   let specifierType = INDIVIDUAL_IMPORT;
-  let exportName = specifier.exported.name;
-  let importName = exportName;
   // "export {...} from ..." type statements
-  if (specifier.type === EXPORT_SPECIFIER) {
-    specifierType = INDIVIDUAL_IMPORT;
-    importName = specifier.local.name;
-  }
+  if (specifier.type === EXPORT_SPECIFIER) specifierType = INDIVIDUAL_IMPORT;
   // "export * as ... from ..." type statements
-  else if (specifier.type === EXPORT_NAMESPACE_SPECIFIER) {
+  else if (specifier.type === EXPORT_NAMESPACE_SPECIFIER)
     specifierType = ALL_EXPORTS_AS_OBJECT;
-  }
+
   return { specifierType, exportName, importName };
 };
 
@@ -70,7 +61,7 @@ const extractVariableInformationFromSpecifier = (specifier) => {
  * @param {String} type To check whether it is a default export or not
  * @returns Array of key value pairs representing local and exported name
  */
-const getValuesFromStatement = (nodeToGetValues, type) => {
+export const getValuesFromStatement = (nodeToGetValues, type) => {
   // module.exports = X type statements
   if (nodeToGetValues.type === IDENTIFIER)
     return {
@@ -79,9 +70,8 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
     };
   // module.exports = {X} type statements
   else if (nodeToGetValues.type === OBJECT_EXPRESSION) {
-    const keyValuesPairArray = getValuesFromObject(nodeToGetValues.properties);
     return {
-      exportedVariablesArray: keyValuesPairArray,
+      exportedVariablesArray: getValuesFromObject(nodeToGetValues.properties),
       type: DEFAULT_OBJECT_EXPORT,
     };
   }
@@ -110,15 +100,16 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
       };
     else if (nodeToGetValues.declaration.declarations) {
       // export const x = () => {} type statements
-      let keyValuesPairArray = [];
+      const keyValuesPairArray = [];
       nodeToGetValues.declaration.declarations.forEach((declaration) => {
-        if (declaration.id.name) {
+        if (declaration.id.name)
           keyValuesPairArray.push({
             [declaration.id.name]: declaration.id.name,
           });
-        } else if (declaration.id.properties) {
-          keyValuesPairArray = getValuesFromObject(declaration.id.properties);
-        }
+        else if (declaration.id.properties)
+          keyValuesPairArray.push(
+            ...getValuesFromObject(declaration.id.properties)
+          );
       });
       return {
         exportedVariablesArray: keyValuesPairArray,
@@ -128,11 +119,11 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
       // export function x(){} type statements
       const keyValuesPairArray = [];
       // export default function x(){} type statements
-      if (type === DEFAULT) {
+      if (type === DEFAULT)
         keyValuesPairArray.push({
           [nodeToGetValues.declaration.id.name]: DEFAULT,
         });
-      } else
+      else
         keyValuesPairArray.push({
           [nodeToGetValues.declaration.id.name]:
             nodeToGetValues.declaration.id.name,
@@ -145,11 +136,11 @@ const getValuesFromStatement = (nodeToGetValues, type) => {
     // export default x  = () => {} type cases
     else if (nodeToGetValues.declaration.left) {
       const keyValuesPairArray = [];
-      if (type === DEFAULT) {
+      if (type === DEFAULT)
         keyValuesPairArray.push({
           [nodeToGetValues.declaration.left.name]: DEFAULT,
         });
-      } else
+      else
         keyValuesPairArray.push({
           [nodeToGetValues.declaration.left.name]:
             nodeToGetValues.declaration.left.name,
@@ -195,6 +186,7 @@ const getValuesFromObject = (arrayToGetValuesFrom) => {
       const keyName = property.key.name
         ? property.key.name
         : property.key.value;
+
       if (property.value && property.value.name)
         keyValuesPairArray.push({ [property.value.name]: keyName });
       else if (property.value && property.value.id)
@@ -212,7 +204,7 @@ const getValuesFromObject = (arrayToGetValuesFrom) => {
  * @param {Object} currentFileMetadata To check whether a variable was imported or is a local one
  * @param {Object} filesMetadata To get all exported variables of another file
  */
-const setExportedVariablesFromArray = (
+export const setExportedVariablesFromArray = (
   { exportedVariablesArray, type },
   currentFileMetadata,
   filesMetadata
@@ -244,11 +236,12 @@ const setExportedVariablesFromArray = (
           currentFileMetadata.exportedVariables;
       else {
         if (!currentFileMetadata.exportedVariables[DEFAULT]) {
-          currentFileMetadata.exportedVariables[DEFAULT] = getNewDefaultObject(
-            currentFileMetadata.fileLocation,
-            DEFAULT,
-            currentFileMetadata.isEntryFile
-          );
+          currentFileMetadata.exportedVariables[DEFAULT] =
+            objectFactory.createNewDefaultVariableObject(
+              currentFileMetadata.fileLocation,
+              DEFAULT,
+              currentFileMetadata.isEntryFile
+            );
         }
         exportVariableMetadata.variableToUpdate =
           currentFileMetadata.exportedVariables[DEFAULT];
@@ -292,20 +285,30 @@ const setExportVariable = (
       ].individualFileReferencesMapping[currentFileMetadata.fileLocation] =
         importedVariable.referenceCountObject;
 
-      variableToUpdate[Object.values(variable)[0]].isEntryFileObject |=
-        currentFileMetadata.isEntryFile;
+      if (currentFileMetadata.isEntryFile)
+        setEntryFileExportRecursively(
+          variableToUpdate[Object.values(variable)[0]]
+        );
     } else {
-      variableToUpdate[Object.values(variable)[0]] = getNewDefaultObject(
-        currentFileMetadata.fileLocation,
-        Object.keys(variable)[0]
-      );
+      variableToUpdate[Object.values(variable)[0]] =
+        objectFactory.createNewDefaultVariableObject(
+          currentFileMetadata.fileLocation,
+          Object.keys(variable)[0]
+        );
     }
   } catch (_) {}
 };
 
-module.exports = {
-  setImportedVariablesMetadataFromExportFromStatementSpecifier,
-  extractVariableInformationFromSpecifier,
-  getValuesFromStatement,
-  setExportedVariablesFromArray,
+/**
+ * Will recursively set all child objects present inside it as entry file's exported variable as they can be used somewhere else
+ * @param {Object} objectToUse The object whose child objects have to be set
+ */
+export const setEntryFileExportRecursively = (objectToUse) => {
+  try {
+    if (objectToUse.isEntryFileObject) return;
+    objectToUse.isEntryFileObject = true;
+    Object.values(objectToUse).forEach((childObject) =>
+      setEntryFileExportRecursively(childObject)
+    );
+  } catch (_) {}
 };

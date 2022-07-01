@@ -1,37 +1,15 @@
-const fs = require("fs");
-const {
-  resolveAddressWithProvidedDirectory,
-  isFilePath,
-} = require("./resolver");
-const {
-  isInstanceofRegexExpression,
-  isFileNotExcluded,
-  isFileExtensionNotValid,
-} = require("./helper");
-const { getNewDefaultObject } = require("../ast/common");
-const process = require("process");
-const { DEFAULT, DEFAULT_ENTRY_ARRAY } = require("./constants");
-
-/**
- * Returns the default filesMetadata object
- * @param {RegExp} excludedFilesRegex Regex expression denoting excluded files
- * @returns Object containing all files' metadata
- */
-const getDefaultFilesMetadata = (excludedFilesRegex) => {
-  return {
-    filesMapping: {},
-    visitedFilesMapping: {},
-    excludedFilesRegex,
-    unparsableVistedFiles: 0,
-  };
-};
+import process from "process";
+import fsPromises from "fs/promises";
+import { resolveAddressWithProvidedDirectory, isFilePath } from "./resolver.js";
+import { isInstanceofRegexExpression, isFileNotExcluded } from "./helper.js";
+import { DEFAULT_ENTRY_ARRAY } from "./constants.js";
 
 /**
  * Update existing filesMetdata with the help of currently parsed file's metdata
  * @param {Object} filesMetadata Metadata of all files parsed by the program
  * @param {Object} currentFileMetadata Metadata of the currently parsed file
  */
-const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
+export const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
   const filesMapping = filesMetadata.filesMapping;
   const currentFileMapping = currentFileMetadata.importedFilesMapping;
   filesMapping[currentFileMetadata.fileLocation].exportedVariables =
@@ -41,67 +19,46 @@ const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
 };
 
 /**
- * Returns the default currentFileMetadata object
- * @param {String} fileLocation Address of the file whose metadata has to be returned
- * @returns Object containing current file's default metadata
- */
-const getDefaultCurrentFileMetadata = (fileLocation, isEntryFile = false) => {
-  const newFileObject = {
-    importedVariables: {},
-    importedVariablesMetadata: {},
-    exportedVariables: {
-      importReferenceCount: 0,
-      referenceCount: 0,
-      isEntryFileObject: isEntryFile,
-    },
-    importedFilesMapping: {},
-    staticImportFilesMapping: {},
-    fileLocation,
-    isEntryFile: isEntryFile,
-  };
-  if (isFileExtensionNotValid(fileLocation)) {
-    // If not a valid extension, then as we won't parse it therefore create a default export object for it
-    newFileObject.exportedVariables[DEFAULT] =
-      getNewDefaultObject(fileLocation);
-  }
-  return newFileObject;
-};
-
-/**
  * Get all entry files from the directories to check (provided in the configuration file)
  * @param {Array} entryArray Array of regex/ paths denoting which entry files are requied
  * @param {Array} allFilesToCheck All files inside the directories where the program will run
  * @param {RegExp} excludedFilesRegex Regex denoting excluded files
  * @returns Array consisting of all entry files
  */
-const getAllEntryFiles = async (
+export const getAllEntryFiles = async (
   entryArray = DEFAULT_ENTRY_ARRAY,
   allFilesToCheck = [],
   excludedFilesRegex
 ) => {
   // Mapping required to remove redundant traversal of directories
   const visitedEntryDirectoriesMapping = {};
-  const entryFilesArray = [];
-  for (const entry of entryArray) {
-    if (isInstanceofRegexExpression(entry)) {
-      allFilesToCheck.forEach((file) => {
-        // if a file matches the regex and also is not excluded
-        if (entry.test(file) && isFileNotExcluded(excludedFilesRegex, file)) {
-          entryFilesArray.push(file);
-        }
-      });
-    } else {
-      // getAllFiles will return all non-excluded files from the "entry" directory
-      const filesInsideThisDirectory =
-        await getAllFilesInsideProvidedDirectories(
-          [entry],
-          visitedEntryDirectoriesMapping,
-          excludedFilesRegex
-        );
-      // Simply using deconstructor to add these files inside the array may result in memory overflow
-      filesInsideThisDirectory.forEach((file) => entryFilesArray.push(file));
-    }
-  }
+  const entryFilesArray = await entryArray.reduce(
+    async (discoveredEntryFilesPromise, entry) => {
+      const discoveredEntryFiles = await discoveredEntryFilesPromise;
+      const newFilesToAdd = [];
+      if (isInstanceofRegexExpression(entry)) {
+        allFilesToCheck.forEach((file) => {
+          // if a file matches the regex and also is not excluded
+          if (entry.test(file) && isFileNotExcluded(excludedFilesRegex, file))
+            newFilesToAdd.push(file);
+        });
+      } else {
+        // getAllFiles will return all non-excluded files from the "entry" directory
+        const filesInsideThisDirectory =
+          await getAllFilesInsideProvidedDirectories(
+            [entry],
+            visitedEntryDirectoriesMapping,
+            excludedFilesRegex
+          );
+        // Simply using deconstructor to add these files inside the array may result in memory overflow
+        filesInsideThisDirectory.forEach((file) => {
+          newFilesToAdd.push(file);
+        });
+      }
+      return [...discoveredEntryFiles, ...newFilesToAdd];
+    },
+    Promise.resolve([])
+  );
   return entryFilesArray;
 };
 
@@ -111,7 +68,7 @@ const getAllEntryFiles = async (
  * @param {RegExp} excludedFilesRegex Regex denoting excluded files
  * @returns Array of feasible files present in any one of the directories which have to be checked
  */
-const getAllFilesToCheck = async (
+export const getAllFilesToCheck = async (
   directoriesToCheck = [],
   excludedFilesRegex
 ) => {
@@ -136,29 +93,31 @@ const getAllFilesInsideProvidedDirectories = async (
   visitedDirectoriesMapping,
   excludedFilesRegex
 ) => {
-  const allFiles = [];
-  for (const directory of allDirectories) {
-    const directoyAbsoluteAddress = resolveAddressWithProvidedDirectory(
-      // This directory is inside utility, so get it's parent directory according to which paths were provided in the configuration file
-      process.cwd(),
-      directory
-    );
-    if (isFilePath(directoyAbsoluteAddress)) {
-      if (isFileNotExcluded(excludedFilesRegex, directoyAbsoluteAddress))
-        allFiles.push(directoyAbsoluteAddress);
+  const allFiles = await allDirectories.reduce(
+    async (discoveredDirectoriesPromise, directory) => {
+      const discoveredDirectories = await discoveredDirectoriesPromise;
+      const directoyAbsoluteAddress = resolveAddressWithProvidedDirectory(
+        // This directory is inside utility, so get it's parent directory according to which paths were provided in the configuration file
+        process.cwd(),
+        directory
+      );
+      if (isFilePath(directoyAbsoluteAddress)) {
+        if (isFileNotExcluded(excludedFilesRegex, directoyAbsoluteAddress))
+          discoveredDirectories.push(directoyAbsoluteAddress);
 
-      continue;
-    }
+        return discoveredDirectories;
+      }
 
-    const directoriesFiles = await getAllFilesInsideOneDirectory(
-      directoyAbsoluteAddress,
-      visitedDirectoriesMapping,
-      excludedFilesRegex
-    );
-    directoriesFiles.forEach((file) => {
-      allFiles.push(file);
-    });
-  }
+      const directoriesFiles = await getAllFilesInsideOneDirectory(
+        directoyAbsoluteAddress,
+        visitedDirectoriesMapping,
+        excludedFilesRegex
+      );
+      directoriesFiles.forEach((file) => discoveredDirectories.push(file));
+      return discoveredDirectories;
+    },
+    Promise.resolve([])
+  );
   return allFiles;
 };
 
@@ -179,42 +138,47 @@ const getAllFilesInsideOneDirectory = async (
     excludedFilesRegex.test(directoryLocation)
   )
     return [];
+
   // If not excluded then mark this location as visited, to remove redundant traversals of this location
   visitedDirectoriesMapping[directoryLocation] = true;
-  const allFilesAndDirectoriesInsideThisDirectory = await fs.promises.readdir(
-    directoryLocation,
-    {
+  const allFilesAndDirectoriesInsideThisDirectoryInDirentFormat =
+    await fsPromises.readdir(directoryLocation, {
       withFileTypes: true,
-    }
-  );
-  const allFiles = [];
-  for (const file of allFilesAndDirectoriesInsideThisDirectory) {
-    if (file.isDirectory()) {
-      // location is a directory
-      const filesInsideThisSubDirectory = await getAllFilesInsideOneDirectory(
-        resolveAddressWithProvidedDirectory(directoryLocation, file.name),
-        visitedDirectoriesMapping,
-        excludedFilesRegex
-      );
-      filesInsideThisSubDirectory.forEach((file) => allFiles.push(file));
-    } else {
-      // location is a file
-      const fileLocation = resolveAddressWithProvidedDirectory(
-        directoryLocation,
-        file.name
-      );
-      if (isFileNotExcluded(excludedFilesRegex, fileLocation)) {
-        allFiles.push(fileLocation);
+    });
+  const allFilesAndDirectoriesInsideThisDirectory =
+    allFilesAndDirectoriesInsideThisDirectoryInDirentFormat.map(
+      (fileObject) => {
+        return { name: fileObject.name, isDirectory: fileObject.isDirectory() };
       }
-    }
-  }
+    );
+  const allFiles = await allFilesAndDirectoriesInsideThisDirectory.reduce(
+    async (retrievedElementsPromise, childElement) => {
+      const retrievedElements = await retrievedElementsPromise;
+      if (childElement.isDirectory) {
+        // location is a directory
+        const filesInsideThisSubDirectory = await getAllFilesInsideOneDirectory(
+          resolveAddressWithProvidedDirectory(
+            directoryLocation,
+            childElement.name
+          ),
+          visitedDirectoriesMapping,
+          excludedFilesRegex
+        );
+        filesInsideThisSubDirectory.forEach((file) =>
+          retrievedElements.push(file)
+        );
+      } else {
+        // location is a file
+        const fileLocation = resolveAddressWithProvidedDirectory(
+          directoryLocation,
+          childElement.name
+        );
+        if (isFileNotExcluded(excludedFilesRegex, fileLocation))
+          retrievedElements.push(fileLocation);
+      }
+      return retrievedElements;
+    },
+    Promise.resolve([])
+  );
   return allFiles;
-};
-
-module.exports = {
-  getDefaultFilesMetadata,
-  updateFilesMetadata,
-  getDefaultCurrentFileMetadata,
-  getAllEntryFiles,
-  getAllFilesToCheck,
 };

@@ -1,5 +1,5 @@
-const { isFileNotExcluded } = require("../helper");
-const { cacheMapping } = require("../configuration");
+import { isFileNotExcluded } from "../helper.js";
+import { cacheMapping } from "../configuration.js";
 
 /**
  * Function to find all the dependencies of the provided file and their file sizes
@@ -7,24 +7,26 @@ const { cacheMapping } = require("../configuration");
  * @param {Object} filesMetadata Contains information related to all files
  * @returns Set containing all dependencies of a given file along with their size
  */
-const getAllDependentFiles = (fileLocation, filesMetadata) => {
+export const getAllDependentFiles = (fileLocation, filesMetadata) => {
   const currentFilesSet = new Set();
   currentFilesSet.add(fileLocation);
   cacheMapping[fileLocation] = {
     dependencySet: currentFilesSet,
     effectiveSize: filesMetadata.filesMapping[fileLocation].fileSize,
   };
-  for (const dependentFile in filesMetadata.filesMapping[fileLocation]
-    .staticImportFilesMapping) {
+
+  Object.keys(
+    filesMetadata.filesMapping[fileLocation].staticImportFilesMapping
+  ).forEach((dependentFile) => {
     if (!isFileNotExcluded(filesMetadata.excludedFilesRegex, dependentFile))
-      continue;
+      return;
     const dependentFileSet = cacheMapping[dependentFile]
       ? cacheMapping[dependentFile].dependencySet
       : getAllDependentFiles(dependentFile, filesMetadata);
-    for (const dependentFileSetElement of dependentFileSet) {
+    dependentFileSet.forEach((dependentFileSetElement) => {
       currentFilesSet.add(dependentFileSetElement);
-    }
-  }
+    });
+  });
   cacheMapping[fileLocation] = {
     dependencySet: currentFilesSet,
     dependencyArray: Array.from(currentFilesSet),
@@ -47,4 +49,3 @@ const getEffectiveSizeFromSet = (currentFilesArray, filesMetadata) => {
     );
   }, 0);
 };
-module.exports = getAllDependentFiles;

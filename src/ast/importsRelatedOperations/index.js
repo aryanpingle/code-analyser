@@ -1,27 +1,26 @@
-const { getDirectoryFromPath } = require("../../utility/resolver");
-const {
+import objectFactory from "../../utility/factory.js";
+import { getDirectoryFromPath } from "../../utility/resolver.js";
+import {
   getResolvedPathFromGivenPath,
   getImportedFileAddress,
   getResolvedImportedFileDetails,
-  getNewImportVariableObject,
-  getNewDefaultObject,
-} = require("../common");
-const {
+} from "../common.js";
+import {
   isSpecifiersPresent,
   isRequireStatement,
   isImportStatementArgumentsPresent,
   isLazyImportDeclaration,
   isNotTraversingToCheckForImportAddresses,
   isTraversingToCheckForImportAddresses,
-} = require("../helper");
-const {
+} from "../helper.js";
+import {
   setImportedVariableInCurrentFileMetadata,
   setImportedVariablesDuringImportStage,
   updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements,
   parseComment,
   updateWebpackConfigurationOfImportedFile,
-} = require("./utility");
-const {
+} from "./utility.js";
+import {
   DEFAULT,
   CHECK_USAGE,
   UPDATE_REFERENCE_COUNT,
@@ -31,14 +30,17 @@ const {
   ALL_EXPORTS_IMPORTED,
   DONT_UPDATE_REFERENCE_COUNT,
   WEBPACK_CHUNK_NAME,
-} = require("../../utility/constants");
+} from "../../utility/constants.js";
 
 /**
  * Will set that the current file has been statically imported
  * @param {Object} importNode Node in AST containing information related to the statement
  * @param {Object} currentFileMetadata Contains information related to the current file
  */
-const doImportDeclartionOperations = (importNode, currentFileMetadata) => {
+export const doImportDeclartionOperations = (
+  importNode,
+  currentFileMetadata
+) => {
   const { importedFileAddress } = getResolvedPathFromGivenPath(
     currentFileMetadata.fileLocation,
     importNode.source.value
@@ -55,7 +57,7 @@ const doImportDeclartionOperations = (importNode, currentFileMetadata) => {
  * @param {Object} currentFileMetadata Contains information related to the current file
  * @param {Object} filesMetadata Contains information related to all files
  */
-const doImportDeclartionOperationsAfterSetup = (
+export const doImportDeclartionOperationsAfterSetup = (
   { importNode, traverseType, addReferences },
   currentFileMetadata,
   filesMetadata
@@ -90,7 +92,7 @@ const doImportDeclartionOperationsAfterSetup = (
         ) {
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
             DEFAULT
-          ] = getNewDefaultObject(importedFileAddress);
+          ] = objectFactory.createNewDefaultVariableObject(importedFileAddress);
         }
         if (traverseType === CHECK_USAGE)
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
@@ -107,7 +109,7 @@ const doImportDeclartionOperationsAfterSetup = (
  * @param {Object} currentFileMetadata Contains information related to current file
  * @param {Object} filesMetadata Contains information related to all files
  */
-const doRequireOrImportStatementOperations = (
+export const doRequireOrImportStatementOperations = (
   { nodeToGetAddress, nodeToGetValues, addReferences, operationType },
   currentFileMetadata,
   filesMetadata
@@ -156,7 +158,7 @@ const doRequireOrImportStatementOperations = (
  * @param {Object} dynamicImportsWithPromiseMetadata Contains information related to corresponding AST node, stage at which this function is called, and whether references have to be added
  * @param {Object} currentFileMetadata Will be used to update the imported variables of the current file
  */
-const doDynamicImportWithPromiseOperations = (
+export const doDynamicImportWithPromiseOperations = (
   { path, type, addReferences },
   currentFileMetadata
 ) => {
@@ -178,13 +180,14 @@ const doDynamicImportWithPromiseOperations = (
           // Specific exports called by this file
           if (specifier.type === OBJECT_PATTERN) {
             specifier.properties.forEach((property) => {
-              const localEntityName = property.value.name;
-              let importedEntityName = property.key.name;
-              let exportType = INDIVIDUAL_IMPORT;
-              const importReferenceCount =
-                localEntityName === importedEntityName ? 2 : 1;
+              const localEntityName = property.value.name,
+                importedEntityName = property.key.name,
+                exportType = INDIVIDUAL_IMPORT,
+                importReferenceCount =
+                  localEntityName === importedEntityName ? 2 : 1;
+
               currentFileMetadata.importedVariablesMetadata[localEntityName] =
-                getNewImportVariableObject(
+                objectFactory.createNewImportMetadataObject(
                   importedEntityName,
                   localEntityName,
                   exportType,
@@ -194,11 +197,11 @@ const doDynamicImportWithPromiseOperations = (
                 );
             });
           } else if (specifier.type === IDENTIFIER) {
-            const localEntityName = specifier.name;
-            const exportType = ALL_EXPORTS_IMPORTED;
+            const localEntityName = specifier.name,
+              exportType = ALL_EXPORTS_IMPORTED;
             // All exports of another file are required
             currentFileMetadata.importedVariablesMetadata[localEntityName] =
-              getNewImportVariableObject(
+              objectFactory.createNewImportMetadataObject(
                 localEntityName,
                 localEntityName,
                 exportType,
@@ -219,7 +222,7 @@ const doDynamicImportWithPromiseOperations = (
  * @param {Object} currentFileMetadata Will be used to update the imported variables of the current file
  * @param {Object} filesMetadata Contains information related to all files
  */
-const doDynamicImportWithPromiseOperationsAfterSetup = (
+export const doDynamicImportWithPromiseOperationsAfterSetup = (
   { path, addReferences },
   currentFileMetadata,
   filesMetadata
@@ -259,7 +262,7 @@ const doDynamicImportWithPromiseOperationsAfterSetup = (
  * @param {Object} currentFileMetadata Will be used to update the imported variables of the current file
  * @param {Object} filesMetadata Contains information related to all files
  */
-const doOperationsOnSubPartOfDynamicImports = (
+export const doOperationsOnSubPartOfDynamicImports = (
   { path, operationType },
   currentFileMetadata,
   filesMetadata
@@ -302,7 +305,7 @@ const doOperationsOnSubPartOfDynamicImports = (
  * @param {Object} currentFileMetadata Will be used to update the imported variables of the current file
  * @param {Object} filesMetadata Contains information related to all files
  */
-const doDynamicImportsUsingLazyHookOperations = (
+export const doDynamicImportsUsingLazyHookOperations = (
   { parentNode, childNode, operationType },
   currentFileMetadata,
   filesMetadata
@@ -331,7 +334,7 @@ const doDynamicImportsUsingLazyHookOperations = (
     }
     if (identifier) {
       currentFileMetadata.importedVariablesMetadata[identifier] =
-        getNewImportVariableObject(
+        objectFactory.createNewImportMetadataObject(
           DEFAULT,
           identifier,
           INDIVIDUAL_IMPORT,
@@ -345,14 +348,4 @@ const doDynamicImportsUsingLazyHookOperations = (
           ];
     }
   } catch (_) {}
-};
-
-module.exports = {
-  doImportDeclartionOperations,
-  doImportDeclartionOperationsAfterSetup,
-  doRequireOrImportStatementOperations,
-  doDynamicImportWithPromiseOperations,
-  doDynamicImportWithPromiseOperationsAfterSetup,
-  doOperationsOnSubPartOfDynamicImports,
-  doDynamicImportsUsingLazyHookOperations,
 };

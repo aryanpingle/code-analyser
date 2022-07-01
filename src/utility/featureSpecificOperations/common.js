@@ -1,12 +1,12 @@
-const { checkFileImports } = require("../../checker/fileImports");
-const {
+import { checkFileImports } from "../../checker/fileImports.js";
+import {
   DISPLAY_TEXT,
   SUCCESSFUL_RETRIEVAL_OF_ALL_FILES_MESSAGE,
   SUCCESSFUL_RETRIEVAL_OF_ALL_ENTRY_FILES_MESSAGE,
-} = require("../constants");
-const { getAllFilesToCheck, getAllEntryFiles } = require("../files");
-const { isFileExtensionValid } = require("../helper");
-const { getNumberOfSubPartsOfGivenAbsolutePath } = require("../resolver");
+} from "../constants.js";
+import { getAllFilesToCheck, getAllEntryFiles } from "../files.js";
+import { isFileExtensionValid } from "../helper.js";
+import { getNumberOfSubPartsOfGivenAbsolutePath } from "../resolver.js";
 
 /**
  * Will be used to get all the files which are imported
@@ -14,7 +14,7 @@ const { getNumberOfSubPartsOfGivenAbsolutePath } = require("../resolver");
  * @param {Object} filesMetadata Contains information related to all files
  * @param {Object} traverseMetadata To decide whether check static imports only, check file size etc...
  */
-const setImportedFilesMapping = (
+export const setImportedFilesMapping = (
   allEntryFiles,
   filesMetadata,
   traverseMetadata
@@ -30,14 +30,14 @@ const setImportedFilesMapping = (
  * @param {Object} filesMapping Contains information related to all files
  * @returns Points associated with the provided file
  */
-const getFilePoints = (file, filesMapping) => {
-  let filePoints = 0;
-  if (isFileExtensionValid(file)) filePoints += 100;
-  // If never referred
-  if (!filesMapping[file]) filePoints += 10;
+export const getFilePoints = (file, filesMapping) => {
+  const validExtendsionPoints = isFileExtensionValid(file) ? 100 : 0;
+  const fileReferredPoints = !filesMapping[file] ? 10 : 0;
   // If present deep inside a parent folder, then it's significance is lower as compared to those present closer to a parent folder
-  filePoints -= getNumberOfSubPartsOfGivenAbsolutePath(file);
-  return filePoints;
+  const subPartsCount = getNumberOfSubPartsOfGivenAbsolutePath(file);
+  const totalFilePoints =
+    validExtendsionPoints + fileReferredPoints - subPartsCount;
+  return totalFilePoints;
 };
 
 /**
@@ -46,7 +46,7 @@ const getFilePoints = (file, filesMapping) => {
  * @param {RegExp} excludedFilesRegex Regex denoting the excluded files
  * @returns Object consisting of arrays of entry files and the files to check
  */
-const getAllRequiredFiles = async (
+export const getAllRequiredFiles = async (
   programConfiguration,
   excludedFilesRegex
 ) => {
@@ -70,10 +70,4 @@ const getAllRequiredFiles = async (
   });
 
   return { allEntryFiles, allFilesToCheck };
-};
-
-module.exports = {
-  setImportedFilesMapping,
-  getFilePoints,
-  getAllRequiredFiles,
 };

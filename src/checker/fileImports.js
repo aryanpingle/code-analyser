@@ -1,33 +1,33 @@
-const process = require("process");
-const { traverseAST, buildAST } = require("../ast/index");
-const { getDefaultCurrentFileMetadata } = require("../utility/files");
-const { getDefaultFileObject } = require("../ast/common");
-const {
+import process from "process";
+import { traverseAST, buildAST } from "../ast/index.js";
+import objectFactory from "../utility/factory.js";
+import {
   isFileExtensionValid,
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
-} = require("../utility/helper");
-const {
+} from "../utility/helper.js";
+import {
   CHECK_STATIC_IMPORTS_ADDRESSES,
   CHECK_ALL_IMPORTS_ADDRESSES,
   DISPLAY_TEXT,
-} = require("../utility/constants");
-const { getFileSize } = require("./utility");
+} from "../utility/constants.js";
+import { getFileSize } from "./utility.js";
+
 /**
  * Will be used to check a given file's imports (used while detecting dependencies at a given depth/ files contributing in multiple chunks)
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
  * @param {Boolean} checkStaticImportsOnly To decide whether only static imports of a file have to be checked or not
  */
-const checkFileImports = (
+export const checkFileImports = (
   entyFileLocation,
   filesMetadata,
   { checkStaticImportsOnly, checkForFileSize = false }
 ) => {
   if (isFileMappingNotPresent(entyFileLocation, filesMetadata)) {
     filesMetadata.filesMapping[entyFileLocation] =
-      getDefaultFileObject(entyFileLocation);
+      objectFactory.createNewDefaultFileObject(entyFileLocation);
   }
   filesMetadata.filesMapping[entyFileLocation].isEntryFile = true;
   if (
@@ -56,12 +56,13 @@ const traverseFileForImports = (
   try {
     if (
       checkStaticImportsOnly &&
-      filesMetadata.insideModuleRegex &&
-      !filesMetadata.insideModuleRegex.test(fileLocation)
+      filesMetadata.insideModuleCheckRegex &&
+      !filesMetadata.insideModuleCheckRegex.test(fileLocation)
     )
       return;
     let ast = buildAST(fileLocation);
-    let currentFileMetadata = getDefaultCurrentFileMetadata(fileLocation);
+    let currentFileMetadata =
+      objectFactory.createNewDefaultCurrentFileMetadataObject(fileLocation);
     let traversalRelatedMetadata = {
       ast,
       currentFileMetadata,
@@ -78,7 +79,7 @@ const traverseFileForImports = (
       );
 
     // Whether we need to check for static imports or should we include dynamic imports too
-    let requiredImportedFilesMapping = checkStaticImportsOnly
+    const requiredImportedFilesMapping = checkStaticImportsOnly
       ? currentFileMetadata.staticImportFilesMapping
       : currentFileMetadata.importedFilesMapping;
     // If we are checking to find files which are contributing in multiple chunks, therefore would need to traverse all files
@@ -89,15 +90,16 @@ const traverseFileForImports = (
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
-    for (const file in requiredImportedFilesMapping) {
+    Object.keys(requiredImportedFilesMapping).forEach((file) => {
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
         isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
       ) {
-        if (!filesMetadata.filesMapping[file]) {
-          filesMetadata.filesMapping[file] = getDefaultFileObject(file);
-        }
+        if (!filesMetadata.filesMapping[file])
+          filesMetadata.filesMapping[file] =
+            objectFactory.createNewDefaultFileObject(file);
+
         traverseFileForImports(file, filesMetadata, {
           checkStaticImportsOnly,
           checkForFileSize,
@@ -105,13 +107,14 @@ const traverseFileForImports = (
       } else if (
         isFileMappingNotPresent(file, filesMetadata) &&
         isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      ) {
-        filesMetadata.filesMapping[file] = getDefaultFileObject(file);
-      }
-    }
+      )
+        filesMetadata.filesMapping[file] =
+          objectFactory.createNewDefaultFileObject(file);
+    });
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;
+    console.log(err);
     process.send({
       text: err,
       fileLocation,
@@ -119,5 +122,3 @@ const traverseFileForImports = (
     });
   }
 };
-
-module.exports = { checkFileImports };

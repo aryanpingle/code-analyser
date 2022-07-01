@@ -1,27 +1,27 @@
-const generate = require("@babel/generator").default;
-const fs = require("fs");
+import _generate from "@babel/generator";
+import fs from "fs";
+
+const generate = _generate.default;
 
 /**
  * Used to retrieve all the imported files which were actually referred in the current file
  * @param {Object} currentFileMetadata Contains information related to the current file
  * @returns Object containing information of all imported files which are at least referred once
  */
-const getUsedFilesMapping = (currentFileMetadata) => {
+export const getUsedFilesMapping = (currentFileMetadata) => {
   const usedFilesMapping = {};
   const visitedFilesMapping = {};
   const importedVariablesMapping =
     currentFileMetadata.importedVariablesMetadata;
-  for (const variable in importedVariablesMapping) {
-    visitedFilesMapping[importedVariablesMapping[variable].importedFrom] = true;
-    if (
-      importedVariablesMapping[variable].referenceCountObject.referenceCount
-    ) {
-      usedFilesMapping[importedVariablesMapping[variable].importedFrom] = true;
+  Object.entries(importedVariablesMapping).forEach(([_, variableObject]) => {
+    visitedFilesMapping[variableObject.importedFrom] = true;
+    if (variableObject.referenceCountObject.referenceCount) {
+      usedFilesMapping[variableObject.importedFrom] = true;
     }
-  }
-  for (const file in currentFileMetadata.importedFilesMapping) {
+  });
+  Object.keys(currentFileMetadata.importedFilesMapping).forEach((file) => {
     if (!visitedFilesMapping[file]) usedFilesMapping[file] = true;
-  }
+  });
   return usedFilesMapping;
 };
 
@@ -31,7 +31,7 @@ const getUsedFilesMapping = (currentFileMetadata) => {
  * @param {String} fileLocation Absolute address of the given file
  * @returns Size (in bytes) of the minified code
  */
-const getFileSize = (fileAst, fileLocation) => {
+export const getFileSize = (fileAst, fileLocation) => {
   const code = fs.readFileSync(fileLocation).toString();
   // Will minify the original code, Eg. will remove unnecssary whitespaces, comments
   const minifiedCode = generate(
@@ -44,5 +44,3 @@ const getFileSize = (fileAst, fileLocation) => {
   );
   return Buffer.byteLength(minifiedCode.code);
 };
-
-module.exports = { getUsedFilesMapping, getFileSize };

@@ -1,7 +1,7 @@
-const { NUMBER, BOOLEAN, TRUE, SIZES_ARRAY } = require("./constants");
+import { NUMBER, BOOLEAN, TRUE, SIZES_ARRAY } from "./constants.js";
 
 // Parses the given string and return the appropriate type element (number, regex, string)
-const getRequiredTypeElementFromString = (
+export const getRequiredTypeElementFromString = (
   arrayElement,
   cannotBeRegex = false
 ) => {
@@ -19,7 +19,7 @@ const getRequiredTypeElementFromString = (
 };
 
 // Returns an array consisting of elements which have been parsed from a string
-const getArrayOfElementsFromString = (arrayString) => {
+export const getArrayOfElementsFromString = (arrayString) => {
   return arrayString
     .slice(1, -1)
     .split(",")
@@ -28,24 +28,24 @@ const getArrayOfElementsFromString = (arrayString) => {
     });
 };
 
-const getSizeFromInteger = (givenInteger) => {
+export const getSizeFromInteger = (givenInteger) => {
   const possibleSizes = SIZES_ARRAY;
   const MULTIPLIER_TO_GET_NEXT_SIZE = 1024;
   let sizeToCheck = 1;
-  for (const size of possibleSizes) {
+  let valueToReturn = null;
+
+  possibleSizes.some((size) => {
     sizeToCheck *= MULTIPLIER_TO_GET_NEXT_SIZE;
     if (givenInteger / sizeToCheck < 1) {
       sizeToCheck /= MULTIPLIER_TO_GET_NEXT_SIZE;
-      return `${(givenInteger / sizeToCheck).toFixed(2)} ${size}`;
+      valueToReturn = `${(givenInteger / sizeToCheck).toFixed(2)} ${size}`;
+      return true;
     }
-  }
+    return false;
+  });
+  if (valueToReturn) return valueToReturn;
   sizeToCheck /= MULTIPLIER_TO_GET_NEXT_SIZE;
   return `${(givenInteger / sizeToCheck).toFixed(2)} ${
     possibleSizes[possibleSizes.length - 1]
   }`;
-};
-module.exports = {
-  getRequiredTypeElementFromString,
-  getArrayOfElementsFromString,
-  getSizeFromInteger,
 };

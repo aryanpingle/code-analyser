@@ -1,25 +1,24 @@
-const process = require("process");
-const { traverseAST, buildAST } = require("../ast/index");
-const { getDefaultFileObject } = require("../ast/common");
-const { CHECK_USAGE, DISPLAY_TEXT } = require("../utility/constants");
-const { getDefaultCurrentFileMetadata } = require("../utility/files");
-const {
+import process from "process";
+import { traverseAST, buildAST } from "../ast/index.js";
+import objectFactory from "../utility/factory.js";
+import { CHECK_USAGE, DISPLAY_TEXT } from "../utility/constants.js";
+import {
   isFileExtensionValid,
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
-} = require("../utility/helper");
-const {getUsedFilesMapping} = require("./utility");
+} from "../utility/helper.js";
+import { getUsedFilesMapping } from "./utility.js";
 
 /**
  * Will be used to check file to update the imported, exported variables when they are referred
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
  */
-const checkFileUsage = (entyFileLocation, filesMetadata) => {
+export const checkFileUsage = (entyFileLocation, filesMetadata) => {
   if (isFileMappingNotPresent(entyFileLocation, filesMetadata)) {
     filesMetadata.filesMapping[entyFileLocation] =
-      getDefaultFileObject(entyFileLocation);
+      objectFactory.createNewDefaultFileObject(entyFileLocation);
   }
   filesMetadata.filesMapping[entyFileLocation].isEntryFile = true;
   if (
@@ -35,14 +34,17 @@ const checkFileUsage = (entyFileLocation, filesMetadata) => {
  * @param {String} deadFileLocation String denoting the absolute address of a dead file
  * @param {Object} filesMetadata Contains information related to all files
  */
-const checkDeadFileImportsUsage = (deadFileLocation, filesMetadata) => {
+export const checkDeadFileImportsUsage = (deadFileLocation, filesMetadata) => {
   if (
     isFileExtensionValid(deadFileLocation) &&
     isFileNotExcluded(filesMetadata.excludedFilesRegex, deadFileLocation)
   ) {
     try {
       let ast = buildAST(deadFileLocation);
-      let currentFileMetadata = getDefaultCurrentFileMetadata(deadFileLocation);
+      let currentFileMetadata =
+        objectFactory.createNewDefaultCurrentFileMetadataObject(
+          deadFileLocation
+        );
       let traversalRelatedMetadata = {
         ast,
         currentFileMetadata,
@@ -69,36 +71,29 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
   filesMetadata.visitedFilesMapping[fileLocation] = true;
   try {
     let ast = buildAST(fileLocation);
-    let currentFileMetadata = getDefaultCurrentFileMetadata(fileLocation);
+    let currentFileMetadata =
+      objectFactory.createNewDefaultCurrentFileMetadataObject(fileLocation);
     let traversalRelatedMetadata = {
       ast,
       currentFileMetadata,
       filesMetadata,
     };
     traverseAST(traversalRelatedMetadata, CHECK_USAGE);
-    let requiredImportedFilesMapping = getUsedFilesMapping(currentFileMetadata);
+    const requiredImportedFilesMapping =
+      getUsedFilesMapping(currentFileMetadata);
     // Setting ast as null, to save memory, will build it again after traversing all imported files of the current file
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
 
-    for (const file in requiredImportedFilesMapping) {
+    Object.keys(requiredImportedFilesMapping).forEach((file) => {
       if (
         isFileNotVisited(file, filesMetadata) &&
         isFileExtensionValid(file) &&
         isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      ) {
-        if (!filesMetadata.filesMapping[file]) {
-          filesMetadata.filesMapping[file] = getDefaultFileObject(file);
-        }
+      )
         traverseFileForCheckingUsage(file, filesMetadata);
-      } else if (
-        isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      ) {
-        filesMetadata.filesMapping[file] = getDefaultFileObject(file);
-      }
-    }
+    });
   } catch (err) {
     process.send({
       text: err,
@@ -107,5 +102,3 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
     });
   }
 };
-
-module.exports = { checkFileUsage, checkDeadFileImportsUsage };

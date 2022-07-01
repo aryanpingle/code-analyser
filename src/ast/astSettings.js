@@ -1,4 +1,4 @@
-const astParserPlugins = [
+export const astParserPlugins = [
   ["typescript", { dts: true }],
   ["pipelineOperator", { proposal: "minimal" }],
   "asyncDoExpressions",
@@ -34,7 +34,7 @@ const astParserPlugins = [
   "topLevelAwait",
 ];
 
-const astOtherSettings = {
+export const astOtherSettings = {
   sourceType: "module",
   allowImportExportEverywhere: true,
   allowAwaitOutsideFunction: true,
@@ -42,9 +42,4 @@ const astOtherSettings = {
   allowSuperOutsideMethod: true,
   allowUndeclaredExports: true,
   errorRecovery: true,
-};
-
-module.exports = {
-  astParserPlugins,
-  astOtherSettings,
 };

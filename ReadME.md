@@ -17,6 +17,7 @@
   - [Files to check options](#files-to-check-options)
   - [Other options](#other-options)
 - [Sample Examples](#sample-examples)
+- [Author](#author)
 
 # Overview
 
@@ -75,8 +76,8 @@ $ analyseCode <options>
    Set it as true if files present in multiple chunks check is required.\
    Accepted values: True/ false
   <br>
-- `checkChunkMetadataUsingGivenFile` **(default: false)**\
-   Set it as true if need to find uncompressed chunk size and all files which will be present inside the chunk, if user chunks using a given file. \
+- `checkChunkMetadataUsingGivenChunk` **(default: false)**\
+   Set it as true if need to find uncompressed chunk size and all files which will be present inside the chunk, if user creates a new chunk using a given file. \
    Accepted values: True/ false
 
 ### Files to check options
@@ -102,14 +103,14 @@ $ analyseCode <options>
    Accepted values: Array consisting of relative/ absolute paths
   <br>
 - `moduleToCheck` \
-  Used along with `checkDependenciesAtGivenDepth`, and `checkChunkMetadataUsingGivenFile` to provide the module using which either dependencies at given depth or chunk metadata has to be computed. \
+  Used along with `checkDependenciesAtGivenDepth`, and `checkChunkMetadataUsingGivenChunk` to provide the module using which either dependencies at given depth or chunk metadata has to be computed. \
   Accepted values: Absolute/ relative path of the module
 
 ### Other options
 
 - `interact` **(default: false)** \
    Use it to display the output in an interactive way for better analysis \
-   Will be always true when using `checkChunkMetadataUsingGivenFile` option \
+   Will be always true when using `checkChunkMetadataUsingGivenChunk` option \
    Accepted values: True/ false
   <br>
 - `rootDirectory` \
@@ -152,7 +153,7 @@ $ analyseCode --checkDependenciesAtGivenDepth --exclude='["./public"]' --moduleT
 ```
 
 ```
-$ analyseCode --checkChunkMetadataUsingGivenFile --moduleToCheck="[/index\.jsx/]" --totalFilesToShow=50
+$ analyseCode --checkChunkMetadataUsingGivenChunk --moduleToCheck="[/index\.jsx/]" --totalFilesToShow=50
 ```
 
 # Author

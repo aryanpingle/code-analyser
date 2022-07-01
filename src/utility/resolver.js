@@ -1,11 +1,11 @@
-const path = require("path");
-const enhancedResolve = require("enhanced-resolve");
-const { existsSync, statSync } = require("fs");
-const { codeAnalyerConfigurationObject } = require("./configuration");
-const TsconfigPathsPlugin = require("tsconfig-paths-webpack-plugin");
-const JsConfigPathsPlugin = require("jsconfig-paths-webpack-plugin");
-const process = require("process");
-const {
+import path from "path";
+import enhancedResolve from "enhanced-resolve";
+import { existsSync, statSync } from "fs";
+import { codeAnalyerConfigurationObject } from "./configuration.js";
+import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
+import JsConfigPathsPlugin from "jsconfig-paths-webpack-plugin";
+import process from "process";
+import {
   JSCONFIG_FILE,
   TSCONFIG_FILE,
   FILE,
@@ -16,14 +16,14 @@ const {
   OBJECT,
   VALID_EXTENSIONS_ARRAY,
   DEFAULT_MODULES_ARRAY,
-} = require("./constants");
+} from "./constants.js";
 
 /**
  * Checks if the given path is absolute or not
  * @param {String} pathToCheck Path of the required module to check
  * @returns Boolean value denoting whether the given path is absolute or not
  */
-const isPathAbsolute = (pathToCheck) =>
+export const isPathAbsolute = (pathToCheck) =>
   pathToCheck && path.isAbsolute(pathToCheck);
 
 /**
@@ -31,7 +31,7 @@ const isPathAbsolute = (pathToCheck) =>
  * @param {String} pathToRetrieveFrom
  * @returns Address of the path's directory
  */
-const getDirectoryFromPath = (pathToRetrieveFrom) =>
+export const getDirectoryFromPath = (pathToRetrieveFrom) =>
   path.dirname(pathToRetrieveFrom);
 
 /**
@@ -40,7 +40,10 @@ const getDirectoryFromPath = (pathToRetrieveFrom) =>
  * @param {Integer} depthFromCurrentNode Smallest distance between the ancestor and current nodes
  * @returns Address of the ancestory directory of the provided path at the given depth
  */
-const getPredecessorDirectory = (pathToRetrieveFrom, depthFromCurrentNode) => {
+export const getPredecessorDirectory = (
+  pathToRetrieveFrom,
+  depthFromCurrentNode
+) => {
   // If current node is the required ancestor node
   if (depthFromCurrentNode === 0) return pathToRetrieveFrom;
   // Else recursicely traverse this node with one less depth
@@ -56,7 +59,7 @@ const getPredecessorDirectory = (pathToRetrieveFrom, depthFromCurrentNode) => {
  * @param {String} givenModuleAddress Given module's path
  * @returns Absolute address of the required module
  */
-const resolveAddressWithProvidedDirectory = (
+export const resolveAddressWithProvidedDirectory = (
   parentDirectoryAddress,
   givenModuleAddress
 ) => {
@@ -76,7 +79,7 @@ const isGivenPathPresent = (givenPath) => givenPath && existsSync(givenPath);
  * @param {String} givenPath Address to check
  * @returns Boolean value denoting whether the path is a file's address or not
  */
-const isFilePath = (givenPath) => {
+export const isFilePath = (givenPath) => {
   if (isGivenPathPresent(givenPath)) return statSync(givenPath).isFile();
   return false;
 };
@@ -120,7 +123,11 @@ const enhancedResolver = new enhancedResolve.create.sync(settings);
  * @param {String} pathType Provided type of path (either FILE or UNRESOLVED TYPE), default: FILE
  * @returns Resolved path of the given address
  */
-const pathResolver = (directoryAddress, fileAddress, pathType = FILE) => {
+export const pathResolver = (
+  directoryAddress,
+  fileAddress,
+  pathType = FILE
+) => {
   try {
     // Unresolved type is given to the paths which are declared using template literals (They can be dynamic strings)
     if (
@@ -167,7 +174,7 @@ const pathResolver = (directoryAddress, fileAddress, pathType = FILE) => {
  * @param {String} givenPath Absolute address of the path from which sub-parts have to be retrieved
  * @returns Array consisting of all sub-parts (in order) of the given path
  */
-const getAllSubPartsOfGivenAbsolutePath = (givenPath) => {
+export const getAllSubPartsOfGivenAbsolutePath = (givenPath) => {
   const subPartsArray = [];
   let pathToRetrieveFrom = givenPath;
   while (pathToRetrieveFrom.length > 1) {
@@ -178,7 +185,7 @@ const getAllSubPartsOfGivenAbsolutePath = (givenPath) => {
   return subPartsArray;
 };
 
-const getNumberOfSubPartsOfGivenAbsolutePath = (givenPath) => {
+export const getNumberOfSubPartsOfGivenAbsolutePath = (givenPath) => {
   let subPartsCount = 0;
   let pathToRetrieveFrom = givenPath;
   while (pathToRetrieveFrom.length > 1) {
@@ -193,7 +200,7 @@ const getNumberOfSubPartsOfGivenAbsolutePath = (givenPath) => {
  * @param {Integer} depth Will be used to decide till what level sub-parts should be present
  * @returns Absolute address joined using the provided array and depth
  */
-const joinSubPartsTillGivenDepth = (subPartsArray, depth) => {
+export const joinSubPartsTillGivenDepth = (subPartsArray, depth) => {
   const arrayAtGivenDepth = subPartsArray.filter((_, index) => index < depth);
   const pathAtGivenDepth = arrayAtGivenDepth.reduce(
     (reducer, subPart) => path.join(reducer, subPart),
@@ -202,21 +209,7 @@ const joinSubPartsTillGivenDepth = (subPartsArray, depth) => {
   return pathAtGivenDepth.trim();
 };
 
-const getPathBaseName = (fileLocation) => path.basename(fileLocation);
+export const getPathBaseName = (fileLocation) => path.basename(fileLocation);
 
-const getFileNameFromElement = (fileElement) =>
+export const getFileNameFromElement = (fileElement) =>
   typeof fileElement === OBJECT ? fileElement.file : fileElement;
-
-module.exports = {
-  pathResolver,
-  resolveAddressWithProvidedDirectory,
-  isPathAbsolute,
-  getDirectoryFromPath,
-  getPredecessorDirectory,
-  isFilePath,
-  getPathBaseName,
-  getAllSubPartsOfGivenAbsolutePath,
-  joinSubPartsTillGivenDepth,
-  getNumberOfSubPartsOfGivenAbsolutePath,
-  getFileNameFromElement,
-};

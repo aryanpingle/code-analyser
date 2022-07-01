@@ -1,5 +1,5 @@
-const { getAllPropertiesFromNode } = require("./utility");
-const { isNotExportTypeReference } = require("../helper");
+import { getAllPropertiesFromNode } from "./utility.js";
+import { isNotExportTypeReference } from "../helper.js";
 
 /**
  * Helps to update individual exports inside an exported variable which contains multiple children exports (eg. factory code)
@@ -8,7 +8,7 @@ const { isNotExportTypeReference } = require("../helper");
  * @param {Boolean} addReferences To decide whether references have to be added or subtracted
  * @returns Boolean value denoting whether the property referred was an imported variable
  */
-const doAccessingPropertiesOfObjectOperations = (
+export const doAccessingPropertiesOfObjectOperations = (
   nodeToParse,
   currentFileMetadata,
   addReferences
@@ -57,7 +57,7 @@ const doAccessingPropertiesOfObjectOperations = (
  * @param {Object} currentFileMetadata Contains imported variables of the current file
  * @param {Boolean} addReferences To decide whether the values have to be added or subtracted
  */
-const doIdentifierOperationsOnImportedVariables = (
+export const doIdentifierOperationsOnImportedVariables = (
   path,
   currentFileMetadata,
   addReferences
@@ -79,7 +79,7 @@ const doIdentifierOperationsOnImportedVariables = (
  * @param {Object} currentFileMetadata Contains imported variables of the current file
  * @param {Boolean} addReferences To decide whether the values have to be added/ subtracted
  */
-const doIdentifierOperationsOnImportedVariablesMetadata = (
+export const doIdentifierOperationsOnImportedVariablesMetadata = (
   path,
   currentFileMetadata,
   addReferences
@@ -98,10 +98,4 @@ const doIdentifierOperationsOnImportedVariablesMetadata = (
         ].referenceCountObject.exportReferenceCount += valueToAdd;
     } catch (_) {}
   }
-};
-
-module.exports = {
-  doIdentifierOperationsOnImportedVariables,
-  doIdentifierOperationsOnImportedVariablesMetadata,
-  doAccessingPropertiesOfObjectOperations,
 };

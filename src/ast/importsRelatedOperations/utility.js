@@ -1,15 +1,13 @@
-const {
+import objectFactory from "../../utility/factory.js";
+import {
   getLocalNameFromProperty,
   getImportedNameFromProperty,
-  getDefaultFileObject,
-  getNewImportVariableObject,
-  getNewDefaultObject,
-} = require("../common");
-const {
+} from "../common.js";
+import {
   isFileMappingNotPresent,
   isFileNotExcluded,
-} = require("../../utility/helper");
-const {
+} from "../../utility/helper.js";
+import {
   ALL_EXPORTS_IMPORTED,
   IMPORT_SPECIFIER,
   IMPORT_DEFAULT_SPECIFIER,
@@ -19,7 +17,7 @@ const {
   IDENTIFIER,
   OBJECT_PATTERN,
   DONT_UPDATE_REFERENCE_COUNT,
-} = require("../../utility/constants");
+} from "../../utility/constants.js";
 
 /**
  * This function parses the specifier and set this specifier as current file's imported variable
@@ -28,7 +26,7 @@ const {
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  * @param {Object} filesMetadata Contains inforamtion related to all files
  */
-const setImportedVariableInCurrentFileMetadata = (
+export const setImportedVariableInCurrentFileMetadata = (
   { specifier, importedFileAddress, traverseType },
   currentFileMetadata,
   filesMetadata
@@ -45,13 +43,12 @@ const setImportedVariableInCurrentFileMetadata = (
   ) {
     if (specifier.type === IMPORT_SPECIFIER)
       importedEntityName = specifier.imported.name;
-    else {
-      importedEntityName = DEFAULT;
-    }
+    else importedEntityName = DEFAULT;
+
     type = INDIVIDUAL_IMPORT;
   }
   currentFileMetadata.importedVariablesMetadata[localEntityName] =
-    getNewImportVariableObject(
+    objectFactory.createNewImportMetadataObject(
       importedEntityName,
       localEntityName,
       type,
@@ -81,7 +78,7 @@ const setImportedVariableInCurrentFileMetadata = (
  * @param {String} importedFileAddress Absolute address of the imported file
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  */
-const setImportedVariablesDuringImportStage = (
+export const setImportedVariablesDuringImportStage = (
   { nodeToGetValues: nodeToParse, importedFileAddress },
   currentFileMetadata
 ) => {
@@ -89,7 +86,7 @@ const setImportedVariablesDuringImportStage = (
   if (nodeToParse.type === IDENTIFIER) {
     const localName = nodeToParse.name;
     currentFileMetadata.importedVariablesMetadata[localName] =
-      getNewImportVariableObject(
+      objectFactory.createNewImportMetadataObject(
         DEFAULT,
         localName,
         INDIVIDUAL_IMPORT,
@@ -100,7 +97,7 @@ const setImportedVariablesDuringImportStage = (
       const localName = property.value.name;
       const importedName = property.key.name;
       currentFileMetadata.importedVariablesMetadata[localName] =
-        getNewImportVariableObject(
+        objectFactory.createNewImportMetadataObject(
           importedName,
           localName,
           INDIVIDUAL_IMPORT,
@@ -120,7 +117,7 @@ const setImportedVariablesDuringImportStage = (
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
  * @param {Object} filesMetadata Contains inforamtion related to all files
  */
-const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
+export const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
   (
     { node, addReferences, importedFileAddress, type },
     currentFileMetadata,
@@ -137,7 +134,7 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
         ) {
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
             DEFAULT
-          ] = getNewDefaultObject(importedFileAddress);
+          ] = objectFactory.createNewDefaultVariableObject(importedFileAddress);
         }
         const exportedVariable =
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
@@ -145,7 +142,7 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
           ];
         exportedVariable.referenceCount += 1 * valueToMultiplyWith;
       } catch (_) {}
-      // Importing all exports of a file. Eg. const X = require(...);
+      // Importing all exports of a file. Eg. const X from ...);
     } else if (node.type === IDENTIFIER) {
       try {
         const localEntityName = node.name;
@@ -161,7 +158,7 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
           ].referenceCount -= 1 * valueToMultiplyWith;
       } catch (_) {}
     }
-    // Selective imports, Eg. const {...} = require(...)
+    // Selective imports, Eg. const {...} from ...)
     else if (node.type === OBJECT_PATTERN) {
       const patternToCheck = node.properties;
       patternToCheck.forEach((property) => {
@@ -191,7 +188,7 @@ const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements =
  * @param {String} comment String which has to be parsed
  * @returns Object containing information whether this comment may be a magic comment or not
  */
-const parseComment = (comment) => {
+export const parseComment = (comment) => {
   const commentSubParts = comment.value.split(":");
   if (commentSubParts.length === 2) {
     commentSubParts[0] = commentSubParts[0].trim();
@@ -216,7 +213,7 @@ const parseComment = (comment) => {
  * @param {String} webpackChunkName Contains information related to the webpack chunk in which this file is present
  * @param {Object} filesMetadata Contains information related to all files
  */
-const updateWebpackConfigurationOfImportedFile = (
+export const updateWebpackConfigurationOfImportedFile = (
   givenFileAddress,
   webpackChunkName,
   filesMetadata
@@ -227,7 +224,7 @@ const updateWebpackConfigurationOfImportedFile = (
       isFileNotExcluded(filesMetadata.excludedFilesRegex, givenFileAddress)
     ) {
       filesMetadata.filesMapping[givenFileAddress] =
-        getDefaultFileObject(givenFileAddress);
+        objectFactory.createNewDefaultFileObject(givenFileAddress);
     }
 
     const currentwebpackConfiguration =
@@ -235,12 +232,4 @@ const updateWebpackConfigurationOfImportedFile = (
     // This file is now present inside the provided webpack chunk too
     currentwebpackConfiguration[webpackChunkName] = true;
   } catch (_) {}
-};
-
-module.exports = {
-  setImportedVariableInCurrentFileMetadata,
-  setImportedVariablesDuringImportStage,
-  updateImportedVariablesReferenceCountInRequireOrDynamicImportStatements,
-  parseComment,
-  updateWebpackConfigurationOfImportedFile,
 };

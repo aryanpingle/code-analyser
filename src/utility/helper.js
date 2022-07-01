@@ -1,49 +1,41 @@
-const { isFilePath } = require("./resolver");
+import { isFilePath } from "./resolver.js";
 
-const isDeadfileCheckRequired = (programConfiguration) =>
+export const isDeadfileCheckRequired = (programConfiguration) =>
   programConfiguration && programConfiguration.checkDeadFiles;
 
-const isDependenciesCheckRequiredAtGivenDepthCheckRequired = (
+export const isDependenciesCheckRequiredAtGivenDepthCheckRequired = (
   programConfiguration
 ) => programConfiguration && programConfiguration.checkDependenciesAtGivenDepth;
 
-const isFilesContributingInMultipleChunksCheckRequired = (
+export const isFilesContributingInMultipleChunksCheckRequired = (
   programConfiguration
 ) =>
   programConfiguration &&
   programConfiguration.checkFilesContributingInMultipleChunks;
 
-const isChunkMetadataOfGivenFileCheckRequired = (programConfiguration) =>
-  programConfiguration && programConfiguration.checkChunkMetadataUsingGivenFile;
+export const isMetadataOfGivenChunkCheckRequired = (programConfiguration) =>
+  programConfiguration &&
+  programConfiguration.checkChunkMetadataUsingGivenChunk;
 
-const isInstanceofRegexExpression = (givenString) =>
+export const isInstanceofRegexExpression = (givenString) =>
   givenString instanceof RegExp;
 
-const isFileMappingNotPresent = (file, filesMetadata) =>
+export const isFileMappingNotPresent = (file, filesMetadata) =>
   !filesMetadata.filesMapping[file];
 
-const isFileNotExcluded = (excludedFilesRegex, directoyAbsoluteAddress) =>
+export const isFileNotExcluded = (
+  excludedFilesRegex,
+  directoyAbsoluteAddress
+) =>
   isFilePath(directoyAbsoluteAddress) &&
   !excludedFilesRegex.test(directoyAbsoluteAddress);
 
 // Valid extensions to parse are .js, .jsx, .ts, .tsx
-const isFileExtensionNotValid = (fileLocation) =>
+export const isFileExtensionNotValid = (fileLocation) =>
   !/[jt]sx?$/.test(fileLocation);
 
-const isFileNotVisited = (fileLocation, filesMetadata) =>
+export const isFileNotVisited = (fileLocation, filesMetadata) =>
   !filesMetadata.visitedFilesMapping[fileLocation];
 
-const isFileExtensionValid = (fileLocation) => /\.[jt]sx?$/.test(fileLocation);
-
-module.exports = {
-  isDeadfileCheckRequired,
-  isDependenciesCheckRequiredAtGivenDepthCheckRequired,
-  isFilesContributingInMultipleChunksCheckRequired,
-  isChunkMetadataOfGivenFileCheckRequired,
-  isInstanceofRegexExpression,
-  isFileNotExcluded,
-  isFileExtensionNotValid,
-  isFileMappingNotPresent,
-  isFileNotVisited,
-  isFileExtensionValid,
-};
+export const isFileExtensionValid = (fileLocation) =>
+  /\.[jt]sx?$/.test(fileLocation);
