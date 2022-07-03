@@ -112,7 +112,6 @@ const traverseFileForImports = (
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;
-    console.log(err);
     process.send({
       text: err,
       fileLocation,

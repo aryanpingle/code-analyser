@@ -33,6 +33,7 @@ const createNewDefaultFileObject = (fileLocation, type = FILE) => {
     exportedVariables: {
       // If the whole exportVariables object is referred
       referenceCount: 0,
+      individualFileReferencesMapping: {},
     },
     staticImportFilesMapping: {},
     webpackChunkConfiguration: {},
@@ -80,6 +81,7 @@ const createNewDefaultCurrentFileMetadataObject = (
     exportedVariables: {
       referenceCount: 0,
       isEntryFileObject: isEntryFile,
+      individualFileReferencesMapping: {},
     },
     importedFilesMapping: {},
     staticImportFilesMapping: {},
