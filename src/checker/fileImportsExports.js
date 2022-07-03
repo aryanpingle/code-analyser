@@ -1,14 +1,14 @@
 import process from "process";
 import { traverseAST, buildAST } from "../ast/index.js";
-import { updateFilesMetadata } from "../utility/files.js";
 import objectFactory from "../utility/factory.js";
 import {
   isFileExtensionValid,
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
+  isFileTraversable,
 } from "../utility/helper.js";
-import { getUsedFilesMapping } from "./utility.js";
+import { getUsedFilesMapping, updateFilesMetadata } from "./utility.js";
 import {
   CHECK_IMPORTS,
   CHECK_EXPORTS,
@@ -21,7 +21,7 @@ import {
  * @param {Object} filesMetadata Object containing information related to all files
  * @param {Object} entryFilesMapping Mapping to check whether a given file is entry file or not
  */
-export const checkFileImportExports = (
+export const checkFileImportsExports = (
   entyFileLocation,
   filesMetadata,
   entryFilesMapping
@@ -74,11 +74,7 @@ const traverseFileForCheckingImportsExports = (
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
     Object.keys(requiredImportedFilesMapping).forEach((file) => {
-      if (
-        isFileNotVisited(file, filesMetadata) &&
-        isFileExtensionValid(file) &&
-        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      ) {
+      if (isFileTraversable(file, filesMetadata)) {
         if (!filesMetadata.filesMapping[file])
           filesMetadata.filesMapping[file] =
             objectFactory.createNewDefaultFileObject(file);

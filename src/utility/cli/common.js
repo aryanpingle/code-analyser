@@ -52,31 +52,30 @@ export const displayAllFilesInteractively = async (
   ];
 
   while (nodesInLastVisitedPaths.length) {
+    const lastVisitedNode =
+      nodesInLastVisitedPaths[nodesInLastVisitedPaths.length - 1];
+
     const firstNodeNotContainingOneChild = getFirstNodeNotContainingOneChild(
-      nodesInLastVisitedPaths[nodesInLastVisitedPaths.length - 1].node
+      lastVisitedNode.node
     );
     const pathToCheck = firstNodeNotContainingOneChild.pathTillNode;
-    if (filesUsageMapping[pathToCheck])
-      displayFileAdditionalInformation(
-        pathToCheck,
-        filesUsageMapping[pathToCheck]
-      );
-    if (checkMetadataOfGivenChunk && cacheMapping[pathToCheck])
-      displayChunkMetadaRelatedInformation(cacheMapping, pathToCheck);
-
+    displayAdditionalInformationIfRequired(
+      {
+        filesUsageMapping,
+        checkMetadataOfGivenChunk,
+        cacheMapping,
+      },
+      pathToCheck
+    );
     const { selectedNode: nextNodeToCheck, choiceIndex } =
       await interactivelyDisplayAndGetNextNode(
         firstNodeNotContainingOneChild,
-        nodesInLastVisitedPaths[nodesInLastVisitedPaths.length - 1]
-          .selectedChoiceIndex
+        lastVisitedNode.selectedChoiceIndex
       );
 
     if (nextNodeToCheck === GO_BACK) nodesInLastVisitedPaths.pop();
     else {
-      nodesInLastVisitedPaths[
-        nodesInLastVisitedPaths.length - 1
-      ].selectedChoiceIndex = choiceIndex;
-
+      lastVisitedNode.selectedChoiceIndex = choiceIndex;
       nodesInLastVisitedPaths.push({
         node: nextNodeToCheck,
         selectedChoiceIndex: null,
@@ -84,6 +83,25 @@ export const displayAllFilesInteractively = async (
     }
     process.stdout.write(CLEAR);
   }
+};
+
+/**
+ * Function to display additional information related to given file if it is required
+ * @param {Object} metadata Contains required information mappings and values which will be used to check whether additional information should be displayed or not
+ * @param {String} pathToCheck Absolute address of the file whose additional information has to be printed
+ */
+const displayAdditionalInformationIfRequired = (
+  { filesUsageMapping, checkMetadataOfGivenChunk, cacheMapping },
+  pathToCheck
+) => {
+  if (filesUsageMapping[pathToCheck])
+    displayFileAdditionalInformation(
+      pathToCheck,
+      filesUsageMapping[pathToCheck]
+    );
+
+  if (checkMetadataOfGivenChunk && cacheMapping[pathToCheck])
+    displayChunkMetadaRelatedInformation(cacheMapping, pathToCheck);
 };
 
 /**
@@ -97,9 +115,9 @@ const interactivelyDisplayAndGetNextNode = async (
   selectedChoiceIndex = GO_BACK
 ) => {
   const choices = [GO_BACK];
-  const addressToNodeMapping = {};
-  addressToNodeMapping[GO_BACK] = GO_BACK;
+  const addressToNodeMapping = { [GO_BACK]: GO_BACK };
   let prompt;
+  // Leaf node
   if (Object.keys(nodeToCheck.childrens).length === 0) {
     prompt = new enquirer.Select({
       message: `Currently at location: ${nodeToCheck.pathTillNode}\n`,

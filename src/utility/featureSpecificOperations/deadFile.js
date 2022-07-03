@@ -2,7 +2,7 @@ import {
   checkFileUsage,
   checkDeadFileImportsUsage,
 } from "../../checker/fileUsage.js";
-import { checkFileImportExports } from "../../checker/fileImportsExports.js";
+import { checkFileImportsExports } from "../../checker/fileImportsExports.js";
 import {
   DISPLAY_TEXT,
   DEFAULT,
@@ -19,13 +19,13 @@ import { getFilePoints } from "./common.js";
  * @param {Object} filesMetadata Contains information related to all files
  * @param {Object} entryFilesMapping Mapping to check whether a file is an entry file or not
  */
-export const setAllFileExports = (
+export const setAllFilesExports = (
   allEntryFiles,
   filesMetadata,
   entryFilesMapping
 ) => {
   allEntryFiles.forEach((entryFile) =>
-    checkFileImportExports(entryFile, filesMetadata, entryFilesMapping)
+    checkFileImportsExports(entryFile, filesMetadata, entryFilesMapping)
   );
 };
 
@@ -80,21 +80,14 @@ export const getDeadFilesAndSendMessageToParent = (
  */
 const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
   const filesMapping = filesMetadata.filesMapping;
+  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
   const deadFileVisitedMapping = {};
   const deadFilesArray = allFilesToCheck
-    .filter((file) => {
-      return (
-        // Either file was never imported/ referred or if imported but never used
-        !filesMapping[file] ||
-        (filesMapping[file].isEntryFile === false &&
-          !isFileReferred(filesMapping, file))
-      );
-    })
+    .filter((file) => isGivenFileDead(filesMapping, file))
     .map((file) => {
       deadFileVisitedMapping[file] = true;
       return { file, filePoints: getFilePoints(file, filesMapping) };
     });
-  const excludedFilesRegex = filesMetadata.excludedFilesRegex;
   deadFilesArray.forEach((fileObject) => {
     const file = fileObject.file;
     deadFileVisitedMapping[file] = true;
@@ -109,9 +102,7 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
           // File isn't excluded
           isFileNotExcluded(excludedFilesRegex, importedFile) &&
           // And it is a dead file too
-          (!filesMapping[importedFile] ||
-            (filesMapping[importedFile].isEntryFile === false &&
-              !isFileReferred(filesMapping, importedFile)))
+          isGivenFileDead(filesMapping, importedFile)
         ) {
           deadFileVisitedMapping[importedFile] = true;
           deadFilesArray.push({
@@ -124,6 +115,18 @@ const getAllDeadFiles = (filesMetadata, allFilesToCheck) => {
   });
   return deadFilesArray;
 };
+
+/**
+ * Checks whether a given file is a dead file or not
+ * @param {Object} filesMapping Contains information related to the file to check
+ * @param {String} file Absolute address of the file which has to be checked
+ * @returns Boolean value denoting whether the file is dead or not
+ */
+const isGivenFileDead = (filesMapping, file) =>
+  // Either file was never imported/ referred or if imported but never used
+  !filesMapping[file] ||
+  (filesMapping[file].isEntryFile === false &&
+    !isFileReferred(filesMapping, file));
 
 /**
  * Checks if a file is not a dead file and was actually used by some other file
@@ -141,9 +144,8 @@ const isFileReferred = (filesMapping, fileLocation) => {
       allExportedVariables,
       fileLocation
     );
-    if (referencesUsingThisFile || allExportedVariables.isEntryFileObject) {
+    if (referencesUsingThisFile || allExportedVariables.isEntryFileObject)
       isReferred = true;
-    }
   } catch (_) {}
   if (isReferred) return true;
   Object.entries(allExportedVariables).some(
@@ -174,8 +176,7 @@ const isFileReferred = (filesMapping, fileLocation) => {
             return false;
           }
         });
-        if (isReferred) return true;
-        return false;
+        return isReferred;
       } catch (_) {
         return false;
       }

@@ -40,7 +40,7 @@ export const getImportedNameFromProperty = (property) => {
 };
 
 /**
- * Will be called to get the absolute source addresss from the given source address
+ * Will be called to get the absolute source address from the given source address
  * @param {String} currentFileLocation Address of the currently parsed file
  * @param {String} givenSourceAdress Provided address (relative, absolute, node_modules)
  * @param {String} importType Either address given as a string or template literal
@@ -61,7 +61,7 @@ export const getResolvedPathFromGivenPath = (
 };
 
 /**
- * Will return the absolute address of provided file's address
+ * Will return the absolute address of the provided file's location
  * @param {String} directoryAddress Used if address given in relative format
  * @param {String} fileAddress Given source address
  * @param {String} importType Either address given as a string or template literal
@@ -123,5 +123,5 @@ const getValueFromStringOrTemplateLiteral = (argument) => {
 const getLastFeasibleAddress = (givenPath) => {
   // If relative path given, then will return the address which is completely static
   // Eg. parsing `/abc/${X}` will return /abc, as the last part of the given path is dynamic
-  return givenPath.replace(/(.{2,})\/(.*)$/, "$1");
+  return givenPath.replace(/(.{2,})\/\$(.*)$/, "$1");
 };

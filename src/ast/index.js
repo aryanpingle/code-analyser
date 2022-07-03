@@ -45,6 +45,7 @@ import {
 } from "../utility/constants.js";
 
 const traverse = _traverse.default;
+
 /**
  * Builds the AST of the file, by first getting the file's code
  * @param {String} fileLocation Address of the file whose AST has to be build
@@ -68,14 +69,14 @@ export const buildAST = (fileLocation) => {
 /**
  * Main function which actually traverse the AST of the file
  * @param {Object} traversalRelatedMetadata Metadata which contains information related to traversal like AST to traverse, current and all files' metadata
- * @param {String} type Traversal type (traverse according to requirement i.e. identifying deadfile/ dependencies at given depth/ files contributing in multiple chunks check)
+ * @param {String} type Traversal type (traverse according to requirement i.e. identifying deadfile/ dependencies at given depth etc...)
  */
 export const traverseAST = (
   { ast, currentFileMetadata, filesMetadata, addReferences = true },
   type
 ) => {
-  /* Takes two parameters ast and an object which contains types of nodes to visit as the key
-     Will visit the entire AST but will report only for visited nodes provided inside the argument */
+  /* Takes two parameters, ast and an object which contains types of nodes to visit as the key
+     Will visit the entire AST but will report only for visited nodes which were provided inside the argument */
   traverse(ast, {
     // ImportDeclaration will check for "import ... from ..." type statements
     ImportDeclaration(path) {
@@ -111,7 +112,7 @@ export const traverseAST = (
         );
       }
     },
-    // Checks for "export * from ..." type statements
+    // Checks for "export * from ..." type statement
     ExportAllDeclaration(path) {
       if (isExportFromTypeStatement(path.node)) {
         doExportDeclarationOperations(path.node, currentFileMetadata, type);
@@ -179,7 +180,7 @@ export const traverseAST = (
           addReferences,
           operationType: type,
         };
-        // Checks for "const ... from ...)", "const ... = import(...)" type statements
+        // Checks for "const ... = require(...)", "const ... = import(...)" type statements
         doRequireOrImportStatementOperations(
           requireOrImportStatementMetadata,
           currentFileMetadata,
@@ -198,7 +199,7 @@ export const traverseAST = (
             filesMetadata
           );
         }
-        // Checks for "... from ...)",  "... = import(...)"" type statements
+        // Checks for "... = require(...)",  "... = import(...)" type statements
         if (isRequireOrImportStatement(path.node.right)) {
           const requireOrImportStatementMetadata = {
             nodeToGetAddress: path.node.right,

@@ -256,7 +256,7 @@ export const doDynamicImportWithPromiseOperationsAfterSetup = (
 };
 
 /**
- * Will be used to parse individual import(...) of each dynamic imports
+ * Will be used to parse individual import(...) of each dynamic import
  * Will parse magic comments present inside it to get the chunk in which it will be present
  * @param {Object} dynamicImportMetadata Contains information related to corresponding AST path and the stage at which this funciton is being called
  * @param {Object} currentFileMetadata Will be used to update the imported variables of the current file

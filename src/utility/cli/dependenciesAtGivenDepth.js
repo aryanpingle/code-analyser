@@ -1,6 +1,6 @@
 import cliTableBuilder from "cli-table3";
 
-// Same as produceAnalysdDeadFileResult function but will provide information related to dependencies at a given depth instead of dead files
+// Same as produceAnalysedDeadFilesResult function but will provide information related to dependencies at a given depth instead of dead files
 export const produceAnalysedDependenciesAtGivenDepthResult = (
   filesMetadata,
   { dependenciesAtGivenDepth, entryFiles }
@@ -34,3 +34,4 @@ export const produceAnalysedDependenciesAtGivenDepthResult = (
   });
   console.log(statsTable.toString());
 };
+  

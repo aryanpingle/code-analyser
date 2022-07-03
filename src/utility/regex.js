@@ -78,11 +78,11 @@ export const buildExcludedFilesRegex = (
  * @param {Integer} depth Depth at which dependencies should be checked
  * @returns Regex containg the dependencies at given depth's required condition
  */
-export const buildDependenciesAtGivenDepthRegex = (
+export const buildDependenciesAtGivenDepthRegex = ({
   moduleLocation,
   isDepthFromFront,
-  depth
-) => {
+  depth,
+}) => {
   const pathSubPartsArray = getAllSubPartsOfGivenAbsolutePath(moduleLocation);
   const pathSubPartsArrayLength = pathSubPartsArray.length;
   const resolvedDepth = isDepthFromFront

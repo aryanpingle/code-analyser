@@ -1,4 +1,4 @@
-import { codeAnalyerConfigurationObject } from "../utility/configuration.js";
+import { codeAnalyserConfigurationObject } from "../utility/configuration.js";
 import {
   CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
   DEFAULT_TRUE_REGEX_STRING,
@@ -13,7 +13,7 @@ import { buildDependenciesAtGivenDepthRegex } from "../utility/regex.js";
 import { resolveAddressWithProvidedDirectory } from "../utility/resolver.js";
 
 /**
- * Function which first analyses the code and prints the dependencies at a given depth on the console
+ * Function which first analyses the code and prints the dependencies which follow the depth criteria on the console
  * @param {Object} filesMetadata Object which contains information related to all files parsed
  * @param {Object} programConfiguration Object which contains information related to which files have to be checked
  */
@@ -38,14 +38,12 @@ export const analyseCodeAndDetectDependenciesAtGivenDepth = async (
     depth: programConfiguration.depth,
   };
   const { outsideModuleCheckRegex, insideModuleCheckRegex } =
-    buildDependenciesAtGivenDepthRegex(
-      dependencyCheckerRelatedMetadata.moduleLocation,
-      dependencyCheckerRelatedMetadata.isDepthFromFront,
-      dependencyCheckerRelatedMetadata.depth
-    );
-  filesMetadata.insideModuleCheckRegex = codeAnalyerConfigurationObject.checkAll
-    ? new RegExp(DEFAULT_TRUE_REGEX_STRING)
-    : insideModuleCheckRegex;
+    buildDependenciesAtGivenDepthRegex(dependencyCheckerRelatedMetadata);
+    
+  filesMetadata.insideModuleCheckRegex =
+    codeAnalyserConfigurationObject.checkAll
+      ? new RegExp(DEFAULT_TRUE_REGEX_STRING)
+      : insideModuleCheckRegex;
   setImportedFilesMapping(allEntryFiles, filesMetadata, {
     checkStaticImportsOnly: true,
   });
@@ -60,7 +58,7 @@ export const analyseCodeAndDetectDependenciesAtGivenDepth = async (
     entryFiles: allEntryFiles.length,
   };
 
-  const dependenciesUsageMapping = codeAnalyerConfigurationObject.interact
+  const dependenciesUsageMapping = codeAnalyserConfigurationObject.interact
     ? getDependenciesAtGivenDepthUsageMapping(
         dependenciesAtGivenDepth,
         filesMetadata
@@ -73,6 +71,6 @@ export const analyseCodeAndDetectDependenciesAtGivenDepth = async (
     filesArray: dependenciesAtGivenDepth,
     filesUsageMapping: dependenciesUsageMapping,
     messageType: CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
-    interact: codeAnalyerConfigurationObject.interact,
+    interact: codeAnalyserConfigurationObject.interact,
   });
 };

@@ -142,7 +142,7 @@ export const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatem
           ];
         exportedVariable.referenceCount += 1 * valueToMultiplyWith;
       } catch (_) {}
-      // Importing all exports of a file. Eg. const X from ...);
+      // Importing default export of a file. Eg. const X = require(...);
     } else if (node.type === IDENTIFIER) {
       try {
         const localEntityName = node.name;
@@ -158,7 +158,7 @@ export const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatem
           ].referenceCount -= 1 * valueToMultiplyWith;
       } catch (_) {}
     }
-    // Selective imports, Eg. const {...} from ...)
+    // Selective imports, Eg. const {...}  = require(...)
     else if (node.type === OBJECT_PATTERN) {
       const patternToCheck = node.properties;
       patternToCheck.forEach((property) => {
@@ -227,9 +227,9 @@ export const updateWebpackConfigurationOfImportedFile = (
         objectFactory.createNewDefaultFileObject(givenFileAddress);
     }
 
-    const currentwebpackConfiguration =
-      filesMetadata.filesMapping[givenFileAddress].webpackChunkConfiguration;
     // This file is now present inside the provided webpack chunk too
-    currentwebpackConfiguration[webpackChunkName] = true;
+    filesMetadata.filesMapping[givenFileAddress].webpackChunkConfiguration[
+      webpackChunkName
+    ] = true;
   } catch (_) {}
 };

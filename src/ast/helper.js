@@ -148,12 +148,3 @@ export const isNotTraversingToCheckForImportAddresses = (traverseType) =>
 export const isNotTraversingToCheckForStaticImportAddresses = (traverseType) =>
   traverseType !== CHECK_STATIC_IMPORTS_ADDRESSES;
 
-export const isAllExportsImported = (filesMetadata, importedFileAddress) => {
-  return !(
-    filesMetadata.filesMapping[importedFileAddress] &&
-    Object.keys(
-      filesMetadata.filesMapping[importedFileAddress].exportedVariables
-    ).length === 4 &&
-    filesMetadata.filesMapping[importedFileAddress].exportedVariables[DEFAULT]
-  );
-};

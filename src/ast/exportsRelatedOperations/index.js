@@ -14,7 +14,7 @@ import {
 import { ALL_EXPORTS_AS_OBJECT } from "../../utility/constants.js";
 
 /**
- * Will set all variables present in the statement as the exported variables of the current file
+ * Will set all the variables present in the statement as the exported variables of the current file
  * @param {Object} exportNode Node in AST containing information related to the statement
  * @param {Object} currentFileMetadata Contains information related to the current file
  * @param {String} traverseType Whether imports usage check phase
@@ -71,15 +71,17 @@ export const doExportSpecifiersOperations = (
         try {
           const { specifierType, exportName, importName } =
             extractVariableInformationFromSpecifier(specifier);
-          if (specifierType === ALL_EXPORTS_AS_OBJECT) {
-            currentFileMetadata.exportedVariables[exportName] =
-              filesMetadata.filesMapping[importedFileAddress].exportedVariables;
-          } else {
-            currentFileMetadata.exportedVariables[exportName] =
-              filesMetadata.filesMapping[importedFileAddress].exportedVariables[
-                importName
-              ];
-          }
+
+          const exportedVariableObject =
+            specifierType === ALL_EXPORTS_AS_OBJECT
+              ? filesMetadata.filesMapping[importedFileAddress]
+                  .exportedVariables
+              : filesMetadata.filesMapping[importedFileAddress]
+                  .exportedVariables[importName];
+
+          currentFileMetadata.exportedVariables[exportName] =
+            exportedVariableObject;
+          
           if (currentFileMetadata.isEntryFile)
             setEntryFileExportRecursively(
               currentFileMetadata.exportedVariables[exportName]

@@ -5,7 +5,7 @@ import path, { dirname } from "path";
 import { fileURLToPath } from "url";
 
 import {
-  produceAnalysdDeadFileResult,
+  produceAnalysedDeadFilesResult,
   displayAllFilesInteractively,
   displayFilesOnScreen,
   produceAnalysedDependenciesAtGivenDepthResult,
@@ -23,7 +23,7 @@ import {
   ERROR,
   RUNNER_FILE,
   SIGINT,
-  CHECK_CHUNKS_METADATA_USING_GIVEN_FILE,
+  CHECK_CHUNK_METADATA_USING_GIVEN_FILE,
 } from "./utility/constants.js";
 
 const directoryAddress = dirname(fileURLToPath(import.meta.url));
@@ -32,7 +32,7 @@ const childProcess = fork(
   path.join(directoryAddress, RUNNER_FILE),
   process.argv,
   {
-    // silent: true,
+    silent: true,
   }
 );
 
@@ -80,13 +80,13 @@ childProcess.on(MESSAGE, (data) => {
         filesContributingInMultipleChunksMetadata
       );
       break;
-    case CHECK_CHUNKS_METADATA_USING_GIVEN_FILE:
+    case CHECK_CHUNK_METADATA_USING_GIVEN_FILE:
       const chunksMetadata = {
         filesArray,
         cacheMapping,
         entryFile,
       };
-      displayAllFilesChunkMetadataInteractively(chunksMetadata);
+      displayMetadataOfGivenChunkAnalysis(chunksMetadata);
 
       break;
     case DISPLAY_TEXT:
@@ -119,7 +119,7 @@ const displayDeadFilesAnalysis = ({
   filesArray,
   interact,
 }) => {
-  produceAnalysdDeadFileResult(filesMetadata, filesLengthObject);
+  produceAnalysedDeadFilesResult(filesMetadata, filesLengthObject);
   if (interact) displayAllFilesInteractively(filesArray, {});
   else displayFilesOnScreen(filesArray);
 };
@@ -157,10 +157,10 @@ const displayFilesInMultipleChunksAnalysis = ({
 };
 
 /**
- * Function to display all chunks metadata using given files interactively on the console
+ * Function to display metadata of given chunk interactively on the console
  * @param {Object} chunksMetadata Contains information required to print a given file's chunk analysis on the console
  */
-const displayAllFilesChunkMetadataInteractively = ({
+const displayMetadataOfGivenChunkAnalysis = ({
   filesArray,
   cacheMapping,
   entryFile,

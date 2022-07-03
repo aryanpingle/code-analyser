@@ -1,6 +1,7 @@
 import {
   DISPLAY_TEXT,
   SUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE,
+  UNSUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE,
 } from "../constants.js";
 import { isFileNotExcluded } from "../helper.js";
 import { isFilePath } from "../resolver.js";
@@ -50,7 +51,8 @@ export const getDependenciesAtGivenDepth = (
 /**
  * Will generate a mapping containing information related to dependency at a given depth and the files which import them
  * @param {Array} dependenciesAtGivenDepthArray Array containing the dependencies at a given depth
- * @param {Object} filesMetadata
+ * @param {Object} filesMetadata Contains information related to all files
+ * @returns Mapping of files which follows the depth criteria and the files which imports them
  */
 export const getDependenciesAtGivenDepthUsageMapping = (
   dependenciesAtGivenDepthArray,
@@ -60,13 +62,15 @@ export const getDependenciesAtGivenDepthUsageMapping = (
   dependenciesAtGivenDepthArray.forEach(
     (fileObject) => (dependenciesUsageMapping[fileObject.file] = [])
   );
-  Object.entries(filesMetadata.filesMapping).forEach(([fileName, fileObject]) => {
-    Object.keys(fileObject.staticImportFilesMapping).forEach(
-      (dependentFile) => {
-        if (dependenciesUsageMapping[dependentFile])
-          dependenciesUsageMapping[dependentFile].push(fileName);
-      }
-    );
-  });
+  Object.entries(filesMetadata.filesMapping).forEach(
+    ([fileName, fileObject]) => {
+      Object.keys(fileObject.staticImportFilesMapping).forEach(
+        (dependentFile) => {
+          if (dependenciesUsageMapping[dependentFile])
+            dependenciesUsageMapping[dependentFile].push(fileName);
+        }
+      );
+    }
+  );
   return dependenciesUsageMapping;
 };

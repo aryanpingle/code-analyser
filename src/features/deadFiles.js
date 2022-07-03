@@ -1,9 +1,9 @@
-import { codeAnalyerConfigurationObject } from "../utility/configuration.js";
+import { codeAnalyserConfigurationObject } from "../utility/configuration.js";
 import { CHECK_DEAD_FILES } from "../utility/constants.js";
 import {
   getDeadFilesAndSendMessageToParent,
   analyseCode,
-  setAllFileExports,
+  setAllFilesExports,
   buildEntryFilesMappingFromArray,
   getAllRequiredFiles,
 } from "../utility/featureSpecificOperations/index.js";
@@ -26,7 +26,7 @@ export const analyseCodeAndDetectDeadfiles = async (
     excludedFilesRegex
   );
   const entryFilesMapping = buildEntryFilesMappingFromArray(allEntryFiles);
-  setAllFileExports(allEntryFiles, filesMetadata, entryFilesMapping);
+  setAllFilesExports(allEntryFiles, filesMetadata, entryFilesMapping);
   // Reset the visited files, will traverse them again
   filesMetadata.visitedFilesMapping = {};
   analyseCode(allEntryFiles, filesMetadata);
@@ -44,6 +44,6 @@ export const analyseCodeAndDetectDeadfiles = async (
     filesLengthObject,
     filesArray: allDeadFiles,
     messageType: CHECK_DEAD_FILES,
-    interact: codeAnalyerConfigurationObject.interact,
+    interact: codeAnalyserConfigurationObject.interact,
   });
 };

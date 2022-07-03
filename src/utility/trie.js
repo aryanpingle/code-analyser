@@ -40,7 +40,7 @@ export const buildTrie = (filesObjectsArray) => {
 
 /**
  * Will be used to ignore nodes which have just one children to allow faster parsing of the trie
- * @param {Object} givenNode
+ * @param {Object} givenNode Node to use
  * @returns Trie node containing zero or more than one childrens
  */
 export const getFirstNodeNotContainingOneChild = (givenNode) => {

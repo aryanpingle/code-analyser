@@ -6,6 +6,7 @@ import {
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
+  isFileTraversable,
 } from "../utility/helper.js";
 import {
   CHECK_STATIC_IMPORTS_ADDRESSES,
@@ -18,7 +19,7 @@ import { getFileSize } from "./utility.js";
  * Will be used to check a given file's imports (used while detecting dependencies at a given depth/ files contributing in multiple chunks)
  * @param {String} entyFileLocation Address of the entry file
  * @param {Object} filesMetadata Object containing information related to all files
- * @param {Boolean} checkStaticImportsOnly To decide whether only static imports of a file have to be checked or not
+ * @param {Object} metadata To decide whether static imports, and size of a file have to be checked or not
  */
 export const checkFileImports = (
   entyFileLocation,
@@ -45,7 +46,7 @@ export const checkFileImports = (
  * This function will traverse a file to get it's imported/ statically imported files
  * @param {String} fileLocation Address of the file which has to be traversed
  * @param {Object} filesMetadata Object containing information related to all files
- * @param {Boolean} checkStaticImportsOnly To decide whether only static imports of a file have to be checked or not
+ * @param {Object} metadata To decide whether static imports, and size of a file have to be checked or not
  */
 const traverseFileForImports = (
   fileLocation,
@@ -60,6 +61,7 @@ const traverseFileForImports = (
       !filesMetadata.insideModuleCheckRegex.test(fileLocation)
     )
       return;
+
     let ast = buildAST(fileLocation);
     let currentFileMetadata =
       objectFactory.createNewDefaultCurrentFileMetadataObject(fileLocation);
@@ -91,11 +93,7 @@ const traverseFileForImports = (
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
     Object.keys(requiredImportedFilesMapping).forEach((file) => {
-      if (
-        isFileNotVisited(file, filesMetadata) &&
-        isFileExtensionValid(file) &&
-        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      ) {
+      if (isFileTraversable(file, filesMetadata)) {
         if (!filesMetadata.filesMapping[file])
           filesMetadata.filesMapping[file] =
             objectFactory.createNewDefaultFileObject(file);

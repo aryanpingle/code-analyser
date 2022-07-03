@@ -1,7 +1,7 @@
 import path from "path";
 import enhancedResolve from "enhanced-resolve";
 import { existsSync, statSync } from "fs";
-import { codeAnalyerConfigurationObject } from "./configuration.js";
+import { codeAnalyserConfigurationObject } from "./configuration.js";
 import TsconfigPathsPlugin from "tsconfig-paths-webpack-plugin";
 import JsConfigPathsPlugin from "jsconfig-paths-webpack-plugin";
 import process from "process";
@@ -35,10 +35,10 @@ export const getDirectoryFromPath = (pathToRetrieveFrom) =>
   path.dirname(pathToRetrieveFrom);
 
 /**
- * Function to get the address of a ancestor directory of the provided path
+ * Function to get the address of an ancestor directory of the provided path
  * @param {String} pathToRetrieveFrom Given path from which the predecessor directory's path will be retrieved
  * @param {Integer} depthFromCurrentNode Smallest distance between the ancestor and current nodes
- * @returns Address of the ancestory directory of the provided path at the given depth
+ * @returns Address of the ancestor directory of the provided path at the given depth
  */
 export const getPredecessorDirectory = (
   pathToRetrieveFrom,
@@ -91,12 +91,12 @@ const settings = {
 };
 
 // Improving resolver if root directory provided
-if (codeAnalyerConfigurationObject.rootDirectory)
+if (codeAnalyserConfigurationObject.rootDirectory)
   [JSCONFIG_FILE, TSCONFIG_FILE].forEach((file, index) => {
     const resolvedPath = resolveAddressWithProvidedDirectory(
       resolveAddressWithProvidedDirectory(
         process.cwd(),
-        codeAnalyerConfigurationObject.rootDirectory
+        codeAnalyserConfigurationObject.rootDirectory
       ),
       file
     );
@@ -117,10 +117,10 @@ if (codeAnalyerConfigurationObject.rootDirectory)
 const enhancedResolver = new enhancedResolve.create.sync(settings);
 
 /**
- * Function will resolve the address of the required file using it's directory and file addresses
+ * This function will resolve the address of the required file using it's directory and file address
  * @param {String} directoryAddress Absolute address of the required file/ folder's directory
  * @param {String} fileAddress Given path of the file (relative, absolute, node module)
- * @param {String} pathType Provided type of path (either FILE or UNRESOLVED TYPE), default: FILE
+ * @param {String} pathType Provided type of path (either FILE or UNRESOLVED TYPE)
  * @returns Resolved path of the given address
  */
 export const pathResolver = (
@@ -169,7 +169,7 @@ export const pathResolver = (
 };
 
 /**
- * Will find all sub-parts present in a given path
+ * Will find all the sub-parts which are present in a given path
  * For eg. path: A/B/C/D -> returned value [A, B, C, D]
  * @param {String} givenPath Absolute address of the path from which sub-parts have to be retrieved
  * @returns Array consisting of all sub-parts (in order) of the given path

@@ -1,11 +1,10 @@
 import { isFilePath } from "./resolver.js";
 
-export const isDeadfileCheckRequired = (programConfiguration) =>
+export const isDeadFilesCheckRequired = (programConfiguration) =>
   programConfiguration && programConfiguration.checkDeadFiles;
 
-export const isDependenciesCheckRequiredAtGivenDepthCheckRequired = (
-  programConfiguration
-) => programConfiguration && programConfiguration.checkDependenciesAtGivenDepth;
+export const isDependenciesAtGivenDepthCheckRequired = (programConfiguration) =>
+  programConfiguration && programConfiguration.checkDependenciesAtGivenDepth;
 
 export const isFilesContributingInMultipleChunksCheckRequired = (
   programConfiguration
@@ -39,3 +38,8 @@ export const isFileNotVisited = (fileLocation, filesMetadata) =>
 
 export const isFileExtensionValid = (fileLocation) =>
   /\.[jt]sx?$/.test(fileLocation);
+
+export const isFileTraversable = (file, filesMetadata) =>
+  isFileNotVisited(file, filesMetadata) &&
+  isFileExtensionValid(file) &&
+  isFileNotExcluded(filesMetadata.excludedFilesRegex, file);

@@ -32,11 +32,11 @@ export const setImportedFilesMapping = (
  */
 export const getFilePoints = (file, filesMapping) => {
   const validExtendsionPoints = isFileExtensionValid(file) ? 100 : 0;
-  const fileReferredPoints = !filesMapping[file] ? 10 : 0;
+  const fileNotReferredPoints = !filesMapping[file] ? 10 : 0;
   // If present deep inside a parent folder, then it's significance is lower as compared to those present closer to a parent folder
   const subPartsCount = getNumberOfSubPartsOfGivenAbsolutePath(file);
   const totalFilePoints =
-    validExtendsionPoints + fileReferredPoints - subPartsCount;
+    validExtendsionPoints + fileNotReferredPoints - subPartsCount;
   return totalFilePoints;
 };
 

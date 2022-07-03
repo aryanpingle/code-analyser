@@ -4,6 +4,7 @@ import {
   ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE,
 } from "../constants.js";
 import { isFileNotExcluded } from "../helper.js";
+import objectFactory from "../factory.js";
 
 /**
  * Will be used to create a new Data Structure which will contain information of each file and the chunks inside which it is present
@@ -17,10 +18,8 @@ export const createWebpackChunkMetadata = (filesMetadata) => {
   Object.entries(filesMapping).forEach(([fileName, fileObject]) => {
     if (!isFileNotExcluded(excludedFilesRegex, fileName)) return;
     if (!allFilesChunksMetadata[fileName])
-      allFilesChunksMetadata[fileName] = generateDefaultFileChunksObject(
-        filesMetadata,
-        fileName
-      );
+      allFilesChunksMetadata[fileName] =
+        objectFactory.createNewDefaultFileChunksObject(filesMetadata, fileName);
     Object.keys(fileObject.webpackChunkConfiguration).forEach((chunkName) =>
       allFilesChunksMetadata[fileName].chunks.push(chunkName)
     );
@@ -28,10 +27,11 @@ export const createWebpackChunkMetadata = (filesMetadata) => {
     Object.keys(fileObject.staticImportFilesMapping).forEach((importedFile) => {
       if (!isFileNotExcluded(excludedFilesRegex, importedFile)) return;
       if (!allFilesChunksMetadata[importedFile])
-        allFilesChunksMetadata[importedFile] = generateDefaultFileChunksObject(
-          filesMetadata,
-          importedFile
-        );
+        allFilesChunksMetadata[importedFile] =
+          objectFactory.createNewDefaultFileChunksObject(
+            filesMetadata,
+            importedFile
+          );
       allFilesChunksMetadata[importedFile][fileName] =
         allFilesChunksMetadata[fileName];
     });
@@ -45,21 +45,7 @@ export const createWebpackChunkMetadata = (filesMetadata) => {
 };
 
 /**
- * Used to create a new object which will contain the chunks inside which this file is present initially
- * @param {Object} filesMetadata Contains information related to all files
- * @param {String} fileLocation Absolute address of the file to check
- * @returns Object containing an array of initial chunks inside which the given file is present
- */
-const generateDefaultFileChunksObject = (filesMetadata, fileLocation) => {
-  const defaultObject = { chunks: [] };
-  if (filesMetadata.filesMapping[fileLocation].isEntryFile) {
-    defaultObject.chunks.push(fileLocation);
-  }
-  return defaultObject;
-};
-
-/**
- * Displays the files (along with the chunks inside which it is present) which are present in more than one chunk on the console
+ * Returns the files along with the chunks' name which are present inside multiple chunks
  * @param {Object} webpackChunkMetadata Data Structure containing information related to the chunks inside which a file is present
  */
 export const getFilesContributingInMultipleChunks = (webpackChunkMetadata) => {
@@ -93,8 +79,6 @@ const getAllRelatedChunks = (
   webpackChunkMetadata,
   fileWebpackChunkMapping
 ) => {
-  if (fileWebpackChunkMapping[fileLocation])
-    return fileWebpackChunkMapping[fileLocation];
   const fileChunksSet = new Set(webpackChunkMetadata[fileLocation].chunks);
   fileWebpackChunkMapping[fileLocation] = fileChunksSet;
   Object.keys(webpackChunkMetadata[fileLocation]).forEach((dependentFile) => {
@@ -121,8 +105,9 @@ const getAllRelatedChunks = (
 };
 
 /**
- * Generates a mapping from given array containing files which are present in multiple chunks
- * @param {Array} filesInMultipleChunksArray
+ * Generates a mapping from given array containing the files which are present in multiple chunks
+ * @param {Array} filesInMultipleChunksArray Array consisting of files which are present inside multiple chunks
+ * @returns Mapping of files which are present inside multiple chunks and the chunks inside which they are present
  */
 export const getFilesContributingInMultipleChunksMapping = (
   filesInMultipleChunksArray

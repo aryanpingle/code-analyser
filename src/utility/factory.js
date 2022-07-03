@@ -1,49 +1,15 @@
-import { DEFAULT, FILE } from "./constants.js";
+import { DEFAULT, FILE, SPACE } from "./constants.js";
 import { isFileExtensionNotValid } from "./helper.js";
 import { buildExcludedFilesRegex } from "./regex.js";
 import { getPathBaseName } from "./resolver.js";
 
-// Factory which will create all the objects that are used by the program
-export default (() => {
-  return {
-    createNewFilesMetadataObject: (exclude, include) =>
-      getFilesMetadataObject(exclude, include),
-    createNewDefaultFileObject: (fileLocation, type = FILE) =>
-      getDefaultFileObject(fileLocation, type),
-    createNewDefaultCurrentFileMetadataObject: (
-      fileLocation,
-      isEntryFile = false
-    ) => getDefaultCurrentFileMetadataObject(fileLocation, isEntryFile),
-    createNewDefaultVariableObject: (
-      fileLocation,
-      name = DEFAULT,
-      isEntryFileObject = false
-    ) => getNewDefaultVariableObject(fileLocation, name, isEntryFileObject),
-    createNewImportMetadataObject: (
-      name,
-      localName,
-      type,
-      importedFileAddress,
-      count = 0
-    ) =>
-      getNewImportMetadataObject(
-        name,
-        localName,
-        type,
-        importedFileAddress,
-        count
-      ),
-    createNewTrieNode: (baseName, pathTillNode = " ", isFile = false) =>
-      getNewTrieNode(baseName, pathTillNode, isFile),
-  };
-})();
-
 /**
  * Returns the default filesMetadata object
- * @param {RegExp} excludedFilesRegex Regex expression denoting excluded files
+ * @param {RegExp} exclude Regex expression denoting excluded files
+ * @param {RegExp} include Regex expression denoting included files
  * @returns Object containing all files' metadata
  */
-const getFilesMetadataObject = (exclude, include) => {
+const createNewFilesMetadataObject = (exclude, include) => {
   return {
     filesMapping: {},
     visitedFilesMapping: {},
@@ -53,12 +19,12 @@ const getFilesMetadataObject = (exclude, include) => {
 };
 
 /**
- * Returns an object which set's the default values corresponding to each file's object
+ * Returns an object which sets the default values corresponding to each file's object
  * @param {String} fileLocation Address of the file for which default object has to be created
  * @param {String} type Denotes whether it is a "FILE" or "UNRESOLVED_TYPE"
  * @returns Object consisting of default information related to that file
  */
-const getDefaultFileObject = (fileLocation, type = FILE) => {
+const createNewDefaultFileObject = (fileLocation, type = FILE) => {
   const newFileObject = {
     name: getPathBaseName(fileLocation),
     type,
@@ -74,7 +40,7 @@ const getDefaultFileObject = (fileLocation, type = FILE) => {
   };
   if (isFileExtensionNotValid(fileLocation))
     newFileObject.exportedVariables[DEFAULT] =
-      getNewDefaultVariableObject(fileLocation);
+      createNewDefaultVariableObject(fileLocation);
 
   return newFileObject;
 };
@@ -85,7 +51,11 @@ const getDefaultFileObject = (fileLocation, type = FILE) => {
  * @param {String} name Local name of the object
  * @returns Object containing information which will used to check whether it has been used or not
  */
-const getNewDefaultVariableObject = (fileLocation, name, isEntryFileObject) => {
+const createNewDefaultVariableObject = (
+  fileLocation,
+  name = DEFAULT,
+  isEntryFileObject = false
+) => {
   return {
     localName: name,
     firstReferencedAt: fileLocation,
@@ -96,11 +66,14 @@ const getNewDefaultVariableObject = (fileLocation, name, isEntryFileObject) => {
 };
 
 /**
- * Returns the default currentFileMetadata object
+ * Returns the default current File Metadata object
  * @param {String} fileLocation Address of the file whose metadata has to be returned
  * @returns Object containing current file's default metadata
  */
-const getDefaultCurrentFileMetadataObject = (fileLocation, isEntryFile) => {
+const createNewDefaultCurrentFileMetadataObject = (
+  fileLocation,
+  isEntryFile = false
+) => {
   const newFileObject = {
     importedVariables: {},
     importedVariablesMetadata: {},
@@ -111,13 +84,13 @@ const getDefaultCurrentFileMetadataObject = (fileLocation, isEntryFile) => {
     importedFilesMapping: {},
     staticImportFilesMapping: {},
     fileLocation,
-    isEntryFile: isEntryFile,
+    isEntryFile,
   };
-  if (isFileExtensionNotValid(fileLocation)) {
+  if (isFileExtensionNotValid(fileLocation))
     // If not a valid extension, then as we won't parse it therefore create a default export object for it
     newFileObject.exportedVariables[DEFAULT] =
-      objectFactory.createNewDefaultVariableObject(fileLocation);
-  }
+      createNewDefaultVariableObject(fileLocation);
+
   return newFileObject;
 };
 
@@ -129,12 +102,12 @@ const getDefaultCurrentFileMetadataObject = (fileLocation, isEntryFile) => {
  * @param {String} importedFileAddress Absolute address of the imported file
  * @returns Object which contains the above information
  */
-const getNewImportMetadataObject = (
+const createNewImportMetadataObject = (
   name,
   localName,
   type,
   importedFileAddress,
-  count
+  count = 0
 ) => {
   return {
     name,
@@ -149,12 +122,37 @@ const getNewImportMetadataObject = (
   };
 };
 
-// Returns new trie node with provided properties
-const getNewTrieNode = (baseName, pathTillNode, isFile) => {
+// Returns new trie node with the provided properties
+const createNewTrieNode = (baseName, pathTillNode = SPACE, isFile = false) => {
   return {
     baseName,
     pathTillNode,
     childrens: {},
     isFile,
   };
+};
+
+/**
+ * Used to create a new object which will contain the chunks inside which this file is present initially
+ * @param {Object} filesMetadata Contains information related to all files
+ * @param {String} fileLocation Absolute address of the file to check
+ * @returns Object containing an array of initial chunks inside which the given file is present
+ */
+const createNewDefaultFileChunksObject = (filesMetadata, fileLocation) => {
+  const defaultObject = { chunks: [] };
+  if (filesMetadata.filesMapping[fileLocation].isEntryFile) {
+    defaultObject.chunks.push(fileLocation);
+  }
+  return defaultObject;
+};
+
+// Factory which will create all the objects that are used by the program
+export default {
+  createNewFilesMetadataObject,
+  createNewDefaultFileObject,
+  createNewDefaultCurrentFileMetadataObject,
+  createNewDefaultVariableObject,
+  createNewImportMetadataObject,
+  createNewTrieNode,
+  createNewDefaultFileChunksObject,
 };

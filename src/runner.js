@@ -1,49 +1,47 @@
-import { codeAnalyerConfigurationObject } from "./utility/configuration.js";
+import { codeAnalyserConfigurationObject } from "./utility/configuration.js";
 import objectFactory from "./utility/factory.js";
 import {
-  isDeadfileCheckRequired,
-  isDependenciesCheckRequiredAtGivenDepthCheckRequired,
+  isDeadFilesCheckRequired,
+  isDependenciesAtGivenDepthCheckRequired,
   isFilesContributingInMultipleChunksCheckRequired,
   isMetadataOfGivenChunkCheckRequired,
 } from "./utility/helper.js";
 import {
   analyseCodeAndDetectDeadfiles,
   analyseCodeAndDetectDependenciesAtGivenDepth,
-  analyseCodeAndDetectAllFilesPresetInMultipleChunks,
-  analyseCodeAndDetectChunkMetadataOfFiles,
+  analyseCodeAndDetectAllFilesPresentInMultipleChunks,
+  analyseCodeAndDetectMetadataOfGivenChunk,
 } from "./features/index.js";
 
 const filesMetadata = objectFactory.createNewFilesMetadataObject(
-  codeAnalyerConfigurationObject.exclude,
-  codeAnalyerConfigurationObject.include
+  codeAnalyserConfigurationObject.exclude,
+  codeAnalyserConfigurationObject.include
 );
 switch (true) {
-  case isDeadfileCheckRequired(codeAnalyerConfigurationObject):
+  case isDeadFilesCheckRequired(codeAnalyserConfigurationObject):
     analyseCodeAndDetectDeadfiles(
       filesMetadata,
-      codeAnalyerConfigurationObject
+      codeAnalyserConfigurationObject
     );
     break;
-  case isDependenciesCheckRequiredAtGivenDepthCheckRequired(
-    codeAnalyerConfigurationObject
-  ):
+  case isDependenciesAtGivenDepthCheckRequired(codeAnalyserConfigurationObject):
     analyseCodeAndDetectDependenciesAtGivenDepth(
       filesMetadata,
-      codeAnalyerConfigurationObject
+      codeAnalyserConfigurationObject
     );
     break;
   case isFilesContributingInMultipleChunksCheckRequired(
-    codeAnalyerConfigurationObject
+    codeAnalyserConfigurationObject
   ):
-    analyseCodeAndDetectAllFilesPresetInMultipleChunks(
+    analyseCodeAndDetectAllFilesPresentInMultipleChunks(
       filesMetadata,
-      codeAnalyerConfigurationObject
+      codeAnalyserConfigurationObject
     );
     break;
-  case isMetadataOfGivenChunkCheckRequired(codeAnalyerConfigurationObject):
-    analyseCodeAndDetectChunkMetadataOfFiles(
+  case isMetadataOfGivenChunkCheckRequired(codeAnalyserConfigurationObject):
+    analyseCodeAndDetectMetadataOfGivenChunk(
       filesMetadata,
-      codeAnalyerConfigurationObject
+      codeAnalyserConfigurationObject
     );
     break;
 }

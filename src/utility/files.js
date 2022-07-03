@@ -5,21 +5,7 @@ import { isInstanceofRegexExpression, isFileNotExcluded } from "./helper.js";
 import { DEFAULT_ENTRY_ARRAY } from "./constants.js";
 
 /**
- * Update existing filesMetdata with the help of currently parsed file's metdata
- * @param {Object} filesMetadata Metadata of all files parsed by the program
- * @param {Object} currentFileMetadata Metadata of the currently parsed file
- */
-export const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
-  const filesMapping = filesMetadata.filesMapping;
-  const currentFileMapping = currentFileMetadata.importedFilesMapping;
-  filesMapping[currentFileMetadata.fileLocation].exportedVariables =
-    currentFileMetadata.exportedVariables;
-  filesMapping[currentFileMetadata.fileLocation].importedFilesMapping =
-    currentFileMapping;
-};
-
-/**
- * Get all entry files from the directories to check (provided in the configuration file)
+ * Get all entry files from the directories to check/ module to check (provided in the configuration file)
  * @param {Array} entryArray Array of regex/ paths denoting which entry files are requied
  * @param {Array} allFilesToCheck All files inside the directories where the program will run
  * @param {RegExp} excludedFilesRegex Regex denoting excluded files
@@ -35,12 +21,11 @@ export const getAllEntryFiles = async (
   const entryFilesArray = await entryArray.reduce(
     async (discoveredEntryFilesPromise, entry) => {
       const discoveredEntryFiles = await discoveredEntryFilesPromise;
-      const newFilesToAdd = [];
       if (isInstanceofRegexExpression(entry)) {
         allFilesToCheck.forEach((file) => {
           // if a file matches the regex and also is not excluded
           if (entry.test(file) && isFileNotExcluded(excludedFilesRegex, file))
-            newFilesToAdd.push(file);
+            discoveredEntryFiles.push(file);
         });
       } else {
         // getAllFiles will return all non-excluded files from the "entry" directory
@@ -52,10 +37,10 @@ export const getAllEntryFiles = async (
           );
         // Simply using deconstructor to add these files inside the array may result in memory overflow
         filesInsideThisDirectory.forEach((file) => {
-          newFilesToAdd.push(file);
+          discoveredEntryFiles.push(file);
         });
       }
-      return [...discoveredEntryFiles, ...newFilesToAdd];
+      return discoveredEntryFiles;
     },
     Promise.resolve([])
   );

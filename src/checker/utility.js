@@ -13,11 +13,10 @@ export const getUsedFilesMapping = (currentFileMetadata) => {
   const visitedFilesMapping = {};
   const importedVariablesMapping =
     currentFileMetadata.importedVariablesMetadata;
-  Object.entries(importedVariablesMapping).forEach(([_, variableObject]) => {
+  Object.values(importedVariablesMapping).forEach((variableObject) => {
     visitedFilesMapping[variableObject.importedFrom] = true;
-    if (variableObject.referenceCountObject.referenceCount) {
+    if (variableObject.referenceCountObject.referenceCount)
       usedFilesMapping[variableObject.importedFrom] = true;
-    }
   });
   Object.keys(currentFileMetadata.importedFilesMapping).forEach((file) => {
     if (!visitedFilesMapping[file]) usedFilesMapping[file] = true;
@@ -33,7 +32,7 @@ export const getUsedFilesMapping = (currentFileMetadata) => {
  */
 export const getFileSize = (fileAst, fileLocation) => {
   const code = fs.readFileSync(fileLocation).toString();
-  // Will minify the original code, Eg. will remove unnecssary whitespaces, comments
+  // Will minify the original code, Eg. will remove unnecessary whitespaces, comments
   const minifiedCode = generate(
     fileAst,
     {
@@ -43,4 +42,18 @@ export const getFileSize = (fileAst, fileLocation) => {
     code
   );
   return Buffer.byteLength(minifiedCode.code);
+};
+
+/**
+ * Update existing filesMetdata with the help of currently parsed file's metadata
+ * @param {Object} filesMetadata Metadata of all files parsed by the program
+ * @param {Object} currentFileMetadata Metadata of the currently parsed file
+ */
+export const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
+  const filesMapping = filesMetadata.filesMapping;
+  const currentFileMapping = currentFileMetadata.importedFilesMapping;
+  filesMapping[currentFileMetadata.fileLocation].exportedVariables =
+    currentFileMetadata.exportedVariables;
+  filesMapping[currentFileMetadata.fileLocation].importedFilesMapping =
+    currentFileMapping;
 };

@@ -16,7 +16,7 @@ import {
  * Will parse the export statement's specifier and set it as an import of the current file
  * @param {Object} specifier Node in AST that corresponds to export from statement's specifier
  * @param {Object} currentFileMetadata Contains information related to the current file's imports and exports
- * @param {Object} filesMetadata Contains inforamtion related to all files
+ * @param {String} importedFileAddress Absolute address of the imported file
  */
 export const setImportedVariablesMetadataFromExportFromStatementSpecifier = (
   specifier,
@@ -59,7 +59,7 @@ export const extractVariableInformationFromSpecifier = (specifier) => {
  * Covers both commonJs and ES6 type exports
  * @param {Object} nodeToGetValues AST node to get values from
  * @param {String} type To check whether it is a default export or not
- * @returns Array of key value pairs representing local and exported name
+ * @returns Object consisting of an array of key value pairs representing local and exported name, and the export type
  */
 export const getValuesFromStatement = (nodeToGetValues, type) => {
   // module.exports = X type statements
@@ -200,7 +200,7 @@ const getValuesFromObject = (arrayToGetValuesFrom) => {
 /**
  * Will set the export variables of the current file
  * If an export is also an imported variable, then it will simply refer it
- * @param {Array} exportedVariablesArray Array of parsed exported variables each containing a key value pair
+ * @param {Array} exportedVariablesArray Array of parsed exported variables, each containing a key value pair
  * @param {Object} currentFileMetadata To check whether a variable was imported or is a local one
  * @param {Object} filesMetadata To get all exported variables of another file
  */
@@ -293,7 +293,8 @@ const setExportVariable = (
       variableToUpdate[Object.values(variable)[0]] =
         objectFactory.createNewDefaultVariableObject(
           currentFileMetadata.fileLocation,
-          Object.keys(variable)[0]
+          Object.keys(variable)[0],
+          currentFileMetadata.isEntryFile
         );
     }
   } catch (_) {}

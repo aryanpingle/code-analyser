@@ -4,7 +4,7 @@ import { BOLD } from "../constants.js";
 import { getSizeFromInteger } from "../parseElements.js";
 
 /**
- * Function which displays the dependencies of the chunk corresponding to the given file on the screen
+ * Function which displays the metadata of a given chunk, which is formed by taking the given file as the entry
  * @param {Object} cacheMapping Cached data which is used to display information related to each file which is present inside the chunk
  * @param {String} fileLocation Absolute address of the file which will used as an entry to build the chunk's metadata
  */
@@ -28,11 +28,7 @@ export const displayChunkMetadaRelatedInformation = (
     const currentFileSize = cacheMapping[file]
       ? cacheMapping[file].effectiveSize
       : 0;
-    statsTable.push([
-      parseInt(index) + 1,
-      file,
-      getSizeFromInteger(currentFileSize),
-    ]);
+    statsTable.push([index + 1, file, getSizeFromInteger(currentFileSize)]);
   });
   console.log(statsTable.toString());
   console.log(

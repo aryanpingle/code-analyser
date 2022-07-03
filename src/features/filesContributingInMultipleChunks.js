@@ -1,4 +1,4 @@
-import { codeAnalyerConfigurationObject } from "../utility/configuration.js";
+import { codeAnalyserConfigurationObject } from "../utility/configuration.js";
 import { CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS } from "../utility/constants.js";
 import {
   getAllRequiredFiles,
@@ -13,7 +13,7 @@ import {
  * @param {Object} filesMetadata Object which contains information related to all files parsed
  * @param {Object} programConfiguration Object which contains information related to which files have to be checked
  */
-export const analyseCodeAndDetectAllFilesPresetInMultipleChunks = async (
+export const analyseCodeAndDetectAllFilesPresentInMultipleChunks = async (
   filesMetadata,
   programConfiguration
 ) => {
@@ -38,6 +38,6 @@ export const analyseCodeAndDetectAllFilesPresetInMultipleChunks = async (
     filesArray: allFilesInMultipleChunks,
     filesUsageMapping: allFilesInMultipleChunksMapping,
     messageType: CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS,
-    interact: codeAnalyerConfigurationObject.interact,
+    interact: codeAnalyserConfigurationObject.interact,
   });
 };

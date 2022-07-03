@@ -7,6 +7,7 @@ import {
   isFileNotVisited,
   isFileMappingNotPresent,
   isFileNotExcluded,
+  isFileTraversable,
 } from "../utility/helper.js";
 import { getUsedFilesMapping } from "./utility.js";
 
@@ -16,10 +17,10 @@ import { getUsedFilesMapping } from "./utility.js";
  * @param {Object} filesMetadata Object containing information related to all files
  */
 export const checkFileUsage = (entyFileLocation, filesMetadata) => {
-  if (isFileMappingNotPresent(entyFileLocation, filesMetadata)) {
+  if (isFileMappingNotPresent(entyFileLocation, filesMetadata))
     filesMetadata.filesMapping[entyFileLocation] =
       objectFactory.createNewDefaultFileObject(entyFileLocation);
-  }
+
   filesMetadata.filesMapping[entyFileLocation].isEntryFile = true;
   if (
     isFileNotVisited(entyFileLocation, filesMetadata) &&
@@ -87,11 +88,7 @@ const traverseFileForCheckingUsage = (fileLocation, filesMetadata) => {
     traversalRelatedMetadata = null;
 
     Object.keys(requiredImportedFilesMapping).forEach((file) => {
-      if (
-        isFileNotVisited(file, filesMetadata) &&
-        isFileExtensionValid(file) &&
-        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      )
+      if (isFileTraversable(file, filesMetadata))
         traverseFileForCheckingUsage(file, filesMetadata);
     });
   } catch (err) {

@@ -6,7 +6,7 @@ import cliTableBuilder from "cli-table3";
  * @param {Object} filesMetadata Contains information related to all files
  * @param {Object} filesLengthObject Contains information related to various types of files
  */
-export const produceAnalysdDeadFileResult = (
+export const produceAnalysedDeadFilesResult = (
   filesMetadata,
   { deadFiles, filesToCheck, entryFiles }
 ) => {
