@@ -96,6 +96,7 @@ childProcess.on(MESSAGE, (data) => {
       };
       displayTextOnConsole(textMetadata);
       break;
+    default:
   }
 });
 
@@ -120,8 +121,13 @@ const displayDeadFilesAnalysis = ({
   interact,
 }) => {
   produceAnalysedDeadFilesResult(filesMetadata, filesLengthObject);
-  if (interact) displayAllFilesInteractively(filesArray, {});
-  else displayFilesOnScreen(filesArray);
+  const outputMetadata = {
+    isInteractionRequired: interact,
+    filesArray,
+    filesAdditionalInformationMapping: {},
+    nonInteractionOutputFunction: displayFilesOnScreen,
+  };
+  displayOutputOnConsole(outputMetadata);
 };
 
 /**
@@ -139,8 +145,14 @@ const displayDependenciesAtGivenDepthAnalysis = ({
     filesMetadata,
     filesLengthObject
   );
-  if (interact) displayAllFilesInteractively(filesArray, { filesUsageMapping });
-  else displayFilesOnScreen(filesArray);
+  const outputMetadata = {
+    isInteractionRequired: interact,
+    filesArray,
+    filesAdditionalInformationMapping: { filesUsageMapping },
+    nonInteractionOutputFunction: displayFilesOnScreen,
+  };
+
+  displayOutputOnConsole(outputMetadata);
 };
 
 /**
@@ -152,8 +164,15 @@ const displayFilesInMultipleChunksAnalysis = ({
   filesUsageMapping,
   interact,
 }) => {
-  if (interact) displayAllFilesInteractively(filesArray, { filesUsageMapping });
-  else displayFilesContributingInMultipleChunksDetails(filesArray);
+  const outputMetadata = {
+    isInteractionRequired: interact,
+    filesArray,
+    filesAdditionalInformationMapping: { filesUsageMapping },
+    nonInteractionOutputFunction:
+      displayFilesContributingInMultipleChunksDetails,
+  };
+
+  displayOutputOnConsole(outputMetadata);
 };
 
 /**
@@ -166,8 +185,29 @@ const displayMetadataOfGivenChunkAnalysis = ({
   entryFile,
 }) => {
   displayChunkMetadaRelatedInformation(cacheMapping, entryFile);
-  displayAllFilesInteractively(filesArray, {
-    checkMetadataOfGivenChunk: true,
-    cacheMapping,
-  });
+  const outputMetadata = {
+    isInteractionRequired: true,
+    filesArray,
+    filesAdditionalInformationMapping: {
+      checkMetadataOfGivenChunk: true,
+      cacheMapping,
+    },
+  };
+
+  displayOutputOnConsole(outputMetadata);
+};
+
+/**
+ * Will be used to print output on the console, depending upon whether interaction is required, and function to use if not
+ * @param {Object} metadata
+ */
+const displayOutputOnConsole = ({
+  isInteractionRequired,
+  filesArray,
+  filesAdditionalInformationMapping,
+  nonInteractionOutputFunction,
+}) => {
+  if (isInteractionRequired)
+    displayAllFilesInteractively(filesArray, filesAdditionalInformationMapping);
+  else nonInteractionOutputFunction(filesArray);
 };

@@ -269,9 +269,10 @@ export const traverseAST = (
               );
             }
           }
+        } else {
         }
-        // Checks for "require(...)" type statements
       }
+      // Checks for "require(...)" type statements
       if (isRequireStatement(path.node)) {
         const requireOrImportStatementMetadata = {
           nodeToGetAddress: path.node,

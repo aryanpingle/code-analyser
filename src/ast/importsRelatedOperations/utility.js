@@ -67,6 +67,7 @@ export const setImportedVariableInCurrentFileMetadata = (
           filesMetadata.filesMapping[importedFileAddress].exportedVariables[
             importedEntityName
           ];
+      } else {
       }
     } catch (_) {}
   }
@@ -107,6 +108,7 @@ export const setImportedVariablesDuringImportStage = (
         localName
       ].isDefaultImport = true;
     });
+  } else {
   }
 };
 
@@ -180,6 +182,7 @@ export const updateImportedVariablesReferenceCountInRequireOrDynamicImportStatem
             ].referenceCount -= importReferenceCount * valueToMultiplyWith;
         } catch (_) {}
       });
+    } else {
     }
   };
 

@@ -13,6 +13,8 @@ export const getRequiredTypeElementFromString = (
     return arrayElement.replace(/['"](.*)['"]/, "$1");
   // if true/false given
   else if (/true|false/.test(arrayElement)) return arrayElement === TRUE;
+  else {
+  }
   // if regex given
   arrayElement = arrayElement.replace(/\/(.*)\//, "$1");
   return new RegExp(arrayElement);

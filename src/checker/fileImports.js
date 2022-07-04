@@ -5,15 +5,13 @@ import {
   isFileExtensionValid,
   isFileNotVisited,
   isFileMappingNotPresent,
-  isFileNotExcluded,
-  isFileTraversable,
 } from "../utility/helper.js";
 import {
   CHECK_STATIC_IMPORTS_ADDRESSES,
   CHECK_ALL_IMPORTS_ADDRESSES,
   DISPLAY_TEXT,
 } from "../utility/constants.js";
-import { getFileSize } from "./utility.js";
+import { getFileSize, traverseChildrenFiles } from "./utility.js";
 
 /**
  * Will be used to check a given file's imports (used while detecting dependencies at a given depth/ files contributing in multiple chunks)
@@ -92,23 +90,14 @@ const traverseFileForImports = (
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
-    Object.keys(requiredImportedFilesMapping).forEach((file) => {
-      if (isFileTraversable(file, filesMetadata)) {
-        if (!filesMetadata.filesMapping[file])
-          filesMetadata.filesMapping[file] =
-            objectFactory.createNewDefaultFileObject(file);
 
-        traverseFileForImports(file, filesMetadata, {
-          checkStaticImportsOnly,
-          checkForFileSize,
-        });
-      } else if (
-        isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      )
-        filesMetadata.filesMapping[file] =
-          objectFactory.createNewDefaultFileObject(file);
-    });
+    const childrenTraversalMetadata = {
+      arrayToTraverse: Object.keys(requiredImportedFilesMapping),
+      functionUsedToTraverse: traverseFileForImports,
+      functionSpecificParameters: { checkStaticImportsOnly, checkForFileSize },
+      filesMetadata,
+    };
+    traverseChildrenFiles(childrenTraversalMetadata);
   } catch (err) {
     // If some error is found during parsing, reporting it back on the console
     filesMetadata.unparsableVistedFiles++;

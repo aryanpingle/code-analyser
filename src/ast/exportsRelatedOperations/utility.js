@@ -50,7 +50,8 @@ export const extractVariableInformationFromSpecifier = (specifier) => {
   // "export * as ... from ..." type statements
   else if (specifier.type === EXPORT_NAMESPACE_SPECIFIER)
     specifierType = ALL_EXPORTS_AS_OBJECT;
-
+  else {
+  }
   return { specifierType, exportName, importName };
 };
 
@@ -110,6 +111,8 @@ export const getValuesFromStatement = (nodeToGetValues, type) => {
           keyValuesPairArray.push(
             ...getValuesFromObject(declaration.id.properties)
           );
+        else {
+        }
       });
       return {
         exportedVariablesArray: keyValuesPairArray,

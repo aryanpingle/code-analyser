@@ -14,6 +14,7 @@ export const SIGINT = "SIGINT";
 
 export const GREEN_COLOR = "\x1b[32m";
 export const YELLOW_COLOR = "\x1b[33m";
+export const RED_COLOR = "\x1b[31m";
 export const CLEAR = "\x1Bc";
 export const BOLD = "\x1b[1m";
 
@@ -109,3 +110,5 @@ export const ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE =
   "Established relationship between different files";
 export const IDENTIFICATION_OF_GIVEN_FILE_CHUNK_METADATA_MESSAGE =
   "Identified all the files along with their effective size which are present inside the chunk";
+export const UNRECOGNIZED_CONFIGURATION_PROVIDED =
+  "Provided configuration not recognized.";

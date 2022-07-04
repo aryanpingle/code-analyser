@@ -208,6 +208,7 @@ export const doDynamicImportWithPromiseOperations = (
                 importedFileAddress,
                 -1 * valueToMultiplyWith
               );
+          } else {
           }
         });
       }
@@ -331,7 +332,9 @@ export const doDynamicImportsUsingLazyHookOperations = (
     } else if (parentNode.key) {
       // Class property
       identifier = parentNode.key.name;
+    } else {
     }
+    
     if (identifier) {
       currentFileMetadata.importedVariablesMetadata[identifier] =
         objectFactory.createNewImportMetadataObject(

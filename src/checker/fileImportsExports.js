@@ -5,10 +5,12 @@ import {
   isFileExtensionValid,
   isFileNotVisited,
   isFileMappingNotPresent,
-  isFileNotExcluded,
-  isFileTraversable,
 } from "../utility/helper.js";
-import { getUsedFilesMapping, updateFilesMetadata } from "./utility.js";
+import {
+  getUsedFilesMapping,
+  updateFilesMetadata,
+  traverseChildrenFiles,
+} from "./utility.js";
 import {
   CHECK_IMPORTS,
   CHECK_EXPORTS,
@@ -73,25 +75,14 @@ const traverseFileForCheckingImportsExports = (
     ast = null;
     currentFileMetadata = null;
     traversalRelatedMetadata = null;
-    Object.keys(requiredImportedFilesMapping).forEach((file) => {
-      if (isFileTraversable(file, filesMetadata)) {
-        if (!filesMetadata.filesMapping[file])
-          filesMetadata.filesMapping[file] =
-            objectFactory.createNewDefaultFileObject(file);
 
-        traverseFileForCheckingImportsExports(
-          file,
-          filesMetadata,
-          entryFilesMapping
-        );
-      } else if (
-        isFileMappingNotPresent(file, filesMetadata) &&
-        isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
-      ) {
-        filesMetadata.filesMapping[file] =
-          objectFactory.createNewDefaultFileObject(file);
-      }
-    });
+    const childrenTraversalMetadata = {
+      arrayToTraverse: Object.keys(requiredImportedFilesMapping),
+      functionUsedToTraverse: traverseFileForCheckingImportsExports,
+      functionSpecificParameters: entryFilesMapping,
+      filesMetadata,
+    };
+    traverseChildrenFiles(childrenTraversalMetadata);
 
     ast = buildAST(fileLocation);
     const isEntryFile = entryFilesMapping[fileLocation] ? true : false;

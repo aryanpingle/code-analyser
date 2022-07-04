@@ -1,5 +1,11 @@
 import _generate from "@babel/generator";
 import fs from "fs";
+import {
+  isFileMappingNotPresent,
+  isFileNotExcluded,
+  isFileTraversable,
+} from "../utility/helper.js";
+import objectFactory from "../utility/factory.js";
 
 const generate = _generate.default;
 
@@ -9,15 +15,19 @@ const generate = _generate.default;
  * @returns Object containing information of all imported files which are at least referred once
  */
 export const getUsedFilesMapping = (currentFileMetadata) => {
-  const usedFilesMapping = {};
-  const visitedFilesMapping = {};
   const importedVariablesMapping =
     currentFileMetadata.importedVariablesMetadata;
-  Object.values(importedVariablesMapping).forEach((variableObject) => {
-    visitedFilesMapping[variableObject.importedFrom] = true;
-    if (variableObject.referenceCountObject.referenceCount)
-      usedFilesMapping[variableObject.importedFrom] = true;
-  });
+  const { usedFilesMapping, visitedFilesMapping } = Object.values(
+    importedVariablesMapping
+  ).reduce(
+    ({ usedFilesMapping, visitedFilesMapping }, variableObject) => {
+      visitedFilesMapping[variableObject.importedFrom] = true;
+      if (variableObject.referenceCountObject.referenceCount)
+        usedFilesMapping[variableObject.importedFrom] = true;
+      return { usedFilesMapping, visitedFilesMapping };
+    },
+    { usedFilesMapping: {}, visitedFilesMapping: {} }
+  );
   Object.keys(currentFileMetadata.importedFilesMapping).forEach((file) => {
     if (!visitedFilesMapping[file]) usedFilesMapping[file] = true;
   });
@@ -56,4 +66,24 @@ export const updateFilesMetadata = (filesMetadata, currentFileMetadata) => {
     currentFileMetadata.exportedVariables;
   filesMapping[currentFileMetadata.fileLocation].importedFilesMapping =
     currentFileMapping;
+};
+
+// Will be used to traverse files which are being imported by a particular file, and take actions according to the feature which is using it
+export const traverseChildrenFiles = ({
+  arrayToTraverse,
+  functionUsedToTraverse,
+  functionSpecificParameters,
+  filesMetadata,
+}) => {
+  arrayToTraverse.forEach((file) => {
+    if (
+      isFileMappingNotPresent(file, filesMetadata) &&
+      isFileNotExcluded(filesMetadata.excludedFilesRegex, file)
+    )
+      filesMetadata.filesMapping[file] =
+        objectFactory.createNewDefaultFileObject(file);
+
+    if (isFileTraversable(file, filesMetadata))
+      functionUsedToTraverse(file, filesMetadata, functionSpecificParameters);
+  });
 };

@@ -3,6 +3,8 @@ import {
   EMPTY_STRING,
   IGNORED_FILES_REGEX,
   IGNORED_FOLDERS_REGEX,
+  RED_COLOR,
+  UNRECOGNIZED_CONFIGURATION_PROVIDED,
 } from "./constants.js";
 import {
   getRequiredTypeElementFromString,
@@ -95,6 +97,11 @@ export const codeAnalyserConfigurationObject = {
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
+        default:
+          if (configurationName !== "_" && configurationName !== "$0") {
+            console.log(RED_COLOR, UNRECOGNIZED_CONFIGURATION_PROVIDED);
+            process.exit();
+          }
       }
     }
   );

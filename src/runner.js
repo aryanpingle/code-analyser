@@ -44,4 +44,5 @@ switch (true) {
       codeAnalyserConfigurationObject
     );
     break;
+  default:
 }
