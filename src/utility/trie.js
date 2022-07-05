@@ -1,4 +1,4 @@
-import { EMPTY_STRING } from "./constants.js";
+import { EMPTY_STRING } from "./constants/index.js";
 import {
   getAllSubPartsOfGivenAbsolutePath,
   resolveAddressWithProvidedDirectory,

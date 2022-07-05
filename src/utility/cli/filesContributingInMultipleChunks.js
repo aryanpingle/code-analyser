@@ -1,5 +1,5 @@
 import cliTableBuilder from "cli-table3";
-import { GREEN_COLOR } from "../constants.js";
+import { GREEN_COLOR } from "../constants/index.js";
 
 /**
  * Will create a new table on the CLI which shows a file, along with the chunks (inside which it is present), which is present in more than one chunk

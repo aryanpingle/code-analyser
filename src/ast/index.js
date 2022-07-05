@@ -42,7 +42,7 @@ import {
   ALL_EXPORTED,
   DEFAULT,
   CHECK_USAGE,
-} from "../utility/constants.js";
+} from "../utility/constants/index.js";
 
 const traverse = _traverse.default;
 

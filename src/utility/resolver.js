@@ -16,7 +16,7 @@ import {
   OBJECT,
   VALID_EXTENSIONS_ARRAY,
   DEFAULT_MODULES_ARRAY,
-} from "./constants.js";
+} from "./constants/index.js";
 
 /**
  * Checks if the given path is absolute or not
@@ -83,38 +83,6 @@ export const isFilePath = (givenPath) => {
   if (isGivenPathPresent(givenPath)) return statSync(givenPath).isFile();
   return false;
 };
-
-const settings = {
-  extensions: VALID_EXTENSIONS_ARRAY,
-  modules: DEFAULT_MODULES_ARRAY,
-  plugins: [],
-};
-
-// Improving resolver if root directory provided
-if (codeAnalyserConfigurationObject.rootDirectory)
-  [JSCONFIG_FILE, TSCONFIG_FILE].forEach((file, index) => {
-    const resolvedPath = resolveAddressWithProvidedDirectory(
-      resolveAddressWithProvidedDirectory(
-        process.cwd(),
-        codeAnalyserConfigurationObject.rootDirectory
-      ),
-      file
-    );
-    if (isFilePath(resolvedPath)) {
-      if (index)
-        settings.plugins.push(
-          new TsconfigPathsPlugin({
-            configFile: resolvedPath,
-          })
-        );
-      else
-        settings.plugins.push(
-          new JsConfigPathsPlugin({ configFile: resolvedPath })
-        );
-    }
-  });
-
-const enhancedResolver = new enhancedResolve.create.sync(settings);
 
 /**
  * This function will resolve the address of the required file using it's directory and file address
@@ -213,3 +181,35 @@ export const getPathBaseName = (fileLocation) => path.basename(fileLocation);
 
 export const getFileNameFromElement = (fileElement) =>
   typeof fileElement === OBJECT ? fileElement.file : fileElement;
+
+const settings = {
+  extensions: VALID_EXTENSIONS_ARRAY,
+  modules: DEFAULT_MODULES_ARRAY,
+  plugins: [],
+};
+
+// Improving resolver if root directory provided
+if (codeAnalyserConfigurationObject.rootDirectory)
+  [JSCONFIG_FILE, TSCONFIG_FILE].forEach((file, index) => {
+    const resolvedPath = resolveAddressWithProvidedDirectory(
+      resolveAddressWithProvidedDirectory(
+        process.cwd(),
+        codeAnalyserConfigurationObject.rootDirectory
+      ),
+      file
+    );
+    if (isFilePath(resolvedPath)) {
+      if (index)
+        settings.plugins.push(
+          new TsconfigPathsPlugin({
+            configFile: resolvedPath,
+          })
+        );
+      else
+        settings.plugins.push(
+          new JsConfigPathsPlugin({ configFile: resolvedPath })
+        );
+    }
+  });
+
+const enhancedResolver = new enhancedResolve.create.sync(settings);

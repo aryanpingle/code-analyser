@@ -11,7 +11,7 @@ import {
   isExportFromTypeStatement,
   isNotTraversingToCheckForImportAddresses,
 } from "../helper.js";
-import { ALL_EXPORTS_AS_OBJECT } from "../../utility/constants.js";
+import { ALL_EXPORTS_AS_OBJECT } from "../../utility/constants/index.js";
 
 /**
  * Will set all the variables present in the statement as the exported variables of the current file
@@ -81,7 +81,7 @@ export const doExportSpecifiersOperations = (
 
           currentFileMetadata.exportedVariables[exportName] =
             exportedVariableObject;
-          
+
           if (currentFileMetadata.isEntryFile)
             setEntryFileExportRecursively(
               currentFileMetadata.exportedVariables[exportName]

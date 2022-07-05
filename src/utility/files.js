@@ -2,7 +2,7 @@ import process from "process";
 import fsPromises from "fs/promises";
 import { resolveAddressWithProvidedDirectory, isFilePath } from "./resolver.js";
 import { isInstanceofRegexExpression, isFileNotExcluded } from "./helper.js";
-import { DEFAULT_ENTRY_ARRAY } from "./constants.js";
+import { DEFAULT_ENTRY_ARRAY } from "./constants/index.js";
 
 /**
  * Get all entry files from the directories to check/ module to check (provided in the configuration file)

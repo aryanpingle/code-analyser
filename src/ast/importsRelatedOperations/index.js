@@ -30,7 +30,7 @@ import {
   ALL_EXPORTS_IMPORTED,
   DONT_UPDATE_REFERENCE_COUNT,
   WEBPACK_CHUNK_NAME,
-} from "../../utility/constants.js";
+} from "../../utility/constants/index.js";
 
 /**
  * Will set that the current file has been statically imported
@@ -334,7 +334,7 @@ export const doDynamicImportsUsingLazyHookOperations = (
       identifier = parentNode.key.name;
     } else {
     }
-    
+
     if (identifier) {
       currentFileMetadata.importedVariablesMetadata[identifier] =
         objectFactory.createNewImportMetadataObject(

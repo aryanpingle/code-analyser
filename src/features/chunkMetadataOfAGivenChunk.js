@@ -3,11 +3,11 @@ import {
   DISPLAY_TEXT,
   IDENTIFICATION_OF_GIVEN_FILE_CHUNK_METADATA_MESSAGE,
   CHECK_CHUNK_METADATA_USING_GIVEN_FILE,
-} from "../utility/constants.js";
+} from "../utility/constants/index.js";
 import {
   setImportedFilesMapping,
   getAllDependentFiles,
-} from "../utility/featureSpecificOperations/index.js";
+} from "../utility/featuresUtility/index.js";
 import { resolveAddressWithProvidedDirectory } from "../utility/resolver.js";
 import { cacheMapping } from "../utility/configuration.js";
 

@@ -2,7 +2,7 @@ import {
   DISPLAY_TEXT,
   CHUNKS,
   ESTABLISHED_RELATIONSHIP_BETWEEN_FILES_MESSAGE,
-} from "../constants.js";
+} from "../constants/index.js";
 import { isFileNotExcluded } from "../helper.js";
 import objectFactory from "../factory.js";
 

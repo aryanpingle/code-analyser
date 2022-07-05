@@ -1,5 +1,10 @@
 import cliTableBuilder from "cli-table3";
-import { GREEN_COLOR, YELLOW_COLOR, GO_BACK, CLEAR } from "../constants.js";
+import {
+  GREEN_COLOR,
+  YELLOW_COLOR,
+  GO_BACK,
+  CLEAR,
+} from "../constants/index.js";
 import { buildTrie, getFirstNodeNotContainingOneChild } from "../trie.js";
 import enquirer from "enquirer";
 import { displayChunkMetadaRelatedInformation } from "./chunkMetadataOfAGivenChunk.js";

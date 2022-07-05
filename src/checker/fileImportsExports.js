@@ -15,7 +15,7 @@ import {
   CHECK_IMPORTS,
   CHECK_EXPORTS,
   DISPLAY_TEXT,
-} from "../utility/constants.js";
+} from "../utility/constants/index.js";
 
 /**
  * Will be used to check file to get it's import and export variables, which will be used in the next stage where their usage will be checked

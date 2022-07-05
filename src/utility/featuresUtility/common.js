@@ -3,7 +3,7 @@ import {
   DISPLAY_TEXT,
   SUCCESSFUL_RETRIEVAL_OF_ALL_FILES_MESSAGE,
   SUCCESSFUL_RETRIEVAL_OF_ALL_ENTRY_FILES_MESSAGE,
-} from "../constants.js";
+} from "../constants/index.js";
 import { getAllFilesToCheck, getAllEntryFiles } from "../files.js";
 import { isFileExtensionValid } from "../helper.js";
 import { getNumberOfSubPartsOfGivenAbsolutePath } from "../resolver.js";

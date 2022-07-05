@@ -2,7 +2,7 @@ import {
   DISPLAY_TEXT,
   SUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE,
   UNSUCCESSFUL_IDENTIFICATION_OF_ALL_DEPENDENCIES_AT_GIVEN_DEPTH_MESSAGE,
-} from "../constants.js";
+} from "../constants/index.js";
 import { isFileNotExcluded } from "../helper.js";
 import { isFilePath } from "../resolver.js";
 import { getFilePoints } from "./common.js";

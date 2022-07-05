@@ -17,7 +17,7 @@ import {
   IDENTIFIER,
   OBJECT_PATTERN,
   DONT_UPDATE_REFERENCE_COUNT,
-} from "../../utility/constants.js";
+} from "../../utility/constants/index.js";
 
 /**
  * This function parses the specifier and set this specifier as current file's imported variable

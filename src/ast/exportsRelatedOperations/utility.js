@@ -10,7 +10,7 @@ import {
   DEFAULT,
   NORMAL_EXPORT,
   DEFAULT_OBJECT_EXPORT,
-} from "../../utility/constants.js";
+} from "../../utility/constants/index.js";
 
 /**
  * Will parse the export statement's specifier and set it as an import of the current file

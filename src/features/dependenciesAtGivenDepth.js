@@ -2,13 +2,13 @@ import { codeAnalyserConfigurationObject } from "../utility/configuration.js";
 import {
   CHECK_DEPENDENCIES_AT_GIVEN_DEPTH,
   DEFAULT_TRUE_REGEX_STRING,
-} from "../utility/constants.js";
+} from "../utility/constants/index.js";
 import {
   getAllRequiredFiles,
   getDependenciesAtGivenDepth,
   getDependenciesAtGivenDepthUsageMapping,
   setImportedFilesMapping,
-} from "../utility/featureSpecificOperations/index.js";
+} from "../utility/featuresUtility/index.js";
 import { buildDependenciesAtGivenDepthRegex } from "../utility/regex.js";
 import { resolveAddressWithProvidedDirectory } from "../utility/resolver.js";
 
@@ -39,7 +39,7 @@ export const analyseCodeAndDetectDependenciesAtGivenDepth = async (
   };
   const { outsideModuleCheckRegex, insideModuleCheckRegex } =
     buildDependenciesAtGivenDepthRegex(dependencyCheckerRelatedMetadata);
-    
+
   filesMetadata.insideModuleCheckRegex =
     codeAnalyserConfigurationObject.checkAll
       ? new RegExp(DEFAULT_TRUE_REGEX_STRING)

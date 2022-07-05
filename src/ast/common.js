@@ -10,7 +10,7 @@ import {
   TEMPLATE_LITERAL,
   UNRESOLVED_TYPE,
   NONE,
-} from "../utility/constants.js";
+} from "../utility/constants/index.js";
 import {
   pathResolver,
   isPathAbsolute,

@@ -5,7 +5,7 @@ import {
   getAllSubPartsOfGivenAbsolutePath,
 } from "./resolver.js";
 import { isInstanceofRegexExpression } from "./helper.js";
-import { EMPTY_STRING, DEFAULT_REGEX_STRING } from "./constants.js";
+import { EMPTY_STRING, DEFAULT_REGEX_STRING } from "./constants/index.js";
 
 /**
  * Builds a regex which excludes files based on the input given in the configuration file initially

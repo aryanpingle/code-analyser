@@ -12,8 +12,7 @@ import {
   IDENTIFIER,
   CHECK_ALL_IMPORTS_ADDRESSES,
   CHECK_STATIC_IMPORTS_ADDRESSES,
-  DEFAULT,
-} from "../utility/constants.js";
+} from "../utility/constants/index.js";
 
 export const isExportFromTypeStatement = (node) =>
   node && node.source && node.source.value;
@@ -94,7 +93,6 @@ export const isNotExportTypeReference = (path) => {
     // ES6 exports statements
     (
       parentNode ||
-      // module.exports type statements
       (assignmentNode &&
         assignmentNode.node &&
         assignmentNode.node.left &&
@@ -103,35 +101,34 @@ export const isNotExportTypeReference = (path) => {
         assignmentNode.node.left.property &&
         assignmentNode.node.left.property.name === EXPORTS &&
         assignmentNode.node.right &&
-        (assignmentNode.node.right === path.node ||
-          (assignmentNode.node.right.properties &&
-            assignmentNode.node.right.properties.some(
-              (property) =>
-                property.key === path.node ||
-                property.value === path.node ||
-                (property.value && property.value.id === path.node)
-            )))) ||
-      // export default type statements
+        isNodeReferred(assignmentNode.node.right, path)) ||
       (exportDefaultDeclaration &&
         exportDefaultDeclaration.node &&
         exportDefaultDeclaration.node.declaration &&
-        (exportDefaultDeclaration.node.declaration.left === path.node ||
-          exportDefaultDeclaration.node.declaration.id === path.node ||
-          exportDefaultDeclaration.node.declaration === path.node ||
-          (exportDefaultDeclaration.node.declaration.params &&
-            exportDefaultDeclaration.node.declaration.params[0] ===
-              path.node) ||
-          (exportDefaultDeclaration.node.declaration.properties &&
-            exportDefaultDeclaration.node.declaration.properties.some(
-              (property) =>
-                property.key === path.node ||
-                property.value === path.node ||
-                (property.value && property.value.id === path.node)
-            ))))
+        isDefaultExportReference(
+          exportDefaultDeclaration.node.declaration,
+          path
+        ))
     )
   );
 };
 
+const isNodeReferred = (referenceNode, path) =>
+  referenceNode === path.node ||
+  (referenceNode.properties &&
+    referenceNode.properties.some(
+      (property) =>
+        property.key === path.node ||
+        property.value === path.node ||
+        (property.value && property.value.id === path.node)
+    ));
+
+const isDefaultExportReference = (referenceNode, path) =>
+  referenceNode.left === path.node ||
+  referenceNode.id === path.node ||
+  (referenceNode.params && referenceNode.params[0] === path.node) ||
+  isNodeReferred(referenceNode, path);
+  
 export const isLazyImportDeclaration = (parentNode) =>
   parentNode &&
   parentNode.declarations &&
@@ -147,4 +144,3 @@ export const isNotTraversingToCheckForImportAddresses = (traverseType) =>
 
 export const isNotTraversingToCheckForStaticImportAddresses = (traverseType) =>
   traverseType !== CHECK_STATIC_IMPORTS_ADDRESSES;
-

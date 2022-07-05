@@ -5,7 +5,7 @@ import {
   MEMBER_EXPRESSION,
   OBJECT,
   PROPERTY,
-} from "../../utility/constants.js";
+} from "../../utility/constants/index.js";
 
 /**
  * Returns all individual properties present in a x.y.z or x["y"]["z"] type statements

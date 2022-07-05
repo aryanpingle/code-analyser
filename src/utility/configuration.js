@@ -5,7 +5,24 @@ import {
   IGNORED_FOLDERS_REGEX,
   RED_COLOR,
   UNRECOGNIZED_CONFIGURATION_PROVIDED,
-} from "./constants.js";
+  ENTRY,
+  INCLUDE,
+  EXCLUDE,
+  CHECK_DEAD_FILES_IN_A_PROJECT,
+  CHECK_DEPENDENCIES_FOLLOWING_DEPTH_CRITERIA,
+  CHECK_FILES_IN_MULTIPLE_CHUNKS,
+  CHECK_CHUNK_METADATA_USING_GIVEN_CHUNK,
+  IS_DEPTH_FROM_FRONT,
+  MODULE_TO_CHECK,
+  DIRECTORIES_TO_CHECK,
+  ROOT_DIRECTORY,
+  DEPTH,
+  INTERACT,
+  CHECK_ALL,
+  TOTAL_FILES_TO_SHOW,
+  UNDERSCORE,
+  FIRST_ARGUMENT,
+} from "./constants/index.js";
 import {
   getRequiredTypeElementFromString,
   getArrayOfElementsFromString,
@@ -35,70 +52,73 @@ export const codeAnalyserConfigurationObject = {
   Object.entries(configurationObject).forEach(
     ([configurationName, subObject]) => {
       switch (configurationName) {
-        case "entry":
+        case ENTRY:
           codeAnalyserConfigurationObject[configurationName] =
             getArrayOfElementsFromString(subObject);
           break;
-        case "include":
+        case INCLUDE:
           codeAnalyserConfigurationObject[configurationName].push(
             ...getArrayOfElementsFromString(subObject)
           );
           break;
-        case "exclude":
+        case EXCLUDE:
           codeAnalyserConfigurationObject[configurationName].push(
             ...getArrayOfElementsFromString(subObject)
           );
           break;
-        case "checkDeadFiles":
+        case CHECK_DEAD_FILES_IN_A_PROJECT:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
-        case "checkDependenciesAtGivenDepth":
+        case CHECK_DEPENDENCIES_FOLLOWING_DEPTH_CRITERIA:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
-        case "checkFilesContributingInMultipleChunks":
+        case CHECK_FILES_IN_MULTIPLE_CHUNKS:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
-        case "checkChunkMetadataUsingGivenChunk":
+        case CHECK_CHUNK_METADATA_USING_GIVEN_CHUNK:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
-        case "isDepthFromFront":
+        case IS_DEPTH_FROM_FRONT:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
-        case "moduleToCheck":
+        case MODULE_TO_CHECK:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject, true);
           break;
-        case "directoriesToCheck":
+        case DIRECTORIES_TO_CHECK:
           codeAnalyserConfigurationObject[configurationName] =
             getArrayOfElementsFromString(subObject);
           break;
-        case "rootDirectory":
+        case ROOT_DIRECTORY:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject, true);
           break;
-        case "depth":
+        case DEPTH:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
-        case "interact":
+        case INTERACT:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
-        case "checkAll":
+        case CHECK_ALL:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
-        case "totalFilesToShow":
+        case TOTAL_FILES_TO_SHOW:
           codeAnalyserConfigurationObject[configurationName] =
             getRequiredTypeElementFromString(subObject);
           break;
         default:
-          if (configurationName !== "_" && configurationName !== "$0") {
+          if (
+            configurationName !== UNDERSCORE &&
+            configurationName !== FIRST_ARGUMENT
+          ) {
             console.log(RED_COLOR, UNRECOGNIZED_CONFIGURATION_PROVIDED);
             process.exit();
           }

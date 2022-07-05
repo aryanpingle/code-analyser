@@ -1,12 +1,12 @@
 import { codeAnalyserConfigurationObject } from "../utility/configuration.js";
-import { CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS } from "../utility/constants.js";
+import { CHECK_FILES_CONTRIBUTING_IN_MULTIPLE_CHUNKS } from "../utility/constants/index.js";
 import {
   getAllRequiredFiles,
   setImportedFilesMapping,
   createWebpackChunkMetadata,
   getFilesContributingInMultipleChunks,
   getFilesContributingInMultipleChunksMapping,
-} from "../utility/featureSpecificOperations/index.js";
+} from "../utility/featuresUtility/index.js";
 
 /**
  * Function which first analyses the code and then prints the files which are present in more than one chunk on the console

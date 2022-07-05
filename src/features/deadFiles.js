@@ -1,12 +1,12 @@
 import { codeAnalyserConfigurationObject } from "../utility/configuration.js";
-import { CHECK_DEAD_FILES } from "../utility/constants.js";
+import { CHECK_DEAD_FILES } from "../utility/constants/index.js";
 import {
   getDeadFilesAndSendMessageToParent,
   analyseCode,
   setAllFilesExports,
   buildEntryFilesMappingFromArray,
   getAllRequiredFiles,
-} from "../utility/featureSpecificOperations/index.js";
+} from "../utility/featuresUtility/index.js";
 
 /**
  * Function which first analyses the code and prints the dead files present on the console

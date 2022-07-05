@@ -1,4 +1,4 @@
-import { NUMBER, BOOLEAN, TRUE, SIZES_ARRAY } from "./constants.js";
+import { NUMBER, BOOLEAN, TRUE, SIZES_ARRAY } from "./constants/index.js";
 
 // Parses the given string and return the appropriate type element (number, regex, string)
 export const getRequiredTypeElementFromString = (

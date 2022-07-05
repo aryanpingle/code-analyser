@@ -1,7 +1,7 @@
 import process from "process";
 import { traverseAST, buildAST } from "../ast/index.js";
 import objectFactory from "../utility/factory.js";
-import { CHECK_USAGE, DISPLAY_TEXT } from "../utility/constants.js";
+import { CHECK_USAGE, DISPLAY_TEXT } from "../utility/constants/index.js";
 import {
   isFileExtensionValid,
   isFileNotVisited,

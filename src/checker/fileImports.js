@@ -10,7 +10,7 @@ import {
   CHECK_STATIC_IMPORTS_ADDRESSES,
   CHECK_ALL_IMPORTS_ADDRESSES,
   DISPLAY_TEXT,
-} from "../utility/constants.js";
+} from "../utility/constants/index.js";
 import { getFileSize, traverseChildrenFiles } from "./utility.js";
 
 /**

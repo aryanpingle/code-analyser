@@ -1,4 +1,4 @@
-import { DEFAULT, FILE, SPACE } from "./constants.js";
+import { DEFAULT, FILE, SPACE } from "./constants/index.js";
 import { isFileExtensionNotValid } from "./helper.js";
 import { buildExcludedFilesRegex } from "./regex.js";
 import { getPathBaseName } from "./resolver.js";

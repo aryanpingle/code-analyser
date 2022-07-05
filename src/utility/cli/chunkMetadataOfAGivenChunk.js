@@ -1,6 +1,6 @@
 import cliTableBuilder from "cli-table3";
 import yargs from "yargs";
-import { BOLD } from "../constants.js";
+import { BOLD } from "../constants/index.js";
 import { getSizeFromInteger } from "../parseElements.js";
 
 /**

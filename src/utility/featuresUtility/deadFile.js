@@ -9,7 +9,7 @@ import {
   ANALYSED_CODEBASE_MESSAGE,
   SUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE,
   UNSUCCESSFUL_IDENTIFICATION_OF_DEAD_FILES_MESSAGE,
-} from "../constants.js";
+} from "../constants/index.js";
 import { isFileNotExcluded } from "../helper.js";
 import { getFilePoints } from "./common.js";
 

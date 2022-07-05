@@ -24,7 +24,7 @@ import {
   RUNNER_FILE,
   SIGINT,
   CHECK_CHUNK_METADATA_USING_GIVEN_FILE,
-} from "./utility/constants.js";
+} from "./utility/constants/index.js";
 
 const directoryAddress = dirname(fileURLToPath(import.meta.url));
 // Child process where computation part of the program will be done
@@ -32,7 +32,7 @@ const childProcess = fork(
   path.join(directoryAddress, RUNNER_FILE),
   process.argv,
   {
-    silent: true,
+   // silent: true,
   }
 );
 
