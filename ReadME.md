@@ -99,12 +99,12 @@ $ analyseCode --checkChunkMetadataUsingGivenChunk --moduleToCheck="[/index\.jsx/
 
 # Major Technologies Used
 
-- Vanilla JavaScript : Lightweight JS Framework
-- Babel Parse: JavaScript Parser
-- Babel Traverse : AST traverser
-- Babel generator : AST to Code convertor
-- Enhanced–Resolve : Path Resolver
-- Enquirer : Interactive CLI builder
+- Vanilla JavaScript: Lightweight JS Framework
+- Babel Parser: JavaScript Parser
+- Babel Traverse: AST traverser
+- Babel generator: AST to Code convertor
+- Enhanced–Resolve: Path Resolver
+- Enquirer: Interactive CLI builder
 
 # Design Patterns
 

@@ -32,7 +32,7 @@ const childProcess = fork(
   path.join(directoryAddress, RUNNER_FILE),
   process.argv,
   {
-   // silent: true,
+   silent: true,
   }
 );
 
