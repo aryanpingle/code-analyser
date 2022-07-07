@@ -42,6 +42,7 @@ import {
   ALL_EXPORTED,
   DEFAULT,
   CHECK_USAGE,
+  JSX,
 } from "../utility/constants/index.js";
 
 const traverse = _traverse.default;
@@ -55,7 +56,7 @@ export const buildAST = (fileLocation) => {
   const code = fs.readFileSync(fileLocation).toString();
   try {
     return parse(code, {
-      plugins: [...astParserPlugins, "jsx"],
+      plugins: [...astParserPlugins, JSX],
       ...astOtherSettings,
     });
   } catch (_) {

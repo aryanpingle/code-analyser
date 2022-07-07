@@ -9,6 +9,7 @@ export const TEMPLATE_LITERAL = "TemplateLiteral";
 export const MEMBER_EXPRESSION = "MemberExpression";
 export const OBJECT_EXPRESSION = "ObjectExpression";
 
+export const JSX = "jsx";
 export const DEFAULT = "default";
 export const NAMED_EXPORT = "namedExport";
 export const ALL_EXPORTED = "allExported";
