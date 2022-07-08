@@ -1,6 +1,6 @@
 {
   "name": "code-analyser",
-  "version": "1.5.5",
+  "version": "1.6.2",
   "description": "Code-Analyser is a script which contains many features, which allow easier analysis of a project.",
   "main": "index.js",
   "type": "module",
