@@ -30,6 +30,12 @@ export const getArrayOfElementsFromString = (arrayString) => {
     });
 };
 
+/**
+ * Convert a number of bytes into its "pretty" string representation
+ * e.g. 1024 => "1.00 KB"
+ * @param {number} givenInteger 
+ * @returns {string}
+ */
 export const getSizeFromInteger = (givenInteger) => {
   const possibleSizes = SIZES_ARRAY;
   const MULTIPLIER_TO_GET_NEXT_SIZE = 1024;
